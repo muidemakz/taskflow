@@ -31,7 +31,11 @@ async function upsertUser({ email, name, password, role }) {
 }
 
 async function seedFortnoto(ownerId) {
-  await prisma.project.deleteMany({ where: { ownerId, title: fortnoto.name } });
+  const existing = await prisma.project.findFirst({ where: { ownerId, title: fortnoto.name } });
+  if (existing) {
+    console.log('Fortnoto demo project already exists. Skipping project seed.');
+    return;
+  }
 
   const project = await prisma.project.create({
     data: {
