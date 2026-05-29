@@ -24,7 +24,7 @@ npm run seed
 npm run dev
 ```
 
-Backend runs on `http://localhost:4000`. The default local database is SQLite at `backend/prisma/dev.db`, so you can run the app without setting up Postgres first. If Prisma migrate has trouble on Windows, use `npm run db:setup`; it creates the same local SQLite tables directly.
+Backend runs on `http://localhost:4000`. For production and Railway, use PostgreSQL and set `DATABASE_URL` from your Railway Postgres service.
 
 Demo accounts:
 
@@ -48,7 +48,7 @@ Frontend runs on `http://localhost:5173`.
 
 ### Backend on Render
 
-1. For production, create a PostgreSQL database on Render, Railway, or Supabase and switch `backend/prisma/schema.prisma` provider from `sqlite` to `postgresql`.
+1. Create a PostgreSQL database on Render, Railway, or Supabase.
 2. Create a Render web service using `backend/render.yaml`, or configure:
    - Root directory: `backend`
    - Build command: `npm install && npx prisma generate && npx prisma db push`

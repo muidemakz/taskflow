@@ -15,7 +15,7 @@ export function orderArray(project) {
 }
 
 export function serializeOrder(order) {
-  return JSON.stringify(Array.isArray(order) ? order : []);
+  return Array.isArray(order) ? order : [];
 }
 
 export function normalizeTaskInput(data = {}) {

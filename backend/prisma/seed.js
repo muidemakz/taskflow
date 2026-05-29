@@ -39,7 +39,7 @@ async function seedFortnoto(ownerId) {
       description: 'Demo project seeded from the original Fortnoto checklist artifact.',
       ownerId,
       shareEnabled: true,
-      order: JSON.stringify([])
+      order: []
     }
   });
 
@@ -90,7 +90,7 @@ async function seedFortnoto(ownerId) {
     })
     .filter(Boolean);
 
-  await prisma.project.update({ where: { id: project.id }, data: { order: JSON.stringify(order) } });
+  await prisma.project.update({ where: { id: project.id }, data: { order } });
 }
 
 async function main() {

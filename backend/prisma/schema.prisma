@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -12,7 +12,7 @@ model User {
   email         String         @unique
   name          String
   password      String
-  role          String         @default("USER")
+  role          Role           @default(USER)
   createdAt     DateTime       @default(now())
   lastLoginAt   DateTime?
   projects      Project[]
@@ -40,7 +40,7 @@ model Project {
   ownerId      String
   groups       Group[]
   tasks        Task[]
-  order        String   @default("[]")
+  order        String[]
 }
 
 model Group {
@@ -55,8 +55,8 @@ model Group {
 model Task {
   id          String    @id @default(cuid())
   title       String
-  status      String    @default("TODO")
-  priority    String    @default("NONE")
+  status      Status    @default(TODO)
+  priority    Priority  @default(NONE)
   comment     String?
   completedAt DateTime?
   createdAt   DateTime  @default(now())
@@ -64,4 +64,20 @@ model Task {
   projectId   String
   group       Group?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
   groupId     String?
+}
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Status {
+  TODO
+  DONE
+}
+
+enum Priority {
+  NONE
+  LOW
+  MID
+  HIGH
 }
