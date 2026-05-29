@@ -51,8 +51,8 @@ Frontend runs on `http://localhost:5173`.
 1. Create a PostgreSQL database on Render, Railway, or Supabase.
 2. Create a Render web service using `backend/render.yaml`, or configure:
    - Root directory: `backend`
-   - Build command: `npm install && npx prisma generate && npx prisma db push`
-   - Start command: `npm start`
+   - Build command: `npm install && npx prisma generate`
+   - Start command: `npx prisma db push && npm start`
 3. Add environment variables:
    - `DATABASE_URL`
    - `JWT_SECRET`
