@@ -14,8 +14,19 @@ import { adminOnly } from './middleware/adminOnly.js';
 const app = express();
 const port = process.env.PORT || 4000;
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+const allowedOrigins = frontendUrl.split(',').map((url) => url.trim()).filter(Boolean);
 
-app.use(cors({ origin: frontendUrl.split(',').map((url) => url.trim()), credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (/^https:\/\/[a-z0-9-]+\.netlify\.app$/i.test(origin)) return callback(null, true);
+    if (/^http:\/\/localhost:\d+$/i.test(origin)) return callback(null, true);
+    if (/^http:\/\/127\.0\.0\.1:\d+$/i.test(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('dev'));
 
