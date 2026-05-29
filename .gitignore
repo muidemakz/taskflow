@@ -4,3 +4,4 @@ dist
 .DS_Store
 *.log
 backend/prisma/migrations/dev.db
+backend/prisma/dev.db
