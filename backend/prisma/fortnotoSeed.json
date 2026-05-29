@@ -1,0 +1,2078 @@
+{
+  "id": "fortnoto-live",
+  "name": "Fortnoto",
+  "createdAt": 1779818255155,
+  "tasks": [
+    {
+      "id": "wlkbbf2z",
+      "title": "Ui for coupon config",
+      "status": "todo",
+      "priority": "",
+      "completedAt": null,
+      "comment": ""
+    },
+    {
+      "id": "7yr3m03f",
+      "title": "Modify Profile page generally..",
+      "status": "todo",
+      "priority": "",
+      "completedAt": null,
+      "comment": ""
+    },
+    {
+      "id": "tw43078r",
+      "title": "Add presale to stores and marketplace.. Let it link to acces duration start date",
+      "status": "todo",
+      "priority": "",
+      "completedAt": null,
+      "comment": ""
+    },
+    {
+      "id": "0iwl2ci8",
+      "title": "Paid view for view profile work samples",
+      "status": "todo",
+      "priority": "",
+      "completedAt": null,
+      "comment": ""
+    },
+    {
+      "id": "1qbbye27",
+      "title": "Create FOrtnoto account and login",
+      "status": "todo",
+      "priority": "",
+      "completedAt": null,
+      "comment": ""
+    },
+    {
+      "id": "69anpq8q",
+      "title": "Post-purchase opt-in checkbox: 'Receive updates from this creator'",
+      "status": "todo",
+      "priority": "",
+      "completedAt": null,
+      "comment": ""
+    }
+  ],
+  "groups": [
+    {
+      "id": "8c6o75zm",
+      "title": "Venda Logo",
+      "tasks": [
+        {
+          "id": "vk28slty",
+          "title": "Create Venda Logo",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "9mn8h9fo",
+      "title": "Marketplace",
+      "tasks": [
+        {
+          "id": "im0h4w5q",
+          "title": "Update to include link to direct business url. and CTA's in marketplace.",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "fw1yzzwr",
+      "title": "Access, Authentication & Onboarding",
+      "tasks": [
+        {
+          "id": "b8kv9orn",
+          "title": "Confirm Creator Platform is a standalone web portal accessible from the main Fortnoto website",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "k026tkmw",
+          "title": "Decision: users MUST have a Super App account before accessing Creator Platform (compulsory)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "uoqux8fb",
+          "title": "Redirect users without a Super App account to download the app, register, then return to the web portal",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "8tuo6dnh",
+          "title": "Duplicate the Super App sign-up flow on the Creator Platform web (mobile parity)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "1rm77xw9",
+          "title": "On login, show two dashboards (Creator and Customer/Consumer) with profile switching",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "cubrp0sf",
+          "title": "Build the 'become a creator' onboarding entry from the public Fortnoto website",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "fqv2xkd2",
+      "title": "Courses (curriculum, LMS integration)",
+      "tasks": [
+        {
+          "id": "75b3d6xi",
+          "title": "Course info section: title, description, cover image, category, course language",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "damve1j5",
+          "title": "Difficulty level field (Beginner / Intermediate / Advanced) as labels",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "mp3n2krj",
+          "title": "Curriculum builder with Modules + Lessons (nested)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "ff7xso4b",
+          "title": "Drip content scheduling — creator sets unlock date per lesson",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "3hoz2k47",
+          "title": "Course Settings section including completion behavior",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "yh8xbpdw",
+          "title": "Make Module Name an editable required field inside each module",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "rcs49g0w",
+          "title": "Make Lesson Name + Lesson Description required fields inside each lesson",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "j2pnnp7n",
+          "title": "Lesson content sources: upload video file, paste YouTube/Vimeo/Google Drive link",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "i7i783ag",
+          "title": "If lesson is an external link, add manual Lesson Duration field",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "l2z0hn0g",
+          "title": "Attach difficulty level to PRICING so creators can offer tiered pricing",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779822055395,
+          "comment": ""
+        },
+        {
+          "id": "jv95kpje",
+          "title": "Define and implement Course Completion settings (criteria + behavior)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "q6czixsc",
+          "title": "Show 'Total course duration' on the course landing page (computed from lesson durations)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "kjkc4mho",
+          "title": "Support pre-sell of courses (sold before content fully released)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "mre1kk1l",
+          "title": "Lesson types beyond video: exercise, document/PDF, live-class link, self-paced reading",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "5z93m24k",
+      "title": "Supported Product Types",
+      "tasks": [
+        {
+          "id": "rzzgt0o6",
+          "title": "Product List confirmed: Digital Product, Course, Ticket/Event, Service, Subscription, Bundle, Masterclass/Webinar, Show Love, bookings",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "q04ozv6i",
+          "title": "Personal Page is NOT a product type — it IS a part of the storepage itself",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "8opve8ny",
+          "title": "Strictly block physical-product selling on the Creator Platform (route to Store app instead)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "pfptbp2g",
+          "title": "File-type gating per product subtype (Ebook=PDF only, Audiobook=MP3, etc.) with form-level rejection",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "ryxcf4cd",
+      "title": "Digital Products Checklist",
+      "tasks": [
+        {
+          "id": "gslvaqe6",
+          "title": "Product flow for license-key sales (PS license, software keys, activation keys)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "edr8d5xr",
+          "title": "Email delivery: credentials/keys sent to buyer after purchase",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "ota6xlwe",
+          "title": "Basic information section: title, description, category, file/link toggle, public/private visibility",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "71qs2rx3",
+          "title": "Pricing: Fixed price, Pay-what-you-want (with minimum), and Free",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "j9s6xg0y",
+          "title": "Availability section with deadline toggle, deadline date, max purchase limit",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "tsr86c3a",
+          "title": "Affiliate permissions section on product creation",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "le66f64m",
+          "title": "Add Sales-price field with original price shown crossed out",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "ne8re3uo",
+          "title": "Add SEO section: CTA button, CTA description, SEO description",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "bcobn3rw",
+          "title": "Add redirect-link toggle: when on, exposes a URL input for post-purchase redirect",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779822942389,
+          "comment": ""
+        },
+        {
+          "id": "9fvzlmnk",
+          "title": "Add 'Bundle this product' option with product picker + auto-calculated savings",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "w2mrncri",
+          "title": "Audiobook product type: upload audio file or paste link",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "hm3mxy4s",
+          "title": "Front-end audio player in buyer portal for streaming the audiobook",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "7h96m7q6",
+          "title": "Ebook upload accepts PDF only",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "2ole3if7",
+          "title": "Per-ebook setting: 'Downloadable' vs 'In-app reader only'",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "mmagx9y8",
+          "title": "Build the in-app PDF reader so buyers can read without downloading",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "lwybmtuh",
+          "title": "Plagiarism check on every new ebook upload; block if 90%+ overlap by different author. Plagiarism detection on every new ebook upload (AI + external similarity services)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "uryqio7a",
+          "title": "Verify uploader's name matches claimed author before allowing publish",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "ey8zt24a",
+      "title": "Masterclass / Webinar",
+      "tasks": [
+        {
+          "id": "zvhhjrp7",
+          "title": "Masterclass tabs: Overview · Content · Students/Registrants · Session · Recording · Certificates · Announcements",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "e9hj7spu",
+          "title": "Start Session sends Zoom/platform link to all registrants and marks event as live",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "nf40cm6y",
+          "title": "Zoom meeting field on product creation; reminder emails fire before session start",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779823369164,
+          "comment": ""
+        },
+        {
+          "id": "pcvq2n6r",
+          "title": "Confirmation email to buyer immediately after purchase, restating session time and link",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "vm4cup8j",
+          "title": "Masterclass waiting room screen (buyer portal)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "14pq6v8w",
+          "title": "Masterclass live view (embedded player + chat) in buyer portal",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "m7mkbi5d",
+          "title": "Replay view in buyer portal",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "rvovu3yr",
+      "title": "Tickets / Events",
+      "tasks": [
+        {
+          "id": "h6ckp419",
+          "title": "Event basics: name, description, banner, category, business type (Physical / Virtual / Hybrid)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "oizdvjg6",
+          "title": "Conditional fields: virtual link, physical location, both for Hybrid",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "nyp34ciz",
+          "title": "Ticket tier builder with name + quantity + price; multiple tiers; add/delete tiers",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "dlc3k6hd",
+          "title": "Ticket-management tab system (Overview · Attendees · Scanners · Check-in · Settings)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "lk3ltjb0",
+          "title": "Subscription-gated ticket-management opt-in toggle",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "ecu0ao4r",
+          "title": "Per-tier price can be FREE (some tiers free, others paid in the same event)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "0bjzn4um",
+          "title": "Multi-currency pricing on tiers (no auto-conversion; creator sets each)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "pn2pgtr1",
+          "title": "Add purchase confirmation message field — fires by email after ticket purchase",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "q1xy0tv9",
+          "title": "Public/private visibility toggle for events",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "p0nnnq5h",
+          "title": "Scanner-staff management UI (invite by email, list, revoke, view scan counts)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "lkm8v7zj",
+          "title": "Scanners must already be Fortnoto users; invite by email; access auto-expires when event ends",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "6yeodbk7",
+          "title": "Attendee list export (CSV + PDF)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "6sw8fbgc",
+          "title": "Minimum + maximum order quantity per tier",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "vr1nf500",
+          "title": "'Sold out' auto-set on capacity zero; manual toggle also available",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "q2g8pfi0",
+      "title": "Service Products",
+      "tasks": [
+        {
+          "id": "si8edj72",
+          "title": "Service product structure with packages and brief form",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "tjf2ldod",
+          "title": "Service orders don't start until buyer submits brief",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "ruf5td48",
+          "title": "Brief builder in Add/Edit Service: creator defines the questions buyer must answer",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "ig4lfn7x",
+          "title": "Buyer brief flow inside buyer portal: Brief → status → delivery",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "lchrjth0",
+      "title": "Subscription Products",
+      "tasks": [
+        {
+          "id": "kvtq2c5y",
+          "title": "Both buyer and creator can cancel; takes effect at end of billing period",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "oswh0qct",
+          "title": "Expired subscription shows 'Renew' CTA in buyer portal",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "zyvxp0q2",
+          "title": "Retention step before final cancel confirmation",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "p3azb4pe",
+          "title": "Subscription product creation: paste Telegram or WhatsApp link as gated resource",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "9t86qlka",
+          "title": "WhatsApp gating: collect buyer phone at checkout; creator gets paid-list to invite",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "pzobhls7",
+          "title": "Telegram gating: send one-time, time-limited invite link to buyer",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "twd4znny",
+          "title": "Notify buyer N days before expiry with direct renewal link",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "9c2k2szd",
+          "title": "Affiliate payout model: 'one-off' or 'recurring on every renewal'",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "52yqt9eo",
+      "title": "Bundle Products",
+      "tasks": [
+        {
+          "id": "9ybquxma",
+          "title": "Bundle picker selects from creator's existing products and shows savings",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "tr9yofvg",
+          "title": "Apply Bundle product type to Store, Shortlet, Digital Product, Business Booking",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "l1dwa9vx",
+          "title": "Buyer portal: bundle purchase detail screen showing access to each included product",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "uj7qsdcc",
+      "title": "Show Love / Fan Page / Seek Assistance",
+      "tasks": [
+        {
+          "id": "lluamga9",
+          "title": "Show Love floating heart button + sticky banner below storepage hero",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "vweka5h3",
+          "title": "Show Love is NOT a product in product list and NOT in buyer portal",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "fso2h0ma",
+          "title": "Thank-you page shown after donation",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "qgi3xtin",
+          "title": "Show Love admin configuration: enable button, set suggested amounts",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "ymhwry22",
+          "title": "Add 'Show Love' button configuration inside Storepage Settings",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "6o9ml9su",
+          "title": "Fan Page/Showlove pages should show creator name, followers count and 'Support' button links to Show Love",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "rjistrz1",
+          "title": "Follow system: users can follow creator; receive emails / in-app updates / new-product announcements",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "ur5h6lvl",
+      "title": "Content Delivery & Email",
+      "tasks": [
+        {
+          "id": "wju0rbd1",
+          "title": "Email Template to use as primary template for mail sent.",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "5wyfiv99",
+          "title": "'Account Required' toggle per product (default OFF; ON for Courses/Masterclasses)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "ume4qqnw",
+          "title": "Guest checkout with same email later creates account → past purchases auto-appear",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "zgbki1m7",
+      "title": "Storepage (Public-Facing Creator Shop)",
+      "tasks": [
+        {
+          "id": "ajtbr5ht",
+          "title": "Storepage URL pattern: fortnoto.co/[username] with custom-domain support",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "cgj9fhtm",
+          "title": "'Powered by Fortnoto' footer with creator toggle to hide it",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "nwwq6x54",
+          "title": "Storepage uses creator's chosen accent colour",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "0u1n8n5h",
+          "title": "Storepage product filter/search interaction",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "nzi2d5m1",
+          "title": "accent-colour picker UI in admin Storepage Settings",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "ngng91ji",
+          "title": "Custom domain settings UI in admin",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "ibj3joh7",
+          "title": "Individual storepage product pages per type",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "tck77rvn",
+          "title": "Post-purchase / thank-you state per product type on storepage",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "l6wasxs4",
+          "title": "Personal profile/store settings grouped: Identity, Bio, Contact, Socials, Custom Domain",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "57fh7tlb",
+      "title": "Buyer / Customer Portal",
+      "tasks": [
+        {
+          "id": "90iiyo2b",
+          "title": "Buyer portal scoped per buyer (Purchases, Courses, Tickets, Subscriptions, Services, Downloads, Settings)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "95vbcmbc",
+          "title": "Fortnoto-branded (not creator-branded); cross-creator unified view",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "izos9bq1",
+          "title": "Build Product Library / LMS area for purchased courses with progress tracking",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "bi0fzm5u",
+          "title": "Buyer account settings screen",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "0tj9tjjd",
+          "title": "Buyer auth screens (sign up / log in / forgot password)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "7cuw1tb3",
+          "title": "Per-product-type purchase detail screen (7 types)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "lynvf8gc",
+      "title": "Creator LMS (inside Course/Masterclass)",
+      "tasks": [
+        {
+          "id": "inx36xud",
+          "title": "Course tabs: Overview · Content · Students · Announcements · Q&A · Certificates · Settings",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "nugnkcap",
+          "title": "Certificates: auto on completion OR manual issue by creator",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "souq6jhc",
+          "title": "Video content: upload OR paste link (YouTube, Vimeo)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "8u3wykfl",
+          "title": "Course classroom (buyer-side full-screen learning interface) — refinement pass",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "d7ujvk06",
+      "title": "Sales Tracking",
+      "tasks": [
+        {
+          "id": "qi1rhk16",
+          "title": "Total Tax Amount card on Sales overview",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "bki61565",
+          "title": "Sales view shows tax per transaction in addition to regular amount",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "l5xyr0h6",
+          "title": "Sales view shows payment method;",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "bzmgxi2l",
+          "title": "Affiliate-attribution flag on each sale",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "cmgoj43c",
+          "title": "Abandoned-transaction tracking & follow-up email",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "76hd70ay",
+      "title": "Customer Management",
+      "tasks": [
+        {
+          "id": "e2xgs32p",
+          "title": "Manage Customers list in admin (sidebar item)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "mubr3zex",
+          "title": "Distinguish Customers vs Subscribers",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "olmwg5v0",
+          "title": "Subscriber list view + ability to email subscribers",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "5pz1lw5h",
+      "title": "Coupons & Discounts",
+      "tasks": [
+        {
+          "id": "lrt93tzb",
+          "title": "Coupon entity: code, %-or-fixed discount, expiry, minimum products, total allowed usage",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "6yugogzy",
+      "title": "Wallet",
+      "tasks": [
+        {
+          "id": "y86ndq8i",
+          "title": "Wallet & Payouts admin module (Overview, History, Withdrawal)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "tcuvsnvx",
+          "title": "Creators see the same super-app wallet (single wallet across products)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "nbjuk8hg",
+          "title": "Wallet earnings breakdown by source with status",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "1onkpa2q",
+          "title": "Daily / Weekly / Monthly time filters on wallet earnings",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "632r70ws",
+          "title": "Wallet funding: bank transfer, virtual account, AND crypto rails (USDT)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "8osmhqwy",
+          "title": "Show payment rails link (Nomba, Moniepoint, Flutterwave)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "ilfju0rs",
+      "title": "Withdrawals",
+      "tasks": [
+        {
+          "id": "i9ee9dkc",
+          "title": "Withdrawal-account setup in Settings — one or more saved accounts",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "1terme54",
+          "title": "On Withdraw, show picklist of saved withdrawal accounts",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "onjrz77d",
+      "title": "Miscellanous",
+      "tasks": [
+        {
+          "id": "uxqa65np",
+          "title": "REMOVE 'select payment method' dropdown on manual Store order creation",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "qy7n21y3",
+      "title": "Affiliate — Model & Access",
+      "tasks": [
+        {
+          "id": "5tlpc88w",
+          "title": "Affiliate is NOT a separate app — embedded in the Super App",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "xtiqpxac",
+          "title": "Every Super App user is automatically eligible to be an affiliate",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "pi4s1wav",
+          "title": "Browse, generate unique link, share, earn commission on conversion",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "2cdcxq2p",
+          "title": "Build 'Earn' / Affiliate tab inside Super App (mobile experience)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "b44iqbes",
+          "title": "Decision: no 'Add Affiliate' feature inside Creator Platform",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "y6b59enr",
+          "title": "Decision: no affiliate dashboard on web for Creator Platform",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "7ido6cu6",
+      "title": "Affiliate — Creator/Business Controls",
+      "tasks": [
+        {
+          "id": "zzkfotg5",
+          "title": "Per-product affiliate toggle inside product creation form",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "48cb7tt2",
+          "title": "Per-product commission: % or fixed amount; creator sets value",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "ojnyikqa",
+          "title": "Affiliate extends to: Store, Shortlet, Logistics, Digital products, Tickets (NOT Business Booking)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "3o2258df",
+          "title": "Subscription: choose 'one-off' or 'recurring' affiliate payment",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "px7jze9w",
+          "title": "Creator dashboard: aggregate stats only — no individual affiliate names",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "6lmojcs8",
+          "title": "Optionally show 'N affiliates marketing this product' per product",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "nu3xes61",
+          "title": "Affiliate marketers can filter by LOCATION and category",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "lt1ljp0l",
+          "title": "Marketplace affiliate clicks → seller's storepage directly",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "82ejlzwp",
+      "title": "Creator Platform Settings",
+      "tasks": [
+        {
+          "id": "tgk7ja0d",
+          "title": "Profile Settings, Email Preferences, Support Channels, Custom Domain Settings, Legal Pages",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "wkr2dqnz",
+          "title": "Currency settings: creator selects accepted currencies; per-product per-currency pricing",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "l6z0cw7i",
+          "title": "Email Preferences split: 'emails I receive' AND 'emails sent to my buyers'",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "oi0j9j7e",
+          "title": "Support Channels: Use AI and Knowledge Base",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "n80gic6g",
+          "title": "Customer-support AI integration (RAG); subscription-gated; configurable in-platform",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "miiho522",
+          "title": "Creator gets Fortnoto-provided WhatsApp number; AI auto-responds via knowledge base",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "ha4ohgm0",
+      "title": "Integrations",
+      "tasks": [
+        {
+          "id": "0ubk3bds",
+          "title": "Facebook Pixel: input field; auto-tracks View/Purchase/AddToCart/InitiateCheckout",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "unh034to",
+          "title": "(Backlog) Tiktok Pixel, GTM, Telegram posting, MailChimp/MailerLite, Google Calendar",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "5kg1cc89",
+      "title": "Public Fortnoto Website",
+      "tasks": [
+        {
+          "id": "ryl30trz",
+          "title": "Upgrade current website design to modern, competitive landing page (Odoo/Zoho level)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "6sjwdukm",
+          "title": "Link out to each standalone product with clear sign-up CTAs",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "maa3wn3t",
+      "title": "Logistics — Delivery Models — Pricing Clarity  — Admin",
+      "tasks": [
+        {
+          "id": "pmtd0pcc",
+          "title": "Two modes: Instant Delivery (dynamic pricing) and Scheduled Delivery (fixed routes)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "2v2w0mf0",
+          "title": "Instant pricing config: ₦/km or ₦/kg; auto-calculate pickup → drop-off",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "lzpc3upl",
+          "title": "Scheduled pricing config: routes, fixed price, weight bracket, pickup/delivery windows",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "oa15mb6c",
+          "title": "Checkout UX: Instant only / Scheduled only / both → user picks",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "dcqvmpu9",
+          "title": "UI for viewing Client ID and Client Route",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "wozsb4e5",
+          "title": "UI for setting Callback URLs per logistics partner",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "6mt3whkp",
+          "title": "Parcel config table: add 'cost per km' column",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "ig7sr730",
+          "title": "Verify shipping rules are added per BRANCH",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "hbece7dg",
+          "title": "Allow new route stop after order has been booked",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "2mqb7v30",
+          "title": "Store + logistics purchases: product amount and logistics amount must be clearly separated",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "0yuculoz",
+      "title": "Shortlet — Apartment Creation — Booking — Custom Domain & Bundles",
+      "tasks": [
+        {
+          "id": "cqyfamo3",
+          "title": "Checkbox: 'Requires approval before payment' (Yes/No)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "us4zs951",
+          "title": "Radio: 'Is tax included in the listed price?'",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "0m3g0926",
+          "title": "Inspection time ranges (comma-separated picklist of accepted times)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "vmw6z2f1",
+          "title": "Two listing models: Direct (instant) and Reseller (multi-party approval with escrow)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "xaux1nt0",
+          "title": "Escrow holds funds until user taps 'Arrived & Verified'",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "v5fyid3y",
+          "title": "Cancellation penalty terms checkbox (10-15% configurable)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "9buaxyo4",
+          "title": "Allow custom domain (parity with Store and Creator Platform)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "jfrpbhr1",
+          "title": "Bundle discount offers on shortlet",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "s9ybgxw9",
+      "title": "Business Booking",
+      "tasks": [
+        {
+          "id": "cgpgtgxv",
+          "title": "Admin can CREATE service categories themselves — build the UI",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "wv9uwkkd",
+          "title": "Checkbox 'Is paying in person allowed?' on service setup",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "nt7sqz4e",
+          "title": "Bundle products on Business Booking (parity)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "0de7fzpc",
+      "title": "Vendor Support",
+      "tasks": [
+        {
+          "id": "ne3ohift",
+          "title": "Show unique Vendor Support Code in app UI",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "ch8sikmt",
+          "title": "Reversed linking flow: agent shares code with business; business enters it in admin",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "2ieptrpb",
+          "title": "Sync vendor-support agents using code on both apps",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "2gqsi121",
+          "title": "Show vendor-support code prominently on the agent's profile",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "1lu5cw3a",
+      "title": "Regular Store (Admin)",
+      "tasks": [
+        {
+          "id": "whx2s5r9",
+          "title": "UI/UX upgrade of individual storepage design",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "5dqjvwn7",
+          "title": "Apply same Facebook Pixel integration",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "qn89udhn",
+          "title": "Bundle products on Store (parity)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "4y0kpxol",
+          "title": "Loyalty points on Store (parity)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "cdyiok3m",
+          "title": "Coupons on Store (parity)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "m3035q26",
+          "title": "Custom domain on Store (parity — verify)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "bbqbsfdm",
+          "title": "Affiliate per-product toggle on Store products (parity)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "00jepdcj",
+      "title": "Cross-Platform / Global",
+      "tasks": [
+        {
+          "id": "6nf42e7s",
+          "title": "Facebook Pixel design + flow shared across Creator, Store, Shortlet, Business Booking",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "yyzuuobr",
+          "title": "Bundle product pattern shared across Creator, Store, Shortlet, Business Booking",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "btsz2q5y",
+          "title": "Coupon engine shared across Creator, Store, Shortlet",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "s3dfqizr",
+          "title": "Loyalty points shared across Creator, Store, Shortlet",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "t2nk94ek",
+          "title": "Custom-domain feature shared across Creator, Store, Shortlet",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "wqu2k60n",
+          "title": "Affiliate-toggle component on product creation forms (Store, Shortlet, Logistics, Creator, Tickets)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "itmnhc4s",
+          "title": "Profile switching across user roles (Creator ↔ Customer dashboards)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        },
+        {
+          "id": "uhnmtu2j",
+          "title": "AI pop-up help guide on EVERY admin product module",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": "5ipy0se5",
+      "title": "Recurring Themes",
+      "tasks": [
+        {
+          "id": "1nl73fmv",
+          "title": "Multi-currency pricing — Tickets, Courses, Digital Products, Audiobooks, Storepage settings",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Creator picks accepted currencies; per product they set a separate price per currency. No auto-conversion."
+        },
+        {
+          "id": "86tsmvmo",
+          "title": "Per-product affiliate toggle + commission (% or fixed) — Digital, Tickets, Courses, Store, Shortlet, Logistics",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Same component everywhere; lives on the creation form, not a separate page."
+        },
+        {
+          "id": "w66iee12",
+          "title": "Bundle product type — Digital, Store, Shortlet, Business Booking",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Bundle picker shows existing products, calculates savings. Cross-platform pattern."
+        },
+        {
+          "id": "9e02ilpa",
+          "title": "Custom domain settings — Storepage (Creator), Regular Store, Shortlet",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Same flow across platforms; mentioned 3+ times."
+        },
+        {
+          "id": "vy30lrlk",
+          "title": "Facebook Pixel integration — Creator, Store, Shortlet, Business Booking",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Same form/component reused on every standalone site."
+        },
+        {
+          "id": "xbjlg2y3",
+          "title": "Email delivery as primary mechanism — every product type",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Originally raised for ebooks only; broadened to every product."
+        },
+        {
+          "id": "yo1jagmv",
+          "title": "Coupon engine + Loyalty points — Creator, Store, Shortlet",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Parity feature — same logic across all three."
+        },
+        {
+          "id": "d4ngmefo",
+          "title": "AI pop-up help guide — every admin product application",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Global requirement: Logistics, Store, Creator, Shortlet, Business Booking admins."
+        },
+        {
+          "id": "dt9d21jc",
+          "title": "Share to social — Storepage, Store, Shortlet, Business Booking, Affiliate, post-purchase",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Auto-fill default message with product description + link, editable by user."
+        },
+        {
+          "id": "vqjio08d",
+          "title": "Subscription gating on advanced features — Ticket Mgmt, Customer-support AI, Custom emails",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Decide tier mapping centrally rather than per feature."
+        },
+        {
+          "id": "lmm1gavp",
+          "title": "Public/private visibility toggle — Digital Products, Tickets, Shortlet listings",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Consistent toggle across product types."
+        },
+        {
+          "id": "skeqi3n9",
+          "title": "Account-required vs guest-checkout toggle — per product (default ON for Course/Masterclass, OFF elsewhere)",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "One toggle, applied per product, sensible defaults per type."
+        },
+        {
+          "id": "37sftxji",
+          "title": "Sign-up flow duplicated on web — Creator Platform web + public Fortnoto website",
+          "status": "todo",
+          "priority": "",
+          "completedAt": null,
+          "comment": "Reproduce Super App's mobile sign-up on web; then push to download the Super App."
+        }
+      ]
+    },
+    {
+      "id": "3f6p145m",
+      "title": "Key Decisions Made",
+      "tasks": [
+        {
+          "id": "wobf1dg9",
+          "title": "Digital Creator Platform cannot sell physical products — they belong to Store app",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "5vzi5pap",
+          "title": "Login to Creator Platform web REQUIRES a Super App account first",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "31ylbv9y",
+          "title": "Affiliate management lives in Super App only — no creator-facing affiliate dashboard on web",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "jimcrlvp",
+          "title": "Creators cannot manually invite affiliates (fraud surface too high)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "y0m6ycmz",
+          "title": "Affiliate stats on creator dashboard are aggregate-only — no names exposed",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "9l94agxu",
+          "title": "Show Love is NOT a product, NOT in buyer portal, only on storepage",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "6c5dwym7",
+          "title": "Personal Page is NOT a product — it IS the storepage itself",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "254xlfhx",
+          "title": "No generic membership/community subscription engine for v1",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "y5v3qj9z",
+          "title": "Single-product checkout — no cart on Creator Platform",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "4nnkicse",
+          "title": "Multi-currency: creator sets separate price per currency (no auto-conversion)",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "8tsopwy1",
+          "title": "Course content is link-only (YouTube/Vimeo/Google Drive) — no platform-hosted upload",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "7aq8twv5",
+          "title": "Ebooks are PDF only, with optional in-app reader vs. downloadable",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "svgm6wtr",
+          "title": "Subscription cancellation takes effect at end of billing period",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "4177qqx2",
+          "title": "Buyer portal is Fortnoto-branded, cross-creator unified view",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "fkhgebi5",
+          "title": "Scanner staff must already be Super App users; access auto-expires when event ends",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "jvkewsfz",
+          "title": "Wallet = same wallet as Super App",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "3vlwv8eo",
+          "title": "Drop 'Powered by Fortnoto' from shared-payment-details text",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        },
+        {
+          "id": "p7bkhi8t",
+          "title": "Remove 'select payment method' dropdown from manual order creation on Store admin",
+          "status": "done",
+          "priority": "",
+          "completedAt": 1779818255156,
+          "comment": ""
+        }
+      ]
+    }
+  ],
+  "order": [
+    "task:wlkbbf2z",
+    "task:7yr3m03f",
+    "task:tw43078r",
+    "task:0iwl2ci8",
+    "task:1qbbye27",
+    "group:8c6o75zm",
+    "group:9mn8h9fo",
+    "task:69anpq8q",
+    "group:fw1yzzwr",
+    "group:5z93m24k",
+    "group:fqv2xkd2",
+    "group:ryxcf4cd",
+    "group:ey8zt24a",
+    "group:rvovu3yr",
+    "group:q2g8pfi0",
+    "group:lchrjth0",
+    "group:52yqt9eo",
+    "group:uj7qsdcc",
+    "group:ur5h6lvl",
+    "group:zgbki1m7",
+    "group:57fh7tlb",
+    "group:lynvf8gc",
+    "group:d7ujvk06",
+    "group:76hd70ay",
+    "group:5pz1lw5h",
+    "group:6yugogzy",
+    "group:ilfju0rs",
+    "group:onjrz77d",
+    "group:qy7n21y3",
+    "group:7ido6cu6",
+    "group:82ejlzwp",
+    "group:ha4ohgm0",
+    "group:5kg1cc89",
+    "group:maa3wn3t",
+    "group:0yuculoz",
+    "group:s9ybgxw9",
+    "group:0de7fzpc",
+    "group:1lu5cw3a",
+    "group:00jepdcj",
+    "group:5ipy0se5",
+    "group:3f6p145m"
+  ]
+}
