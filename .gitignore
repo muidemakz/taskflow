@@ -1,7 +1,10 @@
 node_modules
 dist
 .env
+.env.local
+.env.*.local
 .DS_Store
 *.log
 backend/prisma/migrations/dev.db
 backend/prisma/dev.db
+pgdata/

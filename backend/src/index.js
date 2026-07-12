@@ -1,4 +1,5 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import fs from 'node:fs';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -10,6 +11,8 @@ import shareRoutes from './routes/share.js';
 import adminRoutes from './routes/admin.js';
 import { requireAuth } from './middleware/auth.js';
 import { adminOnly } from './middleware/adminOnly.js';
+
+dotenv.config({ path: fs.existsSync('.env.local') ? '.env.local' : '.env' });
 
 const app = express();
 const port = process.env.PORT || 4000;
