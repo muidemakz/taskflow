@@ -7,3 +7,11 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Persistent staging environment — deploys from the `staging` branch to a
+# stable URL (staging--<your-site-name>.netlify.app), not an ephemeral PR
+# preview. Requires "Branch deploys" enabled for `staging` in the Netlify
+# dashboard: Project configuration > Build & deploy > Continuous Deployment
+# > Branches and deploy contexts. See docs/runbook.md.
+[context.staging.environment]
+  VITE_API_URL = "https://TODO-set-staging-railway-url.up.railway.app"
