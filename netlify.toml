@@ -14,4 +14,4 @@
 # dashboard: Project configuration > Build & deploy > Continuous Deployment
 # > Branches and deploy contexts. See docs/runbook.md.
 [context.staging.environment]
-  VITE_API_URL = "https://TODO-set-staging-railway-url.up.railway.app"
+  VITE_API_URL = "https://taskflow-staging-dbeb.up.railway.app"
