@@ -1,10 +1,9 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { createRefreshToken, publicUser, refreshExpiryDate, signAccessToken } from '../utils/token.js';
 import { requireAuth } from '../middleware/auth.js';
 
-const prisma = new PrismaClient();
 const router = Router();
 
 async function issueSession(user) {

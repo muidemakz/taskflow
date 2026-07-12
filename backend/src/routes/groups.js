@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { orderArray, projectInclude, serializeOrder, taskCounts, toClientProject } from '../utils/project.js';
 
-const prisma = new PrismaClient();
 const router = Router();
 
 async function groupForUser(groupId, userId) {
