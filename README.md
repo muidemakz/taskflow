@@ -8,30 +8,47 @@ Taskflow is a full-stack rebuild of the original single-file EPM checklist artif
 
 - Frontend: React 18, Vite, React Router, Tailwind CSS, Zustand, Axios, Lucide React, react-hot-toast, dnd-kit
 - Backend: Node.js, Express, Prisma, PostgreSQL, JWT, bcrypt
-- Deploy: Netlify frontend, Render or Railway backend, Railway Postgres or Supabase database
+- Deploy: Netlify (frontend), Railway (backend + Postgres) — see [docs/runbook.md](docs/runbook.md) for the LOCAL / STAGING / PRODUCTION pipeline
+
+## Environments
+
+Taskflow runs in three environments — see [docs/runbook.md](docs/runbook.md) for the full promotion workflow:
+
+| Environment | Where | Branch | Database |
+|---|---|---|---|
+| LOCAL | Your laptop | any feature branch | local Docker Postgres via `.env.local` |
+| STAGING | Railway `staging` environment + Netlify branch deploy | `staging` | separate Railway Postgres, staging-only data |
+| PRODUCTION | Railway `production` environment + Netlify production deploy | `main` | production Railway Postgres |
 
 ## Local Setup
+
+### Database
+
+Start a local Postgres with Docker:
+
+```bash
+docker compose up -d
+```
+
+This runs Postgres on `localhost:5432` with user/password/db all `taskflow`, matching the default `DATABASE_URL` in `backend/.env.example`.
 
 ### Backend
 
 ```bash
 cd backend
 npm install
-cp .env.example .env
-npx prisma generate
-npm run db:setup
+cp .env.example .env.local
+npm run db:push
 npm run seed
 npm run dev
 ```
 
-Backend runs on `http://localhost:4000`. For production and Railway, use PostgreSQL and set `DATABASE_URL` from your Railway Postgres service.
+Backend runs on `http://localhost:4000`. `.env.local` is preferred over `.env` if both exist (and is gitignored). `npm run db:push` applies the Prisma schema to your local database; `npm run seed` creates the demo admin/user accounts and the Fortnoto demo project — safe to rerun any time.
 
 Demo accounts:
 
 - Admin: `admin@taskflow.app` / `Admin1234!`
 - Demo user: `demo@taskflow.app` / `Demo1234!`
-
-The seed script creates the Fortnoto project with the extracted tasks, groups, statuses, and ordering from the HTML artifact.
 
 ### Frontend
 
@@ -42,30 +59,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Frontend runs on `http://localhost:5173`.
-
-## Deployment
-
-### Backend on Render
-
-1. Create a PostgreSQL database on Render, Railway, or Supabase.
-2. Create a Render web service using `backend/render.yaml`, or configure:
-   - Root directory: `backend`
-   - Build command: `npm install && npx prisma generate`
-   - Start command: `npx prisma db push && npm start`
-3. Add environment variables:
-   - `DATABASE_URL`
-   - `JWT_SECRET`
-   - `FRONTEND_URL=https://your-netlify-site.netlify.app`
-4. Run `npm run seed` once from the backend shell.
-
-### Frontend on Netlify
-
-1. Set the Netlify base directory to `frontend`.
-2. Build command: `npm run build`
-3. Publish directory: `dist`
-4. Add `VITE_API_URL=https://your-api-url.onrender.com`.
-5. `frontend/netlify.toml` handles SPA redirects.
+Frontend runs on `http://localhost:5173` and points at your local backend. Running `npm run dev` in either package never touches staging or production — they're separate databases with separate credentials that only exist in Railway/Netlify's own environment variables, never in your local `.env.local`.
 
 ## Routes
 
