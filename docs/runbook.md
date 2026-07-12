@@ -1,5 +1,7 @@
 # Taskflow deploy pipeline runbook
 
+<!-- Netlify staging branch deploy enabled 2026-07-12 -->
+
 Three environments. Changes only reach production after being verified on staging.
 
 | | LOCAL | STAGING | PRODUCTION |
