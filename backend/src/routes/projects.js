@@ -5,6 +5,15 @@ import { appendPosition } from '../lib/position.js';
 
 const router = Router();
 
+// Same convention as the Prompt 1 migration's backfill seed.
+const DEFAULT_STATUSES = [
+  { name: 'Backlog', order: 0, countsAsDone: false },
+  { name: 'To-do', order: 1, countsAsDone: false },
+  { name: 'In progress', order: 2, countsAsDone: false },
+  { name: 'In review', order: 3, countsAsDone: false },
+  { name: 'Done', order: 4, countsAsDone: true }
+];
+
 async function ownedProject(id, ownerId) {
   return prisma.project.findFirst({ where: { id, ownerId, deletedAt: null }, include: projectInclude });
 }
@@ -26,9 +35,14 @@ router.post('/', async (req, res, next) => {
   try {
     const title = req.body.title?.trim();
     if (!title) return res.status(400).json({ message: 'Project title is required' });
-    const project = await prisma.project.create({
-      data: { title, description: req.body.description?.trim() || null, ownerId: req.auth.sub, order: serializeOrder([]) },
-      include: projectInclude
+    const project = await prisma.$transaction(async (tx) => {
+      const created = await tx.project.create({
+        data: { title, description: req.body.description?.trim() || null, ownerId: req.auth.sub, order: serializeOrder([]) }
+      });
+      await tx.status.createMany({
+        data: DEFAULT_STATUSES.map((status) => ({ ...status, projectId: created.id }))
+      });
+      return tx.project.findUnique({ where: { id: created.id }, include: projectInclude });
     });
     res.status(201).json(toClientProject(project));
   } catch (error) {
@@ -152,9 +166,14 @@ router.post('/:id/tasks', async (req, res, next) => {
       where: { projectId: project.id, countsAsDone: false },
       orderBy: { order: 'asc' }
     });
-    const maxPosition = backlogStatus
-      ? (await prisma.task.aggregate({ where: { statusId: backlogStatus.id }, _max: { position: true } }))._max.position
-      : null;
+    if (!backlogStatus) {
+      // Every project gets its 5 default statuses at creation time now
+      // (see POST /). This should be unreachable -- if it isn't, that's a
+      // real data-integrity bug worth surfacing loudly, not silently
+      // falling back to statusId: null again.
+      throw new Error(`Project ${project.id} has no non-done status configured`);
+    }
+    const maxPosition = (await prisma.task.aggregate({ where: { statusId: backlogStatus.id }, _max: { position: true } }))._max.position;
 
     const task = await prisma.task.create({
       data: {
@@ -162,8 +181,8 @@ router.post('/:id/tasks', async (req, res, next) => {
         projectId: project.id,
         groupId,
         priority,
-        statusId: backlogStatus?.id ?? null,
-        position: backlogStatus ? appendPosition(maxPosition) : null
+        statusId: backlogStatus.id,
+        position: appendPosition(maxPosition)
       }
     });
     if (!groupId) {
