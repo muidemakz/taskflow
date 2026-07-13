@@ -17,6 +17,24 @@ model User {
   lastLoginAt   DateTime?
   projects      Project[]
   refreshTokens RefreshToken[]
+
+  personalAccessTokens PersonalAccessToken[]
+}
+
+// v1: full-access-as-the-user scope, no granular scopes yet. tokenHash is a
+// fast SHA-256 digest (not bcrypt) -- PATs are 256 bits of randomness, not
+// human-memorable secrets, so a fast deterministic hash is both sufficient
+// and necessary here: it's what makes O(1) lookup-by-token possible on
+// every authenticated request.
+model PersonalAccessToken {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  label      String
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
 }
 
 model RefreshToken {
@@ -52,12 +70,13 @@ model Project {
 }
 
 model Group {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   title     String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String
   tasks     Task[]
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
 }
 
 model Task {
