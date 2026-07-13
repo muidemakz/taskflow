@@ -41,6 +41,14 @@ model Project {
   groups       Group[]
   tasks        Task[]
   order        String[]
+
+  // --- roadmap/kanban migration (expand phase) ---
+  hasRoadmap   Boolean      @default(false)
+  rolloverMode RolloverMode @default(ASK_FIRST)
+  deletedAt    DateTime?
+  statuses     Status[]
+  roadmap      Roadmap?
+  tags         Tag[]
 }
 
 model Group {
@@ -53,24 +61,71 @@ model Group {
 }
 
 model Task {
-  id          String    @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
-  status      Status    @default(TODO)
-  priority    Priority  @default(NONE)
+  status      TaskStatusLegacy @default(TODO)
+  priority    Priority         @default(NONE)
   comment     String?
   completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId   String
-  group       Group?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  group       Group?           @relation(fields: [groupId], references: [id], onDelete: SetNull)
   groupId     String?
+
+  // --- roadmap/kanban migration (expand phase) ---
+  // statusId/position are nullable here so this phase stays purely additive;
+  // both are backfilled and then made required in the contract phase, once
+  // TaskStatusLegacy/status/Group/Project.order are dropped.
+  updatedAt DateTime @updatedAt
+
+  statusId   String?
+  taskStatus Status? @relation("TaskCurrentStatus", fields: [statusId], references: [id])
+
+  gateId String?
+  gate   Gate?   @relation("TaskCurrentGate", fields: [gateId], references: [id])
+
+  position Float?
+
+  dueDate DateTime?
+
+  blocked     Boolean @default(false)
+  blockedNote String?
+
+  // rollover provenance: where this task moved from, and when
+  movedFromGateId String?
+  movedFromGate   Gate?     @relation("TaskMovedFromGate", fields: [movedFromGateId], references: [id])
+  movedFromGateAt DateTime?
+
+  deletedAt DateTime?
+
+  // lightweight commitment marker (not a Sprint entity)
+  focus           Boolean   @default(false)
+  focusTargetDate DateTime?
+
+  // agent/external-sync provenance
+  source     String  @default("manual")
+  externalId String?
+  sourceUrl  String?
+
+  tags           TaskTag[]
+  roadmaps       TaskRoadmap[]
+  gatePlacements TaskGatePlacement[]
+  syncProposals  SyncProposal[]
+
+  // NULL externalId rows are each distinct under Postgres unique-constraint
+  // semantics, so this is only enforced when externalId is actually set --
+  // exactly the "idempotent external syncs" behavior needed, no partial
+  // index required.
+  @@unique([source, externalId])
 }
+
 enum Role {
   USER
   ADMIN
 }
 
-enum Status {
+enum TaskStatusLegacy {
   TODO
   DONE
 }
@@ -80,4 +135,134 @@ enum Priority {
   LOW
   MID
   HIGH
+}
+
+// --- roadmap/kanban migration (expand phase): new models ---
+
+enum RolloverMode {
+  AUTOMATIC
+  ASK_FIRST
+}
+
+// Per-project Kanban columns. Exactly one row per project should have
+// countsAsDone = true; Postgres has no clean native "exactly one true"
+// constraint, so this is enforced in application logic, backed by a
+// partial unique index (at most one countsAsDone per project) added by
+// hand in the migration SQL since the Prisma schema DSL can't express a
+// partial/filtered unique index directly.
+model Status {
+  id           String   @id @default(cuid())
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String
+  name         String
+  order        Int
+  countsAsDone Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  tasks         Task[]         @relation("TaskCurrentStatus")
+  syncProposals SyncProposal[]
+}
+
+// One roadmap per project for now (projectId is unique) -- just the FK,
+// no multi-roadmap-per-project UI yet.
+model Roadmap {
+  id        String   @id @default(cuid())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String   @unique
+  createdAt DateTime @default(now())
+
+  gates     Gate[]
+  taskLinks TaskRoadmap[]
+}
+
+model Gate {
+  id        String    @id @default(cuid())
+  roadmap   Roadmap   @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  roadmapId String
+  name      String
+  order     Int
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  tasksHere      Task[]              @relation("TaskCurrentGate")
+  tasksMovedFrom Task[]              @relation("TaskMovedFromGate")
+  roadmapLinks   TaskRoadmap[]
+  gatePlacements TaskGatePlacement[]
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  name      String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  tasks TaskTag[]
+
+  @@unique([projectId, name])
+}
+
+model TaskTag {
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId  String
+
+  @@id([taskId, tagId])
+}
+
+// A task can belong to additional roadmaps beyond its project's primary
+// one, each with its own gateId within that other roadmap.
+model TaskRoadmap {
+  id        String   @id @default(cuid())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  roadmap   Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  roadmapId String
+  gateId    String?
+  gate      Gate?    @relation(fields: [gateId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([taskId, roadmapId])
+}
+
+// Design choice for "a task placed in more than one gate of the SAME
+// roadmap": one Task row (single source of truth for status, priority,
+// comments, etc.) plus this join table for additional gate placements,
+// rather than duplicate Task rows sharing a provenanceGroupId. Task.gateId
+// remains the task's primary/canonical placement; rows here represent
+// *additional* gates the same task is also visible in. Chosen over row
+// duplication because duplicate rows would need explicit sync logic to
+// keep title/status/priority/comments consistent across copies, which is
+// exactly the kind of drift bug a single-row model avoids for free.
+model TaskGatePlacement {
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
+  gate   Gate   @relation(fields: [gateId], references: [id], onDelete: Cascade)
+  gateId String
+
+  @@id([taskId, gateId])
+}
+
+enum SyncProposalStatus {
+  PENDING
+  ACCEPTED
+  DISMISSED
+}
+
+// v1 proposals are status moves only. Dismissed proposals are kept (not
+// deleted) so agents can avoid re-proposing identical changes.
+model SyncProposal {
+  id               String             @id @default(cuid())
+  task             Task               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId           String
+  proposedStatus   Status             @relation(fields: [proposedStatusId], references: [id])
+  proposedStatusId String
+  reason           String
+  source           String
+  sourceUrl        String?
+  status           SyncProposalStatus @default(PENDING)
+  createdAt        DateTime           @default(now())
+  decidedAt        DateTime?
 }
