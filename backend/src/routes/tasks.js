@@ -6,8 +6,8 @@ const router = Router();
 
 async function taskForUser(taskId, userId) {
   return prisma.task.findFirst({
-    where: { id: taskId, project: { ownerId: userId } },
-    include: { project: { include: { groups: true } } }
+    where: { id: taskId, deletedAt: null, project: { ownerId: userId, deletedAt: null } },
+    include: { project: { include: { groups: { where: { deletedAt: null } } } } }
   });
 }
 
@@ -29,11 +29,13 @@ router.patch('/:tid', async (req, res, next) => {
   }
 });
 
+// Soft delete: only this task is deletedAt-stamped. Its Project is
+// untouched, unlike the Project-delete cascade in projects.js.
 router.delete('/:tid', async (req, res, next) => {
   try {
     const task = await taskForUser(req.params.tid, req.auth.sub);
     if (!task) return res.status(404).json({ message: 'Task not found' });
-    await prisma.task.delete({ where: { id: task.id } });
+    await prisma.task.update({ where: { id: task.id }, data: { deletedAt: new Date() } });
     await prisma.project.update({
       where: { id: task.projectId },
       data: { order: serializeOrder(orderArray(task.project).filter((key) => key !== `task:${task.id}`)) }

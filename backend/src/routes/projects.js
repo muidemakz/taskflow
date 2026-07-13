@@ -5,13 +5,13 @@ import { defaultOrder, orderArray, projectInclude, serializeOrder, taskCounts, t
 const router = Router();
 
 async function ownedProject(id, ownerId) {
-  return prisma.project.findFirst({ where: { id, ownerId }, include: projectInclude });
+  return prisma.project.findFirst({ where: { id, ownerId, deletedAt: null }, include: projectInclude });
 }
 
 router.get('/', async (req, res, next) => {
   try {
     const projects = await prisma.project.findMany({
-      where: { ownerId: req.auth.sub },
+      where: { ownerId: req.auth.sub, deletedAt: null },
       include: projectInclude,
       orderBy: { updatedAt: 'desc' }
     });
@@ -60,12 +60,34 @@ router.patch('/:id', async (req, res, next) => {
   }
 });
 
+// Soft delete: the Project and all its Tasks/Groups/Gates/Tags are
+// deletedAt-stamped together in one transaction. Deleting a single Task
+// elsewhere does not touch its Project (see tasks.js) -- this is the only
+// direction the cascade runs.
 router.delete('/:id', async (req, res, next) => {
   try {
     const project = await ownedProject(req.params.id, req.auth.sub);
     if (!project) return res.status(404).json({ message: 'Project not found' });
-    await prisma.project.delete({ where: { id: project.id } });
-    res.status(204).end();
+
+    const now = new Date();
+    const result = await prisma.$transaction(async (tx) => {
+      const roadmap = await tx.roadmap.findUnique({ where: { projectId: project.id } });
+      const [tasks, groups, gates, tags] = await Promise.all([
+        tx.task.updateMany({ where: { projectId: project.id, deletedAt: null }, data: { deletedAt: now } }),
+        tx.group.updateMany({ where: { projectId: project.id, deletedAt: null }, data: { deletedAt: now } }),
+        roadmap
+          ? tx.gate.updateMany({ where: { roadmapId: roadmap.id, deletedAt: null }, data: { deletedAt: now } })
+          : Promise.resolve({ count: 0 }),
+        tx.tag.updateMany({ where: { projectId: project.id, deletedAt: null }, data: { deletedAt: now } })
+      ]);
+      await tx.project.update({ where: { id: project.id }, data: { deletedAt: now } });
+      return { tasks: tasks.count, groups: groups.count, gates: gates.count, tags: tags.count };
+    });
+
+    res.json({
+      deletedProject: { id: project.id, title: project.title, deletedAt: now },
+      deletedCounts: result
+    });
   } catch (error) {
     next(error);
   }

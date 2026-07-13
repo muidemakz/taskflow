@@ -1,7 +1,11 @@
 export const projectInclude = {
   owner: { select: { id: true, name: true, email: true } },
-  groups: { include: { tasks: true }, orderBy: { createdAt: 'asc' } },
-  tasks: { where: { groupId: null }, orderBy: { createdAt: 'asc' } }
+  groups: {
+    where: { deletedAt: null },
+    include: { tasks: { where: { deletedAt: null } } },
+    orderBy: { createdAt: 'asc' }
+  },
+  tasks: { where: { groupId: null, deletedAt: null }, orderBy: { createdAt: 'asc' } }
 };
 
 export function orderArray(project) {
