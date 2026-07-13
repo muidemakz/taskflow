@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { defaultOrder, orderArray, projectInclude, serializeOrder, taskCounts, toClientProject } from '../utils/project.js';
+import { appendPosition } from '../lib/position.js';
 
 const router = Router();
 
@@ -130,6 +131,12 @@ router.post('/:id/groups', async (req, res, next) => {
   }
 });
 
+// This endpoint predates the Status model. Until the new frontend (Prompt
+// 3) replaces it, every task created here must still land with a real
+// statusId -- otherwise it silently violates the one-true-status
+// invariant the whole roadmap/kanban API relies on. Same convention as
+// the external-upsert endpoint: first non-done status (lowest `order`),
+// appended to the end of that column.
 router.post('/:id/tasks', async (req, res, next) => {
   try {
     const project = await ownedProject(req.params.id, req.auth.sub);
@@ -140,8 +147,24 @@ router.post('/:id/tasks', async (req, res, next) => {
       return res.status(400).json({ message: 'Group does not belong to this project' });
     }
     const priority = ['LOW', 'MID', 'HIGH', 'NONE'].includes(req.body.priority) ? req.body.priority : 'NONE';
+
+    const backlogStatus = await prisma.status.findFirst({
+      where: { projectId: project.id, countsAsDone: false },
+      orderBy: { order: 'asc' }
+    });
+    const maxPosition = backlogStatus
+      ? (await prisma.task.aggregate({ where: { statusId: backlogStatus.id }, _max: { position: true } }))._max.position
+      : null;
+
     const task = await prisma.task.create({
-      data: { title, projectId: project.id, groupId, priority }
+      data: {
+        title,
+        projectId: project.id,
+        groupId,
+        priority,
+        statusId: backlogStatus?.id ?? null,
+        position: backlogStatus ? appendPosition(maxPosition) : null
+      }
     });
     if (!groupId) {
       await prisma.project.update({
