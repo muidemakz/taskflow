@@ -1,19 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Flag } from 'lucide-react';
 import { shareApi } from '../api/endpoints';
-import GroupCard from '../components/GroupCard';
 import ProgressBar from '../components/ProgressBar';
-import TaskCard from '../components/TaskCard';
-import { stats, visibleEntries } from '../utils/project';
-
-const initialFilters = { query: '', status: 'all', completedAfter: '', sort: 'default' };
+import { formatDueDate, isOverdue, priorityMeta, statusDotColor, tagColorClass } from '../utils/board';
 
 export default function ShareView() {
   const { shareToken } = useParams();
   const [project, setProject] = useState(null);
   const [error, setError] = useState('');
-  const [filters, setFilters] = useState(initialFilters);
+
   useEffect(() => {
     shareApi.detail(shareToken)
       .then(({ data }) => setProject(data))
@@ -21,69 +17,88 @@ export default function ShareView() {
   }, [shareToken]);
 
   if (error) {
-    return <main className="flex min-h-screen items-center justify-center p-4"><div className="card max-w-md p-6 text-center"><h1 className="text-xl font-bold">Share unavailable</h1><p className="mt-2 text-muted">{error}</p></div></main>;
+    return (
+      <main className="flex min-h-screen items-center justify-center p-4">
+        <div className="card max-w-md p-6 text-center">
+          <h1 className="text-xl font-bold">Share unavailable</h1>
+          <p className="mt-2 text-muted">{error}</p>
+        </div>
+      </main>
+    );
   }
   if (!project) return <div className="p-8 text-center text-muted">Loading shared project...</div>;
-  const st = stats(project);
-  const entries = visibleEntries(project, filters);
-  const visibleCount = entries.reduce((sum, entry) => sum + (entry.type === 'task' ? 1 : entry.tasks.length), 0);
+
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-semibold text-primary">
-        Viewing shared project — {project.owner?.name}'s {project.title}
+        Viewing a shared project, read-only
       </div>
+
       <section className="card mb-5 p-5">
         <h1 className="text-2xl font-bold">{project.title}</h1>
-        <p className="mt-2 text-muted">{project.description}</p>
+        {project.description && <p className="mt-2 text-muted">{project.description}</p>}
         <div className="mt-4">
-          <ProgressBar value={st.pct} />
-          <p className="mt-2 text-sm text-muted">{st.done} of {st.total} done · {st.pct}%</p>
+          <ProgressBar value={project.stats.pct} />
+          <p className="mt-2 text-sm text-muted">{project.stats.done} of {project.stats.total} done · {project.stats.pct}%</p>
         </div>
         <Link className="btn-primary mt-5" to="/register">Create your own Taskflow account <ArrowRight size={16} /></Link>
       </section>
 
-      <section className="card mb-5 p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            className="field max-w-sm"
-            placeholder="Search tasks or comments"
-            value={filters.query}
-            onChange={(event) => setFilters({ ...filters, query: event.target.value })}
-          />
-          <div className="rounded-md border border-[#d8e0ea] bg-white p-1">
-            {['all', 'TODO', 'DONE'].map((value) => (
-              <button
-                key={value}
-                className={`rounded px-3 py-1.5 text-sm font-semibold ${filters.status === value ? 'bg-primary text-white' : 'text-muted'}`}
-                onClick={() => setFilters({ ...filters, status: value })}
-              >
-                {value === 'all' ? 'All' : value === 'TODO' ? 'To-do' : 'Done'}
-              </button>
+      {project.hasRoadmap && project.gates.length > 0 && (
+        <section className="mb-5">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Roadmap progress</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {project.gates.map((gate) => (
+              <div key={gate.id} className="card p-4">
+                <h3 className="font-semibold">{gate.name}</h3>
+                <div className="mt-2">
+                  <ProgressBar value={gate.progress.pct} />
+                  <div className="mt-2 flex items-center justify-between text-sm">
+                    <span className="text-muted">{gate.progress.done}/{gate.progress.total} done</span>
+                    <span className="font-semibold text-primary">{gate.progress.pct}%</span>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-          <input
-            className="field w-auto"
-            type="date"
-            value={filters.completedAfter}
-            aria-label="Completed on or after"
-            onChange={(event) => setFilters({ ...filters, completedAfter: event.target.value })}
-          />
-          <select className="field w-auto" value={filters.sort} onChange={(event) => setFilters({ ...filters, sort: event.target.value })}>
-            <option value="default">Default order</option>
-            <option value="todo-first">To-do first</option>
-            <option value="done-first">Completed first</option>
-            <option value="completed-desc">Newest completed</option>
-            <option value="completed-asc">Oldest completed</option>
-          </select>
-          <span className="text-sm text-muted">{visibleCount} visible</span>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <div className="space-y-3">
-        {entries.length === 0 && <div className="card p-6 text-center text-muted">No tasks match this filter.</div>}
-        {entries.map((entry) => entry.type === 'task'
-          ? <TaskCard key={entry.key} task={entry.item} readOnly />
-          : <GroupCard key={entry.key} group={entry.item} groups={project.groups} readOnly />)}
+      <div className="space-y-4">
+        {project.statuses.map((status) => (
+          <section key={status.id}>
+            <div className="mb-2 flex items-center gap-2 px-1">
+              <span className={`h-2 w-2 rounded-full ${statusDotColor(status)}`} />
+              <h3 className="text-sm font-semibold">{status.name}</h3>
+              <span className="chip bg-slate-100 text-muted">{status.tasks.length}</span>
+            </div>
+            {status.tasks.length === 0 ? (
+              <div className="card p-4 text-center text-sm text-muted">No tasks in this status.</div>
+            ) : (
+              <div className="card divide-y divide-slate-100">
+                {status.tasks.map((task) => {
+                  const priority = priorityMeta[task.priority || 'NONE'];
+                  return (
+                    <div key={task.id} className="flex flex-wrap items-center gap-2 px-3 py-2.5 text-sm">
+                      <span className="min-w-0 flex-1 font-medium">{task.title}</span>
+                      {task.gateName && <span className="chip bg-purple-50 text-purple-700">{task.gateName}</span>}
+                      {task.tags?.slice(0, 3).map((tag) => (
+                        <span key={tag.id} className={`chip ${tagColorClass(tag.id)}`}>{tag.name}</span>
+                      ))}
+                      {task.blocked && <span className="chip bg-red-50 text-red-700"><AlertTriangle size={11} className="mr-0.5" />Blocked</span>}
+                      {task.priority && task.priority !== 'NONE' && (
+                        <span className={`chip ${priority.className}`}><Flag size={11} className="mr-0.5" />{priority.label}</span>
+                      )}
+                      {task.dueDate && (
+                        <span className={`chip ${isOverdue(task) ? 'bg-red-50 text-red-700' : 'bg-slate-50 text-muted'}`}>{formatDueDate(task.dueDate)}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        ))}
       </div>
     </main>
   );

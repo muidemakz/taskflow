@@ -72,6 +72,10 @@ router.patch('/tasks/:taskId/board', async (req, res, next) => {
     if ('dueDate' in req.body) data.dueDate = req.body.dueDate ? new Date(req.body.dueDate) : null;
     if (typeof req.body.blocked === 'boolean') data.blocked = req.body.blocked;
     if ('blockedNote' in req.body) data.blockedNote = req.body.blockedNote || null;
+    if (typeof req.body.focus === 'boolean') data.focus = req.body.focus;
+    if ('focusTargetDate' in req.body) data.focusTargetDate = req.body.focusTargetDate ? new Date(req.body.focusTargetDate) : null;
+    if ('title' in req.body && typeof req.body.title === 'string' && req.body.title.trim()) data.title = req.body.title.trim();
+    if ('comment' in req.body) data.comment = req.body.comment || null;
 
     if ('gateId' in req.body) {
       if (req.body.gateId) {

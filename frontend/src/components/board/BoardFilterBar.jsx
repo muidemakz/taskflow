@@ -1,4 +1,4 @@
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, Star, X } from 'lucide-react';
 import TagMultiSelect from '../TagMultiSelect';
 import { hasActiveFilters } from '../../utils/board';
 
@@ -29,6 +29,13 @@ export default function BoardFilterBar({ filters, onChange, availableTags }) {
         <AlertTriangle size={14} /> Blocked only
       </button>
 
+      <button
+        className={`btn-ghost ${filters.focusOnly ? 'border-amber-200 bg-amber-50 text-amber-700' : ''}`}
+        onClick={() => onChange({ ...filters, focusOnly: !filters.focusOnly })}
+      >
+        <Star size={14} /> Focus only
+      </button>
+
       <select className="field w-auto" value={filters.dueFilter} onChange={(e) => onChange({ ...filters, dueFilter: e.target.value })}>
         <option value="">Any due date</option>
         <option value="overdue">Overdue</option>
@@ -38,7 +45,7 @@ export default function BoardFilterBar({ filters, onChange, availableTags }) {
       </select>
 
       {hasActiveFilters(filters) && (
-        <button className="btn-ghost ml-auto" onClick={() => onChange({ tagIds: [], priority: '', blockedOnly: false, dueFilter: '' })}>
+        <button className="btn-ghost ml-auto" onClick={() => onChange({ tagIds: [], priority: '', blockedOnly: false, focusOnly: false, dueFilter: '' })}>
           <X size={14} /> Clear filters
         </button>
       )}

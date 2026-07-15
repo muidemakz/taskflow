@@ -117,10 +117,10 @@ function sortByWorkflowOrder(tasks, { gateOrderById = {}, statusOrderById = {}, 
   });
 }
 
-export const EMPTY_FILTERS = { tagIds: [], priority: '', blockedOnly: false, dueFilter: '' };
+export const EMPTY_FILTERS = { tagIds: [], priority: '', blockedOnly: false, focusOnly: false, dueFilter: '' };
 
 export function hasActiveFilters(filters) {
-  return Boolean(filters.tagIds.length || filters.priority || filters.blockedOnly || filters.dueFilter);
+  return Boolean(filters.tagIds.length || filters.priority || filters.blockedOnly || filters.focusOnly || filters.dueFilter);
 }
 
 // All conditions AND together, applied client-side against the
@@ -130,6 +130,7 @@ export function filterTasks(tasks, filters) {
     if (filters.tagIds.length && !task.tags?.some((t) => filters.tagIds.includes(t.id))) return false;
     if (filters.priority && (task.priority || 'NONE') !== filters.priority) return false;
     if (filters.blockedOnly && !task.blocked) return false;
+    if (filters.focusOnly && !task.focus) return false;
     if (filters.dueFilter === 'overdue' && !isOverdue(task)) return false;
     if (filters.dueFilter === 'thisWeek' && !isDueThisWeek(task)) return false;
     if (filters.dueFilter === 'hasDate' && !task.dueDate) return false;

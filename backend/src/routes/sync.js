@@ -99,7 +99,16 @@ router.get('/proposals', async (req, res, next) => {
     const proposals = await prisma.syncProposal.findMany({
       where: { status, task: { project: { ownerId: req.auth.sub } } },
       include: {
-        task: { select: { id: true, title: true, projectId: true, statusId: true } },
+        task: {
+          select: {
+            id: true,
+            title: true,
+            projectId: true,
+            statusId: true,
+            project: { select: { title: true } },
+            taskStatus: { select: { id: true, name: true } }
+          }
+        },
         proposedStatus: { select: { id: true, name: true } }
       },
       orderBy: { createdAt: 'desc' }

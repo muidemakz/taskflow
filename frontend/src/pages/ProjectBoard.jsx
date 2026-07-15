@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Settings } from 'lucide-react';
 import KanbanBoard from '../components/board/KanbanBoard';
@@ -33,6 +33,8 @@ export default function ProjectBoard() {
   const [projectTitle, setProjectTitle] = useState('');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [openTask, setOpenTask] = useState(null);
+  const highlightTaskId = searchParams.get('taskId');
+  const highlightApplied = useRef(false);
 
   useEffect(() => {
     loadProjectMeta(id);
@@ -44,6 +46,18 @@ export default function ProjectBoard() {
     loadBoard(id, gateId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, gateId]);
+
+  // Landing here from search (?taskId=...) opens that task directly instead
+  // of leaving the user to find it themselves among possibly many columns.
+  useEffect(() => {
+    if (!highlightTaskId || highlightApplied.current || !columns.length) return;
+    const found = columns.flatMap((c) => c.tasks).find((t) => t.id === highlightTaskId);
+    if (found) {
+      setOpenTask(found);
+      highlightApplied.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightTaskId, columns]);
 
   const displayColumns = useMemo(() => {
     let cols = columns;

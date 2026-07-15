@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Layers, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, Layers, Plus, Star, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../Modal';
 import DeleteConfirmModal from '../DeleteConfirmModal';
@@ -146,6 +146,33 @@ export default function TaskDetailModal({ task, statuses, gates, tags, onClose, 
             <AlertTriangle size={15} /> {current.blocked ? 'Blocked' : 'Not blocked'}
           </button>
         </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Focus</label>
+          <button
+            className={`btn-ghost w-full justify-start ${current.focus ? 'border-amber-200 bg-amber-50 text-amber-700' : ''}`}
+            onClick={() => patch({ focus: !current.focus, ...(current.focus ? { focusTargetDate: null } : {}) })}
+          >
+            <Star size={15} /> {current.focus ? 'In focus' : 'Not in focus'}
+          </button>
+        </div>
+
+        {current.focus && (
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Focus target date (optional)</label>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                className="field"
+                value={current.focusTargetDate ? current.focusTargetDate.slice(0, 10) : ''}
+                onChange={(e) => patch({ focusTargetDate: e.target.value || null })}
+              />
+              {current.focusTargetDate && (
+                <button className="btn-ghost" onClick={() => patch({ focusTargetDate: null })}>Clear</button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {current.blocked && (

@@ -11,6 +11,8 @@ import ProjectBoard from './pages/ProjectBoard';
 import RoadmapOverview from './pages/RoadmapOverview';
 import ProjectSettings from './pages/ProjectSettings';
 import Trash from './pages/Trash';
+import MyTasks from './pages/MyTasks';
+import CatchUp from './pages/CatchUp';
 import ShareView from './pages/ShareView';
 import AdminLayout from './pages/Admin/AdminLayout';
 import AdminOverview from './pages/Admin/AdminOverview';
@@ -55,6 +57,8 @@ export default function App() {
         <Route path="/projects/:id/roadmap" element={<RoadmapOverview />} />
         <Route path="/projects/:id/settings" element={<ProjectSettings />} />
         <Route path="/trash" element={<Trash />} />
+        <Route path="/my-tasks" element={<MyTasks />} />
+        <Route path="/review" element={<CatchUp />} />
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminOverview />} />
