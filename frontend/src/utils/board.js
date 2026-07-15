@@ -117,6 +117,27 @@ function sortByWorkflowOrder(tasks, { gateOrderById = {}, statusOrderById = {}, 
   });
 }
 
+export const EMPTY_FILTERS = { tagIds: [], priority: '', blockedOnly: false, dueFilter: '' };
+
+export function hasActiveFilters(filters) {
+  return Boolean(filters.tagIds.length || filters.priority || filters.blockedOnly || filters.dueFilter);
+}
+
+// All conditions AND together, applied client-side against the
+// already-loaded board -- no new endpoint.
+export function filterTasks(tasks, filters) {
+  return tasks.filter((task) => {
+    if (filters.tagIds.length && !task.tags?.some((t) => filters.tagIds.includes(t.id))) return false;
+    if (filters.priority && (task.priority || 'NONE') !== filters.priority) return false;
+    if (filters.blockedOnly && !task.blocked) return false;
+    if (filters.dueFilter === 'overdue' && !isOverdue(task)) return false;
+    if (filters.dueFilter === 'thisWeek' && !isDueThisWeek(task)) return false;
+    if (filters.dueFilter === 'hasDate' && !task.dueDate) return false;
+    if (filters.dueFilter === 'noDate' && task.dueDate) return false;
+    return true;
+  });
+}
+
 export const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest → Oldest' },
   { value: 'oldest', label: 'Oldest → Newest' },

@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { ArrowLeft, Settings } from 'lucide-react';
 import KanbanBoard from '../components/board/KanbanBoard';
 import ListView from '../components/board/ListView';
 import BoardToolbar from '../components/board/BoardToolbar';
+import BoardFilterBar from '../components/board/BoardFilterBar';
+import TaskDetailModal from '../components/board/TaskDetailModal';
 import { useBoardStore } from '../store/boardStore';
 import { projectsApi } from '../api/endpoints';
+import { EMPTY_FILTERS, filterTasks } from '../utils/board';
 
 export default function ProjectBoard() {
   const { id } = useParams();
@@ -21,6 +23,7 @@ export default function ProjectBoard() {
   const columns = useBoardStore((s) => s.columns);
   const statuses = useBoardStore((s) => s.statuses);
   const gates = useBoardStore((s) => s.gates);
+  const tags = useBoardStore((s) => s.tags);
   const hasRoadmap = useBoardStore((s) => s.hasRoadmap);
   const view = useBoardStore((s) => s.view);
   const sortKey = useBoardStore((s) => s.sortKey);
@@ -28,6 +31,8 @@ export default function ProjectBoard() {
   const setSortKey = useBoardStore((s) => s.setSortKey);
   const loading = useBoardStore((s) => s.loading);
   const [projectTitle, setProjectTitle] = useState('');
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [openTask, setOpenTask] = useState(null);
 
   useEffect(() => {
     loadProjectMeta(id);
@@ -41,9 +46,10 @@ export default function ProjectBoard() {
   }, [id, gateId]);
 
   const displayColumns = useMemo(() => {
-    if (!isUnscheduledView) return columns;
-    return columns.map((col) => ({ ...col, tasks: col.tasks.filter((t) => !t.gateId) }));
-  }, [columns, isUnscheduledView]);
+    let cols = columns;
+    if (isUnscheduledView) cols = cols.map((col) => ({ ...col, tasks: col.tasks.filter((t) => !t.gateId) }));
+    return cols.map((col) => ({ ...col, tasks: filterTasks(col.tasks, filters) }));
+  }, [columns, isUnscheduledView, filters]);
 
   const currentGate = gates.find((g) => g.id === gateId);
   const workflowContext = useMemo(
@@ -55,9 +61,8 @@ export default function ProjectBoard() {
     [gates, statuses, hasRoadmap]
   );
 
-  function handleOpenTask() {
-    // Task detail view lands in the next checkpoint.
-    toast('Task detail view is coming in the next checkpoint.');
+  function handleTaskUpdated(updated) {
+    setOpenTask(updated);
   }
 
   const title = isUnscheduledView ? 'Unscheduled' : currentGate ? currentGate.name : projectTitle;
@@ -85,15 +90,33 @@ export default function ProjectBoard() {
             {subtitle && <p className="truncate text-sm text-muted">{subtitle}</p>}
           </div>
         </div>
-        <BoardToolbar view={view} onViewChange={setView} sortKey={sortKey} onSortChange={setSortKey} />
+        <div className="flex items-center gap-2">
+          <BoardToolbar view={view} onViewChange={setView} sortKey={sortKey} onSortChange={setSortKey} />
+          <button className="btn-icon" onClick={() => navigate(`/projects/${id}/settings`)} aria-label="Project settings">
+            <Settings size={16} />
+          </button>
+        </div>
       </div>
+
+      <BoardFilterBar filters={filters} onChange={setFilters} availableTags={tags} />
 
       {loading ? (
         <div className="p-8 text-center text-muted">Loading board...</div>
       ) : view === 'board' ? (
-        <KanbanBoard onOpenTask={handleOpenTask} sortKey={sortKey} workflowContext={workflowContext} columnsOverride={isUnscheduledView ? displayColumns : null} />
+        <KanbanBoard onOpenTask={setOpenTask} sortKey={sortKey} workflowContext={workflowContext} columnsOverride={displayColumns} />
       ) : (
-        <ListView columns={displayColumns} sortKey={sortKey} workflowContext={workflowContext} onOpenTask={handleOpenTask} />
+        <ListView columns={displayColumns} sortKey={sortKey} workflowContext={workflowContext} onOpenTask={setOpenTask} />
+      )}
+
+      {openTask && (
+        <TaskDetailModal
+          task={openTask}
+          statuses={statuses}
+          gates={gates}
+          tags={tags}
+          onClose={() => setOpenTask(null)}
+          onUpdated={handleTaskUpdated}
+        />
       )}
     </main>
   );

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import ProjectCard from '../components/ProjectCard';
 import { useProjectStore } from '../store/projectStore';
 
@@ -10,6 +12,7 @@ export default function Dashboard() {
   const { projects, loading, loadProjects, createProject, deleteProject } = useProjectStore();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ title: '', description: '' });
+  const [deletingProject, setDeletingProject] = useState(null);
 
   useEffect(() => { loadProjects(); }, [loadProjects]);
 
@@ -45,7 +48,7 @@ export default function Dashboard() {
               key={project.id}
               project={project}
               onOpen={() => navigate(`/projects/${project.id}`)}
-              onDelete={async () => { if (confirm(`Delete "${project.title}"?`)) await deleteProject(project.id); }}
+              onDelete={() => setDeletingProject(project)}
             />
           ))}
         </div>
@@ -61,6 +64,23 @@ export default function Dashboard() {
             </div>
           </form>
         </Modal>
+      )}
+      {deletingProject && (
+        <DeleteConfirmModal
+          title={`Delete "${deletingProject.title}"?`}
+          warning={
+            <>
+              This will also delete its {deletingProject.tasks.length + deletingProject.groups.reduce((sum, g) => sum + g.tasks.length, 0)} task(s),{' '}
+              {deletingProject.groups.length} group(s), and any gates or tags -- all in one action.
+            </>
+          }
+          onClose={() => setDeletingProject(null)}
+          onConfirm={async () => {
+            await deleteProject(deletingProject.id);
+            toast.success(`"${deletingProject.title}" deleted. Restore it from Trash within 30 days.`);
+            setDeletingProject(null);
+          }}
+        />
       )}
     </main>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Settings } from 'lucide-react';
 import GateCard from '../components/roadmap/GateCard';
 import UnscheduledCard from '../components/roadmap/UnscheduledCard';
 import CloseGateModal from '../components/roadmap/CloseGateModal';
@@ -42,9 +42,14 @@ export default function RoadmapOverview() {
             <p className="text-sm text-muted">Gates in sequence</p>
           </div>
         </div>
-        <button className="btn-ghost" onClick={() => navigate(`/projects/${id}/board`)}>
-          <LayoutGrid size={16} /> Whole-project board
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="btn-ghost" onClick={() => navigate(`/projects/${id}/board`)}>
+            <LayoutGrid size={16} /> Whole-project board
+          </button>
+          <button className="btn-icon" onClick={() => navigate(`/projects/${id}/settings`)} aria-label="Project settings">
+            <Settings size={16} />
+          </button>
+        </div>
       </div>
 
       {!hasRoadmap && !sortedGates.length && (

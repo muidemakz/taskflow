@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import GroupCard from '../components/GroupCard';
 import Modal from '../components/Modal';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import ProgressBar from '../components/ProgressBar';
 import TaskCard from '../components/TaskCard';
 import { useProjectStore } from '../store/projectStore';
@@ -32,6 +33,8 @@ export default function ProjectDetail() {
   const [mergeModal, setMergeModal] = useState(false);
   const [shareModal, setShareModal] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [deletingProject, setDeletingProject] = useState(false);
+  const [deletingTaskId, setDeletingTaskId] = useState(null);
 
   useEffect(() => { store.loadProject(id); }, [id]);
   const st = stats(project);
@@ -86,7 +89,7 @@ export default function ProjectDetail() {
             <button className="btn-ghost" onClick={() => setArrangeMode(!arrangeMode)}>{arrangeMode ? 'Done arranging' : 'Arrange'}</button>
             <button className="btn-ghost" onClick={() => { setMergeMode(!mergeMode); setSelectedGroups([]); }}>Merge Groups</button>
             <button className="btn-ghost" onClick={() => setShareModal(true)}><Share2 size={16} /> Share</button>
-            <button className="btn-icon text-red-700 hover:bg-red-50" onClick={async () => { if (confirm(`Delete "${project.title}"?`)) { await store.deleteProject(project.id); navigate('/dashboard'); } }}><Trash2 size={16} /></button>
+            <button className="btn-icon text-red-700 hover:bg-red-50" onClick={() => setDeletingProject(true)}><Trash2 size={16} /></button>
           </div>
         </div>
       </div>
@@ -127,7 +130,7 @@ export default function ProjectDetail() {
               {entries.map((entry) => (
                 <SortableEntry key={entry.key} id={entry.key} disabled={!arrangeMode}>
                   {(sortable) => entry.type === 'task' ? (
-                    <TaskCard task={entry.item} groups={project.groups} onUpdate={handleTaskUpdate} onDelete={(tid) => confirm('Delete this task?') && store.deleteTask(tid)} onMove={(tid, gid) => store.moveTask(tid, gid)} dragHandle={{ ...sortable.attributes, ...sortable.listeners }} />
+                    <TaskCard task={entry.item} groups={project.groups} onUpdate={handleTaskUpdate} onDelete={setDeletingTaskId} onMove={(tid, gid) => store.moveTask(tid, gid)} dragHandle={{ ...sortable.attributes, ...sortable.listeners }} />
                   ) : (
                     <GroupCard
                       group={{ ...entry.item, tasks: entry.tasks }}
@@ -140,7 +143,7 @@ export default function ProjectDetail() {
                       onUngroup={(gid) => confirm('Ungroup this group?') && store.ungroup(gid)}
                       onAddTask={addTask}
                       onTaskUpdate={handleTaskUpdate}
-                      onTaskDelete={(tid) => confirm('Delete this task?') && store.deleteTask(tid)}
+                      onTaskDelete={setDeletingTaskId}
                       onTaskMove={(tid, gid) => store.moveTask(tid, gid)}
                     />
                   )}
@@ -180,6 +183,37 @@ export default function ProjectDetail() {
             </div>
           )}
         </Modal>
+      )}
+
+      {deletingProject && (
+        <DeleteConfirmModal
+          title={`Delete "${project.title}"?`}
+          warning={
+            <>
+              This will also delete its {project.tasks.length + project.groups.reduce((sum, g) => sum + g.tasks.length, 0)} task(s),{' '}
+              {project.groups.length} group(s), and any gates or tags -- all in one action.
+            </>
+          }
+          onClose={() => setDeletingProject(false)}
+          onConfirm={async () => {
+            await store.deleteProject(project.id);
+            toast.success(`"${project.title}" deleted. Restore it from Trash within 30 days.`);
+            navigate('/dashboard');
+          }}
+        />
+      )}
+
+      {deletingTaskId && (
+        <DeleteConfirmModal
+          title="Delete this task?"
+          warning="This task will be moved to Trash, where it can be restored within 30 days."
+          onClose={() => setDeletingTaskId(null)}
+          onConfirm={async () => {
+            await store.deleteTask(deletingTaskId);
+            toast.success('Task deleted. Restore it from Trash within 30 days.');
+            setDeletingTaskId(null);
+          }}
+        />
       )}
     </main>
   );

@@ -29,7 +29,8 @@ export const useProjectStore = create((set, get) => ({
   async deleteProject(id) {
     await projectsApi.remove(id);
     set({ projects: get().projects.filter((project) => project.id !== id), current: null });
-    toast.success('Project deleted');
+    // Caller shows the restore-within-30-days toast (more informative than
+    // a bare "Project deleted").
   },
   applyProject(project) {
     set({ current: project, projects: get().projects.map((item) => (item.id === project.id ? project : item)) });

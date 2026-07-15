@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, Shield } from 'lucide-react';
+import { LogOut, Shield, Trash2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 export default function Topbar() {
@@ -10,6 +10,9 @@ export default function Topbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Link to="/dashboard" className="text-lg font-bold tracking-tight text-primary">Taskflow</Link>
         <div className="flex items-center gap-2">
+          <Link className="btn-icon" to="/trash" aria-label="Trash" title="Trash">
+            <Trash2 size={16} />
+          </Link>
           {user?.role === 'ADMIN' && (
             <Link className="btn-ghost hidden sm:inline-flex" to="/admin">
               <Shield size={16} /> Admin
