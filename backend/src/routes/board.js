@@ -41,7 +41,9 @@ router.get('/projects/:id/board', async (req, res, next) => {
       status,
       tasks: tasks.filter((t) => t.statusId === status.id).map(serializeTask)
     }));
-    const unassignedCount = tasks.filter((t) => !t.statusId).length;
+    // "Unassigned" means no gate (Unscheduled), not no status -- every
+    // task always has a real statusId post-migration.
+    const unassignedCount = tasks.filter((t) => !t.gateId).length;
 
     res.json({ columns, unassignedCount });
   } catch (error) {
