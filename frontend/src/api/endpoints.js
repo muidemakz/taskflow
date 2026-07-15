@@ -42,3 +42,53 @@ export const adminApi = {
   updateUser: (id, payload) => api.patch(`/api/admin/users/${id}`, payload),
   deleteUser: (id) => api.delete(`/api/admin/users/${id}`)
 };
+
+export const statusesApi = {
+  list: (projectId) => api.get(`/api/projects/${projectId}/statuses`),
+  create: (projectId, payload) => api.post(`/api/projects/${projectId}/statuses`, payload),
+  update: (statusId, payload) => api.patch(`/api/statuses/${statusId}`, payload),
+  remove: (statusId) => api.delete(`/api/statuses/${statusId}`)
+};
+
+export const roadmapApi = {
+  get: (projectId) => api.get(`/api/projects/${projectId}/roadmap`, { silent: true })
+};
+
+export const gatesApi = {
+  create: (projectId, payload) => api.post(`/api/projects/${projectId}/gates`, payload),
+  update: (gateId, payload) => api.patch(`/api/gates/${gateId}`, payload),
+  remove: (gateId, payload) => api.delete(`/api/gates/${gateId}`, { data: payload }),
+  close: (gateId, payload) => api.post(`/api/gates/${gateId}/close`, payload)
+};
+
+export const boardApi = {
+  get: (projectId, gateId) => api.get(`/api/projects/${projectId}/board`, { params: gateId ? { gateId } : {} }),
+  updateTask: (taskId, payload) => api.patch(`/api/tasks/${taskId}/board`, payload),
+  addGatePlacement: (taskId, gateId) => api.post(`/api/tasks/${taskId}/gate-placements`, { gateId }),
+  taskRoadmaps: (taskId) => api.get(`/api/tasks/${taskId}/roadmaps`, { silent: true })
+};
+
+export const tagsApi = {
+  list: (projectId) => api.get(`/api/projects/${projectId}/tags`),
+  create: (projectId, payload) => api.post(`/api/projects/${projectId}/tags`, payload),
+  remove: (tagId) => api.delete(`/api/tags/${tagId}`)
+};
+
+export const searchApi = {
+  query: (q) => api.get('/api/search', { params: { q }, silent: true })
+};
+
+export const meApi = {
+  tasks: () => api.get('/api/me/tasks')
+};
+
+export const trashApi = {
+  list: (projectId) => api.get('/api/trash', { params: projectId ? { projectId } : {} }),
+  restore: (type, id) => api.post(`/api/trash/${type}/${id}/restore`)
+};
+
+export const syncApi = {
+  proposals: (status) => api.get('/api/sync/proposals', { params: { status } }),
+  accept: (id) => api.post(`/api/sync/proposals/${id}/accept`),
+  dismiss: (id) => api.post(`/api/sync/proposals/${id}/dismiss`)
+};

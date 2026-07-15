@@ -7,6 +7,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ProjectDetail from './pages/ProjectDetail';
+import ProjectBoard from './pages/ProjectBoard';
+import RoadmapOverview from './pages/RoadmapOverview';
 import ShareView from './pages/ShareView';
 import AdminLayout from './pages/Admin/AdminLayout';
 import AdminOverview from './pages/Admin/AdminOverview';
@@ -47,6 +49,8 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/projects/:id/board" element={<ProjectBoard />} />
+        <Route path="/projects/:id/roadmap" element={<RoadmapOverview />} />
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminOverview />} />

@@ -1,7 +1,7 @@
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ArrowLeft, Copy, FolderPlus, Plus, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Copy, FolderPlus, LayoutGrid, Plus, Share2, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -78,6 +78,9 @@ export default function ProjectDetail() {
             <input className="field max-w-lg border-transparent text-base font-semibold" value={project.title} onChange={(e) => store.applyProject({ ...project, title: e.target.value })} onBlur={(e) => store.updateProject(project.id, { title: e.target.value })} />
           </div>
           <div className="flex flex-wrap gap-2">
+            <button className="btn-ghost" onClick={() => navigate(project.hasRoadmap ? `/projects/${project.id}/roadmap` : `/projects/${project.id}/board`)}>
+              <LayoutGrid size={16} /> {project.hasRoadmap ? 'Roadmap' : 'Board'}
+            </button>
             <button className="btn-ghost" onClick={() => addTask()}><Plus size={16} /> Add Task</button>
             <button className="btn-ghost" onClick={() => store.createGroup('New Group')}><FolderPlus size={16} /> Add Group</button>
             <button className="btn-ghost" onClick={() => setArrangeMode(!arrangeMode)}>{arrangeMode ? 'Done arranging' : 'Arrange'}</button>
