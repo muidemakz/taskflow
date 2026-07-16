@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RotateCcw, Trash2 } from 'lucide-react';
+import { RotateCcw, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { projectsApi, trashApi } from '../api/endpoints';
 
@@ -16,7 +15,6 @@ function daysRemaining(deletedAt, retentionDays) {
 // (matches the existing Admin link) better than nesting this under a
 // project you'd have to already be inside.
 export default function Trash() {
-  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [retentionDays, setRetentionDays] = useState(30);
   const [projectTitles, setProjectTitles] = useState({});
@@ -53,12 +51,9 @@ export default function Trash() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
-      <div className="mb-5 flex items-center gap-2">
-        <button className="btn-icon" onClick={() => navigate('/dashboard')} aria-label="Back"><ArrowLeft size={17} /></button>
-        <div>
-          <h1 className="text-xl font-bold">Trash</h1>
-          <p className="text-sm text-muted">Items are permanently deleted {retentionDays} days after being trashed</p>
-        </div>
+      <div className="mb-5">
+        <h1 className="text-xl font-bold">Trash</h1>
+        <p className="text-sm text-muted">Items are permanently deleted {retentionDays} days after being trashed</p>
       </div>
 
       {!items.length ? (

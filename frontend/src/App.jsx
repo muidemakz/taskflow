@@ -3,6 +3,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import Topbar from './components/Topbar';
 import BottomNav from './components/BottomNav';
 import { useAuthStore } from './store/authStore';
+import { watchSystemTheme } from './utils/theme';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -55,6 +56,7 @@ export default function App() {
     window.addEventListener('taskflow:auth-expired', handler);
     return () => window.removeEventListener('taskflow:auth-expired', handler);
   }, [logout]);
+  useEffect(() => watchSystemTheme(), []);
 
   return (
     <Routes>

@@ -32,6 +32,8 @@ export function publicUser(user) {
     name: user.name,
     role: user.role,
     createdAt: user.createdAt,
-    lastLoginAt: user.lastLoginAt
+    lastLoginAt: user.lastLoginAt,
+    avatarUrl: user.avatarUrl,
+    theme: user.theme
   };
 }

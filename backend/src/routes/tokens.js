@@ -24,8 +24,7 @@ router.get('/', async (req, res, next) => {
 // ever stored.
 router.post('/', async (req, res, next) => {
   try {
-    const label = req.body.label?.trim();
-    if (!label) return res.status(400).json({ message: 'Token label is required' });
+    const label = req.body.label?.trim() || `Token · ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
     const token = generatePatToken();
     const created = await prisma.personalAccessToken.create({
       data: { userId: req.auth.sub, label, tokenHash: hashPatToken(token) }

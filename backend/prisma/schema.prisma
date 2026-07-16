@@ -18,9 +18,22 @@ model User {
   projects      Project[]
   refreshTokens RefreshToken[]
 
+  // --- Prompt 7: Profile & Settings ---
+  // avatarUrl holds a small client-resized data: URL, not a CDN link --
+  // there's no object storage in this app, so the browser downsizes the
+  // image before it ever reaches the API.
+  avatarUrl String?
+  theme     ThemePreference @default(SYSTEM)
+
   personalAccessTokens PersonalAccessToken[]
   taskActivity         TaskActivity[]
   docAnnotations       DocAnnotation[]
+}
+
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
 }
 
 // v1: full-access-as-the-user scope, no granular scopes yet. tokenHash is a

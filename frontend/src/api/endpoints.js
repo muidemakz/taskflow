@@ -86,6 +86,19 @@ export const meApi = {
   tasks: () => api.get('/api/me/tasks')
 };
 
+export const usersApi = {
+  me: () => api.get('/api/users/me', { silent: true }),
+  update: (payload) => api.patch('/api/users/me', payload)
+};
+
+// Mounted at /api/tokens (not /api/users/me/tokens) -- pre-existing from
+// Prompt 2, kept as-is rather than moved, to avoid touching a working route.
+export const tokensApi = {
+  list: () => api.get('/api/tokens', { silent: true }),
+  create: (label) => api.post('/api/tokens', { label }),
+  remove: (id) => api.delete(`/api/tokens/${id}`)
+};
+
 export const trashApi = {
   list: (projectId) => api.get('/api/trash', { params: projectId ? { projectId } : {} }),
   restore: (type, id) => api.post(`/api/trash/${type}/${id}/restore`)

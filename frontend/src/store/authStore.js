@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { authApi } from '../api/endpoints';
+import { applyTheme } from '../utils/theme';
 
 const saved = JSON.parse(localStorage.getItem('taskflow_auth') || '{}');
 
@@ -10,6 +11,7 @@ export const useAuthStore = create((set, get) => ({
   loading: true,
   setSession(session) {
     localStorage.setItem('taskflow_auth', JSON.stringify(session));
+    if (session.user?.theme) applyTheme(session.user.theme.toLowerCase());
     set({ ...session, loading: false });
   },
   async login(payload) {
@@ -27,10 +29,16 @@ export const useAuthStore = create((set, get) => ({
     if (!token) return set({ loading: false });
     try {
       const { data } = await authApi.me();
+      if (data.theme) applyTheme(data.theme.toLowerCase());
       set({ user: data, loading: false });
     } catch {
       get().logout(false);
     }
+  },
+  setUser(user) {
+    const session = { user, accessToken: get().accessToken, refreshToken: get().refreshToken };
+    localStorage.setItem('taskflow_auth', JSON.stringify(session));
+    set({ user });
   },
   async logout(callApi = true) {
     const refreshToken = get().refreshToken;

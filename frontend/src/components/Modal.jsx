@@ -20,7 +20,7 @@ export default function Modal({ title, children, onClose, maxWidthClass = 'max-w
         <div className="min-h-0 flex-1 overflow-y-auto">
           {children}
         </div>
-        {footer && <div className="mt-4 shrink-0 border-t border-border pt-4">{footer}</div>}
+        {footer && <div className="mt-4 shrink-0 border-t border-border pt-4 dark:border-slate-700">{footer}</div>}
       </div>
     </div>
   );
