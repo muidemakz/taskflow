@@ -104,6 +104,10 @@ router.patch('/:id', async (req, res, next) => {
         data.promptRulesCategoryId = null;
       }
     }
+    // One-way flag: once the forced first-visit settings prompt has been
+    // shown and dismissed (Save or Cancel), it never re-triggers for this
+    // project, so this only ever needs to go false -> true.
+    if (req.body.hasConfigured === true) data.hasConfigured = true;
     const updated = await prisma.project.update({ where: { id: project.id }, data, include: projectInclude });
     res.json(await withMetrics(updated));
   } catch (error) {

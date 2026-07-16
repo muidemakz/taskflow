@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import Topbar from './components/Topbar';
+import BottomNav from './components/BottomNav';
 import { useAuthStore } from './store/authStore';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -15,6 +16,7 @@ import DocDetail from './pages/DocDetail';
 import Trash from './pages/Trash';
 import MyTasks from './pages/MyTasks';
 import CatchUp from './pages/CatchUp';
+import AccountPage from './pages/AccountPage';
 import ShareView from './pages/ShareView';
 import AdminLayout from './pages/Admin/AdminLayout';
 import AdminOverview from './pages/Admin/AdminOverview';
@@ -26,7 +28,15 @@ function ProtectedRoute() {
   const location = useLocation();
   if (loading) return <div className="p-8 text-center text-muted">Loading Taskflow...</div>;
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
-  return <><Topbar /><Outlet /></>;
+  return (
+    <>
+      <Topbar />
+      <div className="pb-16">
+        <Outlet />
+      </div>
+      <BottomNav />
+    </>
+  );
 }
 
 function AdminRoute() {
@@ -63,6 +73,7 @@ export default function App() {
         <Route path="/trash" element={<Trash />} />
         <Route path="/my-tasks" element={<MyTasks />} />
         <Route path="/review" element={<CatchUp />} />
+        <Route path="/account" element={<AccountPage />} />
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminOverview />} />

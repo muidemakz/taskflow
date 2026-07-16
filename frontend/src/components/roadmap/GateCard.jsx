@@ -1,4 +1,5 @@
-import { ChevronRight, DoorClosed, DoorOpen, Plus, Share2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronRight, DoorClosed, DoorOpen, MoreVertical, Pencil, Plus, Share2 } from 'lucide-react';
 import ProgressBar from '../ProgressBar';
 
 function formatClosedDate(iso) {
@@ -10,9 +11,24 @@ function formatClosedDate(iso) {
 // open ones) -- closed only changes the badge/actions shown here. Active
 // and Closed badges share one top-right corner position so scanning the
 // roadmap always finds gate status in the same spot.
-export default function GateCard({ gate, onOpen, onCloseGate, onReopenGate, onAddTask, onShareGate }) {
+export default function GateCard({ gate, onOpen, onCloseGate, onReopenGate, onAddTask, onShareGate, onEditGate }) {
   const { total, done, pct } = gate.progress;
   const isClosed = gate.status === 'CLOSED';
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  function runAction(action) {
+    setMenuOpen(false);
+    action?.(gate);
+  }
 
   return (
     <div className="card relative flex flex-col p-4">
@@ -43,22 +59,34 @@ export default function GateCard({ gate, onOpen, onCloseGate, onReopenGate, onAd
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex gap-2">
         <button className="btn-ghost flex-1 justify-center" onClick={() => onAddTask?.(gate)}>
           <Plus size={14} /> Add task
         </button>
-        <button className="btn-icon" onClick={() => onShareGate?.(gate)} aria-label="Share gate">
-          <Share2 size={15} />
-        </button>
-        {isClosed ? (
-          <button className="btn-ghost flex-1 justify-center" onClick={() => onReopenGate(gate)}>
-            <DoorOpen size={15} /> Reopen
+        <div className="relative" ref={menuRef}>
+          <button className="btn-icon" onClick={() => setMenuOpen((v) => !v)} aria-label="Gate actions">
+            <MoreVertical size={15} />
           </button>
-        ) : (
-          <button className="btn-ghost flex-1 justify-center" onClick={() => onCloseGate(gate)}>
-            <DoorClosed size={15} /> Close
-          </button>
-        )}
+          {menuOpen && (
+            <div className="card absolute right-0 z-20 mt-1 w-44 p-1">
+              {isClosed ? (
+                <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50" onClick={() => runAction(onReopenGate)}>
+                  <DoorOpen size={14} /> Reopen gate
+                </button>
+              ) : (
+                <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50" onClick={() => runAction(onCloseGate)}>
+                  <DoorClosed size={14} /> Close gate
+                </button>
+              )}
+              <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50" onClick={() => runAction(onShareGate)}>
+                <Share2 size={14} /> Share gate
+              </button>
+              <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50" onClick={() => runAction(onEditGate)}>
+                <Pencil size={14} /> Edit gate
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

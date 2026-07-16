@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, LayoutGrid, Settings, Share2 } from 'lucide-react';
 import GateCard from '../components/roadmap/GateCard';
@@ -42,6 +42,18 @@ export default function RoadmapOverview() {
     ]).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // First-visit forced settings prompt (checkpoint c.1.3) -- same rule as
+  // ProjectBoard: fires once per project the moment it first loads with
+  // hasConfigured false. Covers entry via this page directly (projects that
+  // already have a roadmap land here from the dashboard, not on the board).
+  const firstVisitChecked = useRef(false);
+  useEffect(() => {
+    if (project && !project.hasConfigured && !firstVisitChecked.current) {
+      firstVisitChecked.current = true;
+      setSettingsOpen(true);
+    }
+  }, [project]);
 
   const sortedGates = [...gates].sort((a, b) => a.order - b.order);
 
@@ -93,6 +105,7 @@ export default function RoadmapOverview() {
             onReopenGate={setReopeningGate}
             onAddTask={setAddingTaskGate}
             onShareGate={setSharingGate}
+            onEditGate={() => setSettingsOpen(true)}
           />
         ))}
         <UnscheduledCard
@@ -159,6 +172,9 @@ export default function RoadmapOverview() {
             setSettingsOpen(false);
             loadProjectMeta(id);
             boardApi.get(id).then(({ data }) => setUnscheduledCount(data.unassignedCount));
+            if (project && !project.hasConfigured) {
+              projectsApi.update(id, { hasConfigured: true }).then(refreshProject);
+            }
           }}
         />
       )}

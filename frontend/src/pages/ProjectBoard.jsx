@@ -62,6 +62,18 @@ export default function ProjectBoard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // First-visit forced settings prompt (checkpoint c.1.3): fires once per
+  // project, the moment its detail first loads with hasConfigured false.
+  // The ref (not just the project field) guards against re-opening while
+  // the PATCH from closing the modal is still in flight.
+  const firstVisitChecked = useRef(false);
+  useEffect(() => {
+    if (project && !project.hasConfigured && !firstVisitChecked.current) {
+      firstVisitChecked.current = true;
+      setSettingsOpen(true);
+    }
+  }, [project]);
+
   useEffect(() => {
     loadBoard(id, gateId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -257,6 +269,9 @@ export default function ProjectBoard() {
           onClose={() => {
             setSettingsOpen(false);
             loadBoard(id, gateId);
+            if (project && !project.hasConfigured) {
+              projectsApi.update(id, { hasConfigured: true }).then(refreshProject);
+            }
           }}
         />
       )}

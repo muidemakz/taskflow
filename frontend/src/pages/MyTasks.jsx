@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { meApi, projectsApi } from '../api/endpoints';
+import { meApi, projectsApi, roadmapApi, boardApi } from '../api/endpoints';
 import { formatDueDate, isOverdue, priorityMeta, tagColorClass } from '../utils/board';
 
 const LAST_PROJECT_KEY = 'taskflow_last_project';
@@ -22,6 +22,8 @@ export default function MyTasks() {
   const [projects, setProjects] = useState([]);
   const [quickTitle, setQuickTitle] = useState('');
   const [quickProjectId, setQuickProjectId] = useState('');
+  const [quickGateId, setQuickGateId] = useState('');
+  const [quickGates, setQuickGates] = useState([]);
   const [adding, setAdding] = useState(false);
 
   function loadTasks() {
@@ -38,13 +40,25 @@ export default function MyTasks() {
     });
   }, []);
 
+  // Gate is optional and scoped to whichever project is currently picked --
+  // reset to Unscheduled whenever the project changes rather than carrying
+  // a gate id that may not belong to the new project.
+  useEffect(() => {
+    setQuickGateId('');
+    if (!quickProjectId) return setQuickGates([]);
+    roadmapApi.get(quickProjectId).then(({ data }) => setQuickGates(data.gates || []));
+  }, [quickProjectId]);
+
   async function submitQuickAdd(e) {
     e.preventDefault();
     const title = quickTitle.trim();
     if (!title || !quickProjectId) return;
     setAdding(true);
     try {
-      await projectsApi.createTask(quickProjectId, { title });
+      const { data } = await projectsApi.createTask(quickProjectId, { title });
+      // No gate picked -> leave it Unscheduled, exactly what createTask
+      // already does by default; only move it when the user chose one.
+      if (quickGateId) await boardApi.updateTask(data.taskId, { gateId: quickGateId });
       localStorage.setItem(LAST_PROJECT_KEY, quickProjectId);
       setQuickTitle('');
       toast.success('Task added');
@@ -78,6 +92,10 @@ export default function MyTasks() {
               {p.title}{p.metrics ? ` (${p.metrics.gateCount}g · ${p.metrics.taskCount}t)` : ''}
             </option>
           ))}
+        </select>
+        <select className="field sm:w-44" value={quickGateId} onChange={(e) => setQuickGateId(e.target.value)}>
+          <option value="">Unscheduled</option>
+          {quickGates.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
         <button className="btn-primary shrink-0" disabled={adding || !quickTitle.trim() || !quickProjectId}>
           <Plus size={16} /> Add
