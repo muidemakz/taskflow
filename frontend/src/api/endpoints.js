@@ -99,7 +99,7 @@ export const docCategoriesApi = {
   list: (projectId) => api.get(`/api/projects/${projectId}/categories`),
   create: (projectId, payload) => api.post(`/api/projects/${projectId}/categories`, payload),
   rename: (catId, name) => api.patch(`/api/categories/${catId}`, { name }),
-  remove: (projectId, catId, payload) => api.delete(`/api/projects/${projectId}/categories/${catId}`, { data: payload })
+  remove: (projectId, catId, payload) => api.delete(`/api/categories/${catId}`, { data: payload })
 };
 
 export const docsApi = {
