@@ -125,8 +125,13 @@ export const useBoardStore = create((set, get) => ({
     return data;
   },
 
-  async closeGate(gateId, confirm = false) {
-    const { data } = await gatesApi.close(gateId, { confirm });
+  async closeGate(gateId, confirm = false, reason = null) {
+    const { data } = await gatesApi.close(gateId, { confirm, reason });
+    return data;
+  },
+
+  async reopenGate(gateId, reason = null) {
+    const { data } = await gatesApi.reopen(gateId, { reason });
     return data;
   }
 }));

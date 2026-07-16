@@ -58,7 +58,9 @@ export const gatesApi = {
   create: (projectId, payload) => api.post(`/api/projects/${projectId}/gates`, payload),
   update: (gateId, payload) => api.patch(`/api/gates/${gateId}`, payload),
   remove: (gateId, payload) => api.delete(`/api/gates/${gateId}`, { data: payload }),
-  close: (gateId, payload) => api.post(`/api/gates/${gateId}/close`, payload)
+  close: (gateId, payload) => api.post(`/api/gates/${gateId}/close`, payload),
+  reopen: (gateId, payload) => api.post(`/api/gates/${gateId}/reopen`, payload),
+  bulkImport: (projectId, rows) => api.post(`/api/projects/${projectId}/gates/bulk-import`, { rows })
 };
 
 export const boardApi = {
@@ -85,6 +87,10 @@ export const meApi = {
 export const trashApi = {
   list: (projectId) => api.get('/api/trash', { params: projectId ? { projectId } : {} }),
   restore: (type, id) => api.post(`/api/trash/${type}/${id}/restore`)
+};
+
+export const activityApi = {
+  list: (taskId) => api.get(`/api/tasks/${taskId}/activity`, { silent: true })
 };
 
 export const syncApi = {

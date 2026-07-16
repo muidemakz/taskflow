@@ -19,6 +19,7 @@ model User {
   refreshTokens RefreshToken[]
 
   personalAccessTokens PersonalAccessToken[]
+  taskActivity         TaskActivity[]
 }
 
 // v1: full-access-as-the-user scope, no granular scopes yet. tokenHash is a
@@ -131,6 +132,7 @@ model Task {
   roadmaps       TaskRoadmap[]
   gatePlacements TaskGatePlacement[]
   syncProposals  SyncProposal[]
+  activity       TaskActivity[]
 
   // NULL externalId rows are each distinct under Postgres unique-constraint
   // semantics, so this is only enforced when externalId is actually set --
@@ -194,14 +196,23 @@ model Roadmap {
   taskLinks TaskRoadmap[]
 }
 
+enum GateStatus {
+  OPEN
+  CLOSED
+}
+
 model Gate {
-  id        String    @id @default(cuid())
-  roadmap   Roadmap   @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
-  roadmapId String
-  name      String
-  order     Int
-  createdAt DateTime  @default(now())
-  deletedAt DateTime?
+  id           String     @id @default(cuid())
+  roadmap      Roadmap    @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  roadmapId    String
+  name         String
+  description  String?
+  order        Int
+  status       GateStatus @default(OPEN)
+  closedAt     DateTime?
+  closedReason String?
+  createdAt    DateTime   @default(now())
+  deletedAt    DateTime?
 
   tasksHere      Task[]              @relation("TaskCurrentGate")
   tasksMovedFrom Task[]              @relation("TaskMovedFromGate")
@@ -284,4 +295,40 @@ model SyncProposal {
   status           SyncProposalStatus @default(PENDING)
   createdAt        DateTime           @default(now())
   decidedAt        DateTime?
+}
+
+enum TaskActivityEventType {
+  status_changed
+  gate_changed
+  gate_assigned
+  gate_removed
+  focus_toggled
+  due_date_set
+  priority_changed
+  blocked
+  tag_added
+  tag_removed
+  comment_added
+  moved_by_sync_proposal
+  closed_gate_reason
+  reopened_gate_reason
+}
+
+// Append-only audit log for a task's timeline -- no update endpoint, rows
+// are only ever created by the mutation that caused them. oldValue/newValue
+// are stored as display-ready text (status/gate names, not ids) so the
+// timeline never needs a join at read time.
+model TaskActivity {
+  id        String                @id @default(cuid())
+  task      Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  eventType TaskActivityEventType
+  oldValue  String?
+  newValue  String?
+  changedAt DateTime              @default(now())
+  changedBy User?                 @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedById String?
+  reason    String?
+
+  @@index([taskId, changedAt])
 }

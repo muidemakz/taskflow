@@ -4,6 +4,8 @@ import { ArrowLeft, LayoutGrid, Settings } from 'lucide-react';
 import GateCard from '../components/roadmap/GateCard';
 import UnscheduledCard from '../components/roadmap/UnscheduledCard';
 import CloseGateModal from '../components/roadmap/CloseGateModal';
+import ReopenGateModal from '../components/roadmap/ReopenGateModal';
+import ProjectSettingsModal from '../components/settings/ProjectSettingsModal';
 import { useBoardStore } from '../store/boardStore';
 import { boardApi, projectsApi } from '../api/endpoints';
 
@@ -15,6 +17,8 @@ export default function RoadmapOverview() {
   const hasRoadmap = useBoardStore((s) => s.hasRoadmap);
   const [unscheduledCount, setUnscheduledCount] = useState(0);
   const [closingGate, setClosingGate] = useState(null);
+  const [reopeningGate, setReopeningGate] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [projectTitle, setProjectTitle] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -46,7 +50,7 @@ export default function RoadmapOverview() {
           <button className="btn-ghost" onClick={() => navigate(`/projects/${id}/board`)}>
             <LayoutGrid size={16} /> Whole-project board
           </button>
-          <button className="btn-icon" onClick={() => navigate(`/projects/${id}/settings`)} aria-label="Project settings">
+          <button className="btn-icon" onClick={() => setSettingsOpen(true)} aria-label="Project settings">
             <Settings size={16} />
           </button>
         </div>
@@ -65,6 +69,7 @@ export default function RoadmapOverview() {
             gate={gate}
             onOpen={(g) => navigate(`/projects/${id}/board?gateId=${g.id}`)}
             onCloseGate={setClosingGate}
+            onReopenGate={setReopeningGate}
           />
         ))}
         <UnscheduledCard count={unscheduledCount} onOpen={() => navigate(`/projects/${id}/board?gateId=unscheduled`)} />
@@ -76,6 +81,28 @@ export default function RoadmapOverview() {
           onClose={() => setClosingGate(null)}
           onDone={() => {
             setClosingGate(null);
+            loadProjectMeta(id);
+            boardApi.get(id).then(({ data }) => setUnscheduledCount(data.unassignedCount));
+          }}
+        />
+      )}
+
+      {reopeningGate && (
+        <ReopenGateModal
+          gate={reopeningGate}
+          onClose={() => setReopeningGate(null)}
+          onDone={() => {
+            setReopeningGate(null);
+            loadProjectMeta(id);
+          }}
+        />
+      )}
+
+      {settingsOpen && (
+        <ProjectSettingsModal
+          projectId={id}
+          onClose={() => {
+            setSettingsOpen(false);
             loadProjectMeta(id);
             boardApi.get(id).then(({ data }) => setUnscheduledCount(data.unassignedCount));
           }}

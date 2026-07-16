@@ -6,6 +6,7 @@ import ListView from '../components/board/ListView';
 import BoardToolbar from '../components/board/BoardToolbar';
 import BoardFilterBar from '../components/board/BoardFilterBar';
 import TaskDetailModal from '../components/board/TaskDetailModal';
+import ProjectSettingsModal from '../components/settings/ProjectSettingsModal';
 import { useBoardStore } from '../store/boardStore';
 import { projectsApi } from '../api/endpoints';
 import { EMPTY_FILTERS, filterTasks } from '../utils/board';
@@ -33,6 +34,7 @@ export default function ProjectBoard() {
   const [projectTitle, setProjectTitle] = useState('');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [openTask, setOpenTask] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const highlightTaskId = searchParams.get('taskId');
   const highlightApplied = useRef(false);
 
@@ -64,6 +66,16 @@ export default function ProjectBoard() {
     if (isUnscheduledView) cols = cols.map((col) => ({ ...col, tasks: col.tasks.filter((t) => !t.gateId) }));
     return cols.map((col) => ({ ...col, tasks: filterTasks(col.tasks, filters) }));
   }, [columns, isUnscheduledView, filters]);
+
+  // Gate-scoped board: columns are already filtered to that gate's tasks by
+  // the backend (loadBoard(id, gateId)), so "that gate's statuses" is just
+  // whichever status columns currently hold at least one of its tasks.
+  // Whole-project / Unscheduled views (gateId null) get every status.
+  const statusOptionsForModal = useMemo(() => {
+    if (!gateId) return statuses;
+    const used = columns.filter((c) => c.tasks.length).map((c) => c.status);
+    return used.length ? used : statuses;
+  }, [gateId, columns, statuses]);
 
   const currentGate = gates.find((g) => g.id === gateId);
   const workflowContext = useMemo(
@@ -106,7 +118,7 @@ export default function ProjectBoard() {
         </div>
         <div className="flex items-center gap-2">
           <BoardToolbar view={view} onViewChange={setView} sortKey={sortKey} onSortChange={setSortKey} />
-          <button className="btn-icon" onClick={() => navigate(`/projects/${id}/settings`)} aria-label="Project settings">
+          <button className="btn-icon" onClick={() => setSettingsOpen(true)} aria-label="Project settings">
             <Settings size={16} />
           </button>
         </div>
@@ -126,10 +138,21 @@ export default function ProjectBoard() {
         <TaskDetailModal
           task={openTask}
           statuses={statuses}
+          statusOptions={statusOptionsForModal}
           gates={gates}
           tags={tags}
           onClose={() => setOpenTask(null)}
           onUpdated={handleTaskUpdated}
+        />
+      )}
+
+      {settingsOpen && (
+        <ProjectSettingsModal
+          projectId={id}
+          onClose={() => {
+            setSettingsOpen(false);
+            loadBoard(id, gateId);
+          }}
         />
       )}
     </main>

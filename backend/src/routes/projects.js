@@ -68,6 +68,12 @@ router.patch('/:id', async (req, res, next) => {
     if (typeof req.body.title === 'string' && req.body.title.trim()) data.title = req.body.title.trim();
     if (typeof req.body.description === 'string') data.description = req.body.description.trim() || null;
     if (Array.isArray(req.body.order)) data.order = serializeOrder(req.body.order);
+    if (req.body.rolloverMode) {
+      if (!['AUTOMATIC', 'ASK_FIRST'].includes(req.body.rolloverMode)) {
+        return res.status(400).json({ message: 'rolloverMode must be AUTOMATIC or ASK_FIRST' });
+      }
+      data.rolloverMode = req.body.rolloverMode;
+    }
     const updated = await prisma.project.update({ where: { id: project.id }, data, include: projectInclude });
     res.json({ ...toClientProject(updated), stats: taskCounts(updated) });
   } catch (error) {

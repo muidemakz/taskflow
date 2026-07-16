@@ -4,10 +4,14 @@ import toast from 'react-hot-toast';
 import Modal from '../Modal';
 import DeleteConfirmModal from '../DeleteConfirmModal';
 import TagMultiSelect from '../TagMultiSelect';
+import TaskActivityTimeline from './TaskActivityTimeline';
 import { boardApi, tagsApi, tasksApi } from '../../api/endpoints';
 import { useBoardStore } from '../../store/boardStore';
 
-export default function TaskDetailModal({ task, statuses, gates, tags, onClose, onUpdated }) {
+// statusOptions scopes the dropdown's choices (gate-scoped board vs.
+// whole-project board); statuses stays the full project list so the
+// current status can always be resolved even if it falls outside that scope.
+export default function TaskDetailModal({ task, statuses, statusOptions, gates, tags, onClose, onUpdated }) {
   const updateTaskFields = useBoardStore((s) => s.updateTaskFields);
   const refreshBoard = useBoardStore((s) => s.refreshBoard);
   const loadProjectMeta = useBoardStore((s) => s.loadProjectMeta);
@@ -19,7 +23,14 @@ export default function TaskDetailModal({ task, statuses, gates, tags, onClose, 
   const [showGatePicker, setShowGatePicker] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const status = statuses.find((s) => s.id === current.statusId);
+  const options = statusOptions?.length ? statusOptions : statuses;
+  // The current status can fall outside a gate-scoped dropdown's options
+  // (e.g. a task sitting in "Done" while the gate view only shows statuses
+  // its own tasks currently use) -- always include it so the select never
+  // silently shows the wrong value.
+  const statusSelectOptions = options.some((s) => s.id === current.statusId)
+    ? options
+    : [...options, ...statuses.filter((s) => s.id === current.statusId)];
 
   useEffect(() => {
     boardApi.taskRoadmaps(task.id).then(({ data }) => setRoadmapEntries(data.entries));
@@ -93,13 +104,19 @@ export default function TaskDetailModal({ task, statuses, gates, tags, onClose, 
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        {status && <span className="chip bg-slate-100 text-muted">{status.name}</span>}
         {roadmapCount > 1 && (
           <span className="chip bg-purple-50 text-purple-700"><Layers size={11} className="mr-1" />Counts in {roadmapCount} roadmaps</span>
         )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Status</label>
+          <select className="field" value={current.statusId || ''} onChange={(e) => patch({ statusId: e.target.value })}>
+            {statusSelectOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Gate</label>
           <select
@@ -108,7 +125,9 @@ export default function TaskDetailModal({ task, statuses, gates, tags, onClose, 
             onChange={(e) => patch({ gateId: e.target.value || null })}
           >
             <option value="">Unscheduled</option>
-            {gates.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            {gates.map((g) => (
+              <option key={g.id} value={g.id}>{g.name}{g.status === 'CLOSED' ? ' (Closed)' : ''}</option>
+            ))}
           </select>
         </div>
 
@@ -230,6 +249,11 @@ export default function TaskDetailModal({ task, statuses, gates, tags, onClose, 
           <p className="mt-1 text-xs text-muted">Status stays shared -- there's no separate status to choose per placement.</p>
         </div>
       )}
+
+      <div className="mt-6 border-t border-border pt-4">
+        <label className="mb-3 block text-xs font-semibold uppercase tracking-wide text-muted">Activity</label>
+        <TaskActivityTimeline taskId={current.id} refreshKey={current.updatedAt} />
+      </div>
 
       <div className="mt-6 flex justify-end border-t border-border pt-4">
         <button className="btn-ghost text-red-700 hover:bg-red-50" onClick={() => setDeleting(true)}>

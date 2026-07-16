@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { requireProject, requireTask } from '../lib/ownership.js';
 import { appendPosition } from '../lib/position.js';
+import { logActivity } from '../lib/activity.js';
 
 const router = Router();
 
@@ -128,20 +129,34 @@ router.post('/proposals/:id/accept', async (req, res, next) => {
   try {
     const proposal = await prisma.syncProposal.findFirst({
       where: { id: req.params.id, task: { project: { ownerId: req.auth.sub } } },
-      include: { task: true }
+      include: { task: true, proposedStatus: { select: { name: true } } }
     });
     if (!proposal) return res.status(404).json({ message: 'Proposal not found' });
     if (proposal.status !== 'PENDING') return res.status(400).json({ message: `Proposal is already ${proposal.status}` });
 
     const maxPosition = (await prisma.task.aggregate({ where: { statusId: proposal.proposedStatusId }, _max: { position: true } }))._max.position;
+    const oldStatus = proposal.task.statusId
+      ? await prisma.status.findUnique({ where: { id: proposal.task.statusId }, select: { name: true } })
+      : null;
 
-    const [updatedTask] = await prisma.$transaction([
-      prisma.task.update({
-        where: { id: proposal.taskId },
-        data: { statusId: proposal.proposedStatusId, position: appendPosition(maxPosition) }
-      }),
-      prisma.syncProposal.update({ where: { id: proposal.id }, data: { status: 'ACCEPTED', decidedAt: new Date() } })
-    ]);
+    const [updatedTask] = await prisma.$transaction(async (tx) => {
+      const result = await Promise.all([
+        tx.task.update({
+          where: { id: proposal.taskId },
+          data: { statusId: proposal.proposedStatusId, position: appendPosition(maxPosition) }
+        }),
+        tx.syncProposal.update({ where: { id: proposal.id }, data: { status: 'ACCEPTED', decidedAt: new Date() } })
+      ]);
+      await logActivity(tx, {
+        taskId: proposal.taskId,
+        eventType: 'moved_by_sync_proposal',
+        oldValue: oldStatus?.name ?? null,
+        newValue: proposal.proposedStatus.name,
+        reason: proposal.reason,
+        changedById: req.auth.sub
+      });
+      return result;
+    });
 
     res.json({ task: updatedTask, proposalId: proposal.id, status: 'ACCEPTED' });
   } catch (error) {

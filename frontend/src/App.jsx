@@ -9,7 +9,6 @@ import Dashboard from './pages/Dashboard';
 import ProjectDetail from './pages/ProjectDetail';
 import ProjectBoard from './pages/ProjectBoard';
 import RoadmapOverview from './pages/RoadmapOverview';
-import ProjectSettings from './pages/ProjectSettings';
 import Trash from './pages/Trash';
 import MyTasks from './pages/MyTasks';
 import CatchUp from './pages/CatchUp';
@@ -55,7 +54,6 @@ export default function App() {
         <Route path="/projects/:id" element={<ProjectDetail />} />
         <Route path="/projects/:id/board" element={<ProjectBoard />} />
         <Route path="/projects/:id/roadmap" element={<RoadmapOverview />} />
-        <Route path="/projects/:id/settings" element={<ProjectSettings />} />
         <Route path="/trash" element={<Trash />} />
         <Route path="/my-tasks" element={<MyTasks />} />
         <Route path="/review" element={<CatchUp />} />
