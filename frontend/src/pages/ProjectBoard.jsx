@@ -245,6 +245,7 @@ export default function ProjectBoard() {
           statusOptions={statusOptionsForModal}
           gates={gates}
           tags={tags}
+          promptRulesCategoryId={project.promptRulesCategoryId}
           onClose={() => setOpenTask(null)}
           onUpdated={handleTaskUpdated}
         />

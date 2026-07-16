@@ -123,6 +123,12 @@ export const annotationsApi = {
   remove: (projectId, docId, annotationId) => api.delete(`/api/projects/${projectId}/docs/${docId}/annotations/${annotationId}`)
 };
 
+export const promptsApi = {
+  list: (projectId, taskId) => api.get(`/api/projects/${projectId}/tasks/${taskId}/prompts`, { silent: true }),
+  create: (projectId, taskId, payload) => api.post(`/api/projects/${projectId}/tasks/${taskId}/prompts`, payload),
+  markUsed: (promptId) => api.patch(`/api/prompts/${promptId}/mark-used`)
+};
+
 export const syncApi = {
   proposals: (status) => api.get('/api/sync/proposals', { params: { status } }),
   accept: (id) => api.post(`/api/sync/proposals/${id}/accept`),
