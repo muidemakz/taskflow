@@ -55,3 +55,10 @@ export async function requireDocCategory(categoryId, userId) {
     include: { project: true }
   });
 }
+
+export async function requirePromptVersion(promptVersionId, userId) {
+  return prisma.promptVersion.findFirst({
+    where: { id: promptVersionId, task: { deletedAt: null, project: { ownerId: userId, deletedAt: null } } },
+    include: { task: true }
+  });
+}

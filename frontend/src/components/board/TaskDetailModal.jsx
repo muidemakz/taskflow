@@ -8,13 +8,14 @@ import EntityShareModal from '../EntityShareModal';
 import TagMultiSelect from '../TagMultiSelect';
 import TaskActivityTimeline from './TaskActivityTimeline';
 import LinkedDocsPickerModal from './LinkedDocsPickerModal';
+import PromptsPanel from './PromptsPanel';
 import { boardApi, tagsApi, tasksApi, taskDocLinksApi } from '../../api/endpoints';
 import { useBoardStore } from '../../store/boardStore';
 
 // statusOptions scopes the dropdown's choices (gate-scoped board vs.
 // whole-project board); statuses stays the full project list so the
 // current status can always be resolved even if it falls outside that scope.
-export default function TaskDetailModal({ task, statuses, statusOptions, gates, tags, onClose, onUpdated }) {
+export default function TaskDetailModal({ task, statuses, statusOptions, gates, tags, promptRulesCategoryId, onClose, onUpdated }) {
   const navigate = useNavigate();
   const updateTaskFields = useBoardStore((s) => s.updateTaskFields);
   const refreshBoard = useBoardStore((s) => s.refreshBoard);
@@ -326,6 +327,8 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
           </button>
         </div>
       </div>
+
+      <PromptsPanel projectId={current.projectId} taskId={current.id} promptRulesCategoryId={promptRulesCategoryId} />
 
       <div className="mt-6 border-t border-border pt-4">
         <label className="mb-3 block text-xs font-semibold uppercase tracking-wide text-muted">Activity</label>

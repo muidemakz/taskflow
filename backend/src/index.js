@@ -21,6 +21,7 @@ import syncRoutes from './routes/sync.js';
 import trashRoutes from './routes/trash.js';
 import docRoutes from './routes/docs.js';
 import docCategoryRoutes from './routes/docCategories.js';
+import promptRoutes from './routes/prompts.js';
 import { requireAuth } from './middleware/auth.js';
 import { adminOnly } from './middleware/adminOnly.js';
 
@@ -65,6 +66,7 @@ app.use('/api', requireAuth, boardRoutes);
 app.use('/api', requireAuth, tagRoutes);
 app.use('/api', requireAuth, docRoutes);
 app.use('/api', requireAuth, docCategoryRoutes);
+app.use('/api', requireAuth, promptRoutes);
 app.use('/api/search', requireAuth, searchRoutes);
 app.use('/api/me', requireAuth, meRoutes);
 app.use('/api/tokens', requireAuth, tokenRoutes);

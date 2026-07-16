@@ -20,6 +20,11 @@ export default function ProjectSettingsModal({ projectId, onClose }) {
   const tags = useBoardStore((s) => s.tags);
   const [rolloverMode, setRolloverMode] = useState(null);
   const [initialRolloverMode, setInitialRolloverMode] = useState(null);
+  // undefined (not null) means "not loaded yet" -- promptRulesCategoryId's
+  // real value is legitimately null (no rules category set), so null can't
+  // double as the loading sentinel the way it does for rolloverMode.
+  const [promptRulesCategoryId, setPromptRulesCategoryId] = useState(undefined);
+  const [initialPromptRulesCategoryId, setInitialPromptRulesCategoryId] = useState(undefined);
   const [categories, setCategories] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -37,14 +42,18 @@ export default function ProjectSettingsModal({ projectId, onClose }) {
     projectsApi.detail(projectId).then(({ data }) => {
       setRolloverMode(data.rolloverMode);
       setInitialRolloverMode(data.rolloverMode);
+      setPromptRulesCategoryId(data.promptRulesCategoryId ?? null);
+      setInitialPromptRulesCategoryId(data.promptRulesCategoryId ?? null);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
-  const hasUnsavedChanges = rolloverMode !== null && rolloverMode !== initialRolloverMode;
+  const rolloverChanged = rolloverMode !== null && rolloverMode !== initialRolloverMode;
+  const promptRulesCategoryChanged = initialPromptRulesCategoryId !== undefined && promptRulesCategoryId !== initialPromptRulesCategoryId;
+  const hasUnsavedChanges = rolloverChanged || promptRulesCategoryChanged;
 
   function handleCancel() {
-    if (hasUnsavedChanges && !confirm('You changed the rollover mode without saving. Discard that change?')) return;
+    if (hasUnsavedChanges && !confirm('You changed settings without saving. Discard those changes?')) return;
     onClose();
   }
 
@@ -52,7 +61,10 @@ export default function ProjectSettingsModal({ projectId, onClose }) {
     setSaving(true);
     try {
       if (hasUnsavedChanges) {
-        await projectsApi.update(projectId, { rolloverMode });
+        const payload = {};
+        if (rolloverChanged) payload.rolloverMode = rolloverMode;
+        if (promptRulesCategoryChanged) payload.promptRulesCategoryId = promptRulesCategoryId;
+        await projectsApi.update(projectId, payload);
         toast.success('Settings saved');
       }
       onClose();
@@ -109,10 +121,25 @@ export default function ProjectSettingsModal({ projectId, onClose }) {
         <TagSettingsList tags={tags} onChange={refresh} />
       </section>
 
-      <section>
+      <section className="mb-8">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Doc categories</h2>
         <p className="mb-3 text-sm text-muted">Renaming a category never moves its docs -- it's a label change on the same category.</p>
         <DocCategorySettingsList projectId={projectId} categories={categories} onChange={refreshCategories} />
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Prompt rules category</h2>
+        <p className="mb-3 text-sm text-muted">When copying a prompt, docs from this category can be prepended as rules. Leave unset to skip that step.</p>
+        {promptRulesCategoryId !== undefined && (
+          <select
+            className="field"
+            value={promptRulesCategoryId || ''}
+            onChange={(e) => setPromptRulesCategoryId(e.target.value || null)}
+          >
+            <option value="">None</option>
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
       </section>
     </Modal>
   );

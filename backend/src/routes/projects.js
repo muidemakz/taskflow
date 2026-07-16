@@ -95,6 +95,15 @@ router.patch('/:id', async (req, res, next) => {
       }
       data.rolloverMode = req.body.rolloverMode;
     }
+    if ('promptRulesCategoryId' in req.body) {
+      if (req.body.promptRulesCategoryId) {
+        const category = await prisma.docCategory.findFirst({ where: { id: req.body.promptRulesCategoryId, projectId: project.id, deletedAt: null } });
+        if (!category) return res.status(400).json({ message: 'promptRulesCategoryId does not belong to this project' });
+        data.promptRulesCategoryId = category.id;
+      } else {
+        data.promptRulesCategoryId = null;
+      }
+    }
     const updated = await prisma.project.update({ where: { id: project.id }, data, include: projectInclude });
     res.json(await withMetrics(updated));
   } catch (error) {

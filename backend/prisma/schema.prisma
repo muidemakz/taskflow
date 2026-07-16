@@ -71,6 +71,14 @@ model Project {
   tags         Tag[]
   docEntries   DocEntry[]
   docCategories DocCategory[]
+
+  // --- Prompt 5: Prompt system ---
+  // Nullable -- a project with no rules category simply skips the
+  // prepend-rules step when copying a prompt. SetNull (not Cascade) so
+  // deleting the category just turns rules-prepending off, it never takes
+  // the project down with it.
+  promptRulesCategoryId String?
+  promptRulesCategory   DocCategory? @relation("ProjectPromptRulesCategory", fields: [promptRulesCategoryId], references: [id], onDelete: SetNull)
 }
 
 model Group {
@@ -144,6 +152,7 @@ model Task {
   syncProposals  SyncProposal[]
   activity       TaskActivity[]
   docLinks       TaskDocLink[]
+  promptVersions PromptVersion[]
 
   // NULL externalId rows are each distinct under Postgres unique-constraint
   // semantics, so this is only enforced when externalId is actually set --
@@ -370,6 +379,12 @@ model DocCategory {
 
   docs DocEntry[]
 
+  // Back-relation for Project.promptRulesCategory -- distinct name required
+  // since this is a second, independent relation between Project and
+  // DocCategory (the first being the ownership FK above). In practice a
+  // category is only ever pointed to by its own owning project.
+  promptRulesForProjects Project[] @relation("ProjectPromptRulesCategory")
+
   @@unique([projectId, name])
 }
 
@@ -426,4 +441,39 @@ model DocAnnotation {
   deletedAt  DateTime?
 
   @@index([docEntryId])
+}
+
+// --- Prompt 5: Prompt system (manual, non-AI) ---
+
+enum PromptTargetTool {
+  FIGMA_AI
+  CLAUDE_CODE
+  FIGMA_MAKE
+  OTHER
+}
+
+enum PromptStatus {
+  DRAFT
+  FINAL
+  USED
+}
+
+// Append-only, same shape as TaskActivity: no update endpoint, "changing"
+// a prompt creates a new row rather than mutating the last one. `generated`
+// is always false in this phase -- it exists now so Prompt 6 (AI
+// generation) can start writing generated: true rows without a schema
+// change.
+model PromptVersion {
+  id            String           @id @default(cuid())
+  task          Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId        String
+  body          String
+  targetTool    PromptTargetTool
+  status        PromptStatus     @default(DRAFT)
+  directionNote String?
+  generated     Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  usedAt        DateTime?
+
+  @@index([taskId, createdAt])
 }
