@@ -93,6 +93,34 @@ export const activityApi = {
   list: (taskId) => api.get(`/api/tasks/${taskId}/activity`, { silent: true })
 };
 
+export const docCategoriesApi = {
+  list: (projectId) => api.get(`/api/projects/${projectId}/categories`),
+  create: (projectId, payload) => api.post(`/api/projects/${projectId}/categories`, payload),
+  rename: (catId, name) => api.patch(`/api/categories/${catId}`, { name }),
+  remove: (projectId, catId, payload) => api.delete(`/api/projects/${projectId}/categories/${catId}`, { data: payload })
+};
+
+export const docsApi = {
+  list: (projectId, params) => api.get(`/api/projects/${projectId}/docs`, { params }),
+  create: (projectId, payload) => api.post(`/api/projects/${projectId}/docs`, payload),
+  detail: (projectId, docId) => api.get(`/api/projects/${projectId}/docs/${docId}`),
+  update: (projectId, docId, payload) => api.patch(`/api/projects/${projectId}/docs/${docId}`, payload),
+  remove: (projectId, docId) => api.delete(`/api/projects/${projectId}/docs/${docId}`),
+  linkedTasks: (projectId, docId) => api.get(`/api/projects/${projectId}/docs/${docId}/tasks`, { silent: true })
+};
+
+export const taskDocLinksApi = {
+  list: (projectId, taskId) => api.get(`/api/projects/${projectId}/tasks/${taskId}/docs`, { silent: true }),
+  add: (projectId, taskId, docId) => api.post(`/api/projects/${projectId}/tasks/${taskId}/docs`, { docId }),
+  remove: (projectId, taskId, docId) => api.delete(`/api/projects/${projectId}/tasks/${taskId}/docs/${docId}`)
+};
+
+export const annotationsApi = {
+  list: (projectId, docId) => api.get(`/api/projects/${projectId}/docs/${docId}/annotations`, { silent: true }),
+  create: (projectId, docId, payload) => api.post(`/api/projects/${projectId}/docs/${docId}/annotations`, payload),
+  remove: (projectId, docId, annotationId) => api.delete(`/api/projects/${projectId}/docs/${docId}/annotations/${annotationId}`)
+};
+
 export const syncApi = {
   proposals: (status) => api.get('/api/sync/proposals', { params: { status } }),
   accept: (id) => api.post(`/api/sync/proposals/${id}/accept`),

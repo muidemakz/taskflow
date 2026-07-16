@@ -41,3 +41,17 @@ export async function requireTag(tagId, userId) {
     include: { project: true }
   });
 }
+
+export async function requireDocEntry(docId, userId) {
+  return prisma.docEntry.findFirst({
+    where: { id: docId, deletedAt: null, project: { ownerId: userId, deletedAt: null } },
+    include: { project: true }
+  });
+}
+
+export async function requireDocCategory(categoryId, userId) {
+  return prisma.docCategory.findFirst({
+    where: { id: categoryId, deletedAt: null, project: { ownerId: userId, deletedAt: null } },
+    include: { project: true }
+  });
+}

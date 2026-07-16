@@ -36,4 +36,26 @@
   .progress-fill {
     @apply h-full rounded-full bg-gradient-to-r from-primary to-[#16a56f] transition-all duration-300;
   }
+
+  /* Minimal markdown body styling for rendered DocEntry content -- no
+     @tailwindcss/typography dependency for this one use site. */
+  .prose-doc h1, .prose-doc h2, .prose-doc h3, .prose-doc h4 {
+    @apply mb-3 mt-6 font-bold leading-tight first:mt-0;
+  }
+  .prose-doc h1 { @apply text-2xl; }
+  .prose-doc h2 { @apply text-xl; }
+  .prose-doc h3 { @apply text-lg; }
+  .prose-doc h4 { @apply text-base; }
+  .prose-doc p { @apply mb-4 leading-relaxed; }
+  .prose-doc ul { @apply mb-4 list-disc pl-6; }
+  .prose-doc ol { @apply mb-4 list-decimal pl-6; }
+  .prose-doc li { @apply mb-1; }
+  .prose-doc a { @apply text-primary underline; }
+  .prose-doc blockquote { @apply mb-4 border-l-2 border-[#d8e0ea] pl-4 italic text-muted; }
+  .prose-doc code { @apply rounded bg-slate-100 px-1 py-0.5 text-[0.85em]; }
+  .prose-doc pre { @apply mb-4 overflow-x-auto rounded-md bg-slate-900 p-4 text-slate-100; }
+  .prose-doc pre code { @apply bg-transparent p-0 text-inherit; }
+  .prose-doc hr { @apply my-6 border-border; }
+  .prose-doc table { @apply mb-4 w-full border-collapse text-sm; }
+  .prose-doc th, .prose-doc td { @apply border border-border px-2 py-1 text-left; }
 }

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { defaultOrder, orderArray, projectInclude, serializeOrder, taskCounts, toClientProject } from '../utils/project.js';
 import { appendPosition } from '../lib/position.js';
+import { STARTER_CATEGORIES } from './docCategories.js';
 
 const router = Router();
 
@@ -41,6 +42,9 @@ router.post('/', async (req, res, next) => {
       });
       await tx.status.createMany({
         data: DEFAULT_STATUSES.map((status) => ({ ...status, projectId: created.id }))
+      });
+      await tx.docCategory.createMany({
+        data: STARTER_CATEGORIES.map((name) => ({ name, projectId: created.id }))
       });
       return tx.project.findUnique({ where: { id: created.id }, include: projectInclude });
     });
@@ -93,16 +97,18 @@ router.delete('/:id', async (req, res, next) => {
     const now = new Date();
     const result = await prisma.$transaction(async (tx) => {
       const roadmap = await tx.roadmap.findUnique({ where: { projectId: project.id } });
-      const [tasks, groups, gates, tags] = await Promise.all([
+      const [tasks, groups, gates, tags, docs, categories] = await Promise.all([
         tx.task.updateMany({ where: { projectId: project.id, deletedAt: null }, data: { deletedAt: now } }),
         tx.group.updateMany({ where: { projectId: project.id, deletedAt: null }, data: { deletedAt: now } }),
         roadmap
           ? tx.gate.updateMany({ where: { roadmapId: roadmap.id, deletedAt: null }, data: { deletedAt: now } })
           : Promise.resolve({ count: 0 }),
-        tx.tag.updateMany({ where: { projectId: project.id, deletedAt: null }, data: { deletedAt: now } })
+        tx.tag.updateMany({ where: { projectId: project.id, deletedAt: null }, data: { deletedAt: now } }),
+        tx.docEntry.updateMany({ where: { projectId: project.id, deletedAt: null }, data: { deletedAt: now } }),
+        tx.docCategory.updateMany({ where: { projectId: project.id, deletedAt: null }, data: { deletedAt: now } })
       ]);
       await tx.project.update({ where: { id: project.id }, data: { deletedAt: now } });
-      return { tasks: tasks.count, groups: groups.count, gates: gates.count, tags: tags.count };
+      return { tasks: tasks.count, groups: groups.count, gates: gates.count, tags: tags.count, docs: docs.count, categories: categories.count };
     });
 
     res.json({

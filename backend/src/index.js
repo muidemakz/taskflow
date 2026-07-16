@@ -19,6 +19,8 @@ import meRoutes from './routes/me.js';
 import tokenRoutes from './routes/tokens.js';
 import syncRoutes from './routes/sync.js';
 import trashRoutes from './routes/trash.js';
+import docRoutes from './routes/docs.js';
+import docCategoryRoutes from './routes/docCategories.js';
 import { requireAuth } from './middleware/auth.js';
 import { adminOnly } from './middleware/adminOnly.js';
 
@@ -61,6 +63,8 @@ app.use('/api', requireAuth, roadmapRoutes);
 app.use('/api', requireAuth, gateRoutes);
 app.use('/api', requireAuth, boardRoutes);
 app.use('/api', requireAuth, tagRoutes);
+app.use('/api', requireAuth, docRoutes);
+app.use('/api', requireAuth, docCategoryRoutes);
 app.use('/api/search', requireAuth, searchRoutes);
 app.use('/api/me', requireAuth, meRoutes);
 app.use('/api/tokens', requireAuth, tokenRoutes);

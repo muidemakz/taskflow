@@ -5,8 +5,9 @@ import StatusSettingsList from './StatusSettingsList';
 import GateSettingsList from './GateSettingsList';
 import TagSettingsList from './TagSettingsList';
 import GateImportPanel from './GateImportPanel';
+import DocCategorySettingsList from './DocCategorySettingsList';
 import { useBoardStore } from '../../store/boardStore';
-import { projectsApi } from '../../api/endpoints';
+import { projectsApi, docCategoriesApi } from '../../api/endpoints';
 
 // Status/Gate/Tag CRUD below stay instant-save, same as the settings page
 // they replace -- each row already persists itself the moment it changes.
@@ -19,14 +20,20 @@ export default function ProjectSettingsModal({ projectId, onClose }) {
   const tags = useBoardStore((s) => s.tags);
   const [rolloverMode, setRolloverMode] = useState(null);
   const [initialRolloverMode, setInitialRolloverMode] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [saving, setSaving] = useState(false);
 
   function refresh() {
     return loadProjectMeta(projectId);
   }
 
+  function refreshCategories() {
+    docCategoriesApi.list(projectId).then(({ data }) => setCategories(data));
+  }
+
   useEffect(() => {
     refresh();
+    refreshCategories();
     projectsApi.detail(projectId).then(({ data }) => {
       setRolloverMode(data.rolloverMode);
       setInitialRolloverMode(data.rolloverMode);
@@ -97,9 +104,15 @@ export default function ProjectSettingsModal({ projectId, onClose }) {
         )}
       </section>
 
-      <section>
+      <section className="mb-8">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Tags</h2>
         <TagSettingsList tags={tags} onChange={refresh} />
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Doc categories</h2>
+        <p className="mb-3 text-sm text-muted">Renaming a category never moves its docs -- it's a label change on the same category.</p>
+        <DocCategorySettingsList projectId={projectId} categories={categories} onChange={refreshCategories} />
       </section>
     </Modal>
   );

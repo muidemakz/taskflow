@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Layers, Plus, Star, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, FileText, Layers, Plus, Star, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../Modal';
 import DeleteConfirmModal from '../DeleteConfirmModal';
 import TagMultiSelect from '../TagMultiSelect';
 import TaskActivityTimeline from './TaskActivityTimeline';
-import { boardApi, tagsApi, tasksApi } from '../../api/endpoints';
+import LinkedDocsPickerModal from './LinkedDocsPickerModal';
+import { boardApi, tagsApi, tasksApi, taskDocLinksApi } from '../../api/endpoints';
 import { useBoardStore } from '../../store/boardStore';
 
 // statusOptions scopes the dropdown's choices (gate-scoped board vs.
 // whole-project board); statuses stays the full project list so the
 // current status can always be resolved even if it falls outside that scope.
 export default function TaskDetailModal({ task, statuses, statusOptions, gates, tags, onClose, onUpdated }) {
+  const navigate = useNavigate();
   const updateTaskFields = useBoardStore((s) => s.updateTaskFields);
   const refreshBoard = useBoardStore((s) => s.refreshBoard);
   const loadProjectMeta = useBoardStore((s) => s.loadProjectMeta);
@@ -22,6 +25,8 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
   const [roadmapEntries, setRoadmapEntries] = useState([]);
   const [showGatePicker, setShowGatePicker] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [linkedDocs, setLinkedDocs] = useState([]);
+  const [showDocPicker, setShowDocPicker] = useState(false);
 
   const options = statusOptions?.length ? statusOptions : statuses;
   // The current status can fall outside a gate-scoped dropdown's options
@@ -35,6 +40,24 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
   useEffect(() => {
     boardApi.taskRoadmaps(task.id).then(({ data }) => setRoadmapEntries(data.entries));
   }, [task.id]);
+
+  function loadLinkedDocs() {
+    taskDocLinksApi.list(current.projectId, task.id).then(({ data }) => setLinkedDocs(data));
+  }
+
+  useEffect(() => {
+    loadLinkedDocs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task.id]);
+
+  async function removeDocLink(docId) {
+    try {
+      await taskDocLinksApi.remove(current.projectId, task.id, docId);
+      loadLinkedDocs();
+    } catch {
+      toast.error('Could not remove link');
+    }
+  }
 
   async function patch(payload) {
     try {
@@ -250,6 +273,28 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
         </div>
       )}
 
+      <div className="mt-4">
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Linked docs</label>
+        <div className="flex flex-wrap items-center gap-2">
+          {linkedDocs.map((doc) => (
+            <span key={doc.id} className="chip gap-1 border border-[#d8e0ea] bg-white text-text">
+              <button
+                className="flex items-center gap-1 hover:text-primary"
+                onClick={() => navigate(`/projects/${current.projectId}/docs/${doc.id}`)}
+              >
+                <FileText size={11} /> {doc.title}
+              </button>
+              <button onClick={() => removeDocLink(doc.id)} aria-label={`Remove link to ${doc.title}`} className="text-muted hover:text-red-600">
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+          <button className="btn-icon h-7 w-7" onClick={() => setShowDocPicker(true)} aria-label="Link a doc">
+            <Plus size={14} />
+          </button>
+        </div>
+      </div>
+
       <div className="mt-6 border-t border-border pt-4">
         <label className="mb-3 block text-xs font-semibold uppercase tracking-wide text-muted">Activity</label>
         <TaskActivityTimeline taskId={current.id} refreshKey={current.updatedAt} />
@@ -267,6 +312,16 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
           warning="This task will be moved to Trash, where it can be restored within 30 days."
           onConfirm={confirmDeleteTask}
           onClose={() => setDeleting(false)}
+        />
+      )}
+
+      {showDocPicker && (
+        <LinkedDocsPickerModal
+          projectId={current.projectId}
+          taskId={task.id}
+          linkedDocIds={linkedDocs.map((d) => d.id)}
+          onClose={() => setShowDocPicker(false)}
+          onDone={() => { setShowDocPicker(false); loadLinkedDocs(); }}
         />
       )}
     </Modal>

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import GroupCard from '../components/GroupCard';
+import ProjectTabs from '../components/ProjectTabs';
 import Modal from '../components/Modal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import ProgressBar from '../components/ProgressBar';
@@ -93,6 +94,8 @@ export default function ProjectDetail() {
           </div>
         </div>
       </div>
+
+      <ProjectTabs projectId={id} active="tasks" />
 
       <section className="border-b border-border bg-white/80">
         <div className="mx-auto max-w-6xl px-4 py-4">

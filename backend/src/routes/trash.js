@@ -28,7 +28,9 @@ async function sweepExpiredTrash(ownerId) {
     prisma.task.deleteMany({ where: { deletedAt: { lt: before }, project: { ownerId } } }),
     prisma.group.deleteMany({ where: { deletedAt: { lt: before }, project: { ownerId } } }),
     prisma.gate.deleteMany({ where: { deletedAt: { lt: before }, roadmap: { project: { ownerId } } } }),
-    prisma.tag.deleteMany({ where: { deletedAt: { lt: before }, project: { ownerId } } })
+    prisma.tag.deleteMany({ where: { deletedAt: { lt: before }, project: { ownerId } } }),
+    prisma.docEntry.deleteMany({ where: { deletedAt: { lt: before }, project: { ownerId } } }),
+    prisma.docCategory.deleteMany({ where: { deletedAt: { lt: before }, project: { ownerId } } })
   ]);
 }
 
@@ -43,12 +45,14 @@ router.get('/', async (req, res, next) => {
     }
 
     const projectScope = projectId ? { id: projectId } : { ownerId: req.auth.sub };
-    const [projects, tasks, groups, gates, tags] = await Promise.all([
+    const [projects, tasks, groups, gates, tags, docs, categories] = await Promise.all([
       prisma.project.findMany({ where: { ownerId: req.auth.sub, deletedAt: { not: null }, ...(projectId ? { id: projectId } : {}) } }),
       prisma.task.findMany({ where: { deletedAt: { not: null }, project: projectScope } }),
       prisma.group.findMany({ where: { deletedAt: { not: null }, project: projectScope } }),
       prisma.gate.findMany({ where: { deletedAt: { not: null }, roadmap: { project: projectScope } } }),
-      prisma.tag.findMany({ where: { deletedAt: { not: null }, project: projectScope } })
+      prisma.tag.findMany({ where: { deletedAt: { not: null }, project: projectScope } }),
+      prisma.docEntry.findMany({ where: { deletedAt: { not: null }, project: projectScope } }),
+      prisma.docCategory.findMany({ where: { deletedAt: { not: null }, project: projectScope } })
     ]);
 
     res.json({
@@ -58,7 +62,9 @@ router.get('/', async (req, res, next) => {
         ...tasks.map((t) => ({ type: 'task', id: t.id, title: t.title, projectId: t.projectId, deletedAt: t.deletedAt })),
         ...groups.map((g) => ({ type: 'group', id: g.id, title: g.title, projectId: g.projectId, deletedAt: g.deletedAt })),
         ...gates.map((g) => ({ type: 'gate', id: g.id, title: g.name, deletedAt: g.deletedAt })),
-        ...tags.map((t) => ({ type: 'tag', id: t.id, title: t.name, projectId: t.projectId, deletedAt: t.deletedAt }))
+        ...tags.map((t) => ({ type: 'tag', id: t.id, title: t.name, projectId: t.projectId, deletedAt: t.deletedAt })),
+        ...docs.map((d) => ({ type: 'doc', id: d.id, title: d.title, projectId: d.projectId, deletedAt: d.deletedAt })),
+        ...categories.map((c) => ({ type: 'category', id: c.id, title: c.name, projectId: c.projectId, deletedAt: c.deletedAt }))
       ]
     });
   } catch (error) {
@@ -84,6 +90,8 @@ router.post('/:type/:id/restore', async (req, res, next) => {
         prisma.task.updateMany({ where: { projectId: project.id, deletedAt: { not: null } }, data: { deletedAt: null } }),
         prisma.group.updateMany({ where: { projectId: project.id, deletedAt: { not: null } }, data: { deletedAt: null } }),
         prisma.tag.updateMany({ where: { projectId: project.id, deletedAt: { not: null } }, data: { deletedAt: null } }),
+        prisma.docEntry.updateMany({ where: { projectId: project.id, deletedAt: { not: null } }, data: { deletedAt: null } }),
+        prisma.docCategory.updateMany({ where: { projectId: project.id, deletedAt: { not: null } }, data: { deletedAt: null } }),
         ...(roadmap ? [prisma.gate.updateMany({ where: { roadmapId: roadmap.id, deletedAt: { not: null } }, data: { deletedAt: null } })] : [])
       ]);
       return res.json({ restored: 'project', id: project.id });
@@ -117,7 +125,27 @@ router.post('/:type/:id/restore', async (req, res, next) => {
       return res.json({ restored: 'tag', id: tag.id });
     }
 
-    res.status(400).json({ message: 'type must be one of: project, task, group, gate, tag' });
+    if (type === 'doc') {
+      const doc = await prisma.docEntry.findFirst({ where: { id, deletedAt: { not: null }, project: { ownerId: req.auth.sub } } });
+      if (!doc) return res.status(404).json({ message: 'Trashed doc not found' });
+      // Annotations were stamped with the doc's own deletedAt at delete time
+      // (see docs.js), so this restores exactly the ones that came down
+      // with it, not any annotation independently deleted before that.
+      await prisma.$transaction([
+        prisma.docEntry.update({ where: { id: doc.id }, data: { deletedAt: null } }),
+        prisma.docAnnotation.updateMany({ where: { docEntryId: doc.id, deletedAt: doc.deletedAt }, data: { deletedAt: null } })
+      ]);
+      return res.json({ restored: 'doc', id: doc.id });
+    }
+
+    if (type === 'category') {
+      const category = await prisma.docCategory.findFirst({ where: { id, deletedAt: { not: null }, project: { ownerId: req.auth.sub } } });
+      if (!category) return res.status(404).json({ message: 'Trashed category not found' });
+      await prisma.docCategory.update({ where: { id: category.id }, data: { deletedAt: null } });
+      return res.json({ restored: 'category', id: category.id });
+    }
+
+    res.status(400).json({ message: 'type must be one of: project, task, group, gate, tag, doc, category' });
   } catch (error) {
     next(error);
   }
