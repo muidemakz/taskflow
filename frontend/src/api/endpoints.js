@@ -126,7 +126,8 @@ export const annotationsApi = {
 export const promptsApi = {
   list: (projectId, taskId) => api.get(`/api/projects/${projectId}/tasks/${taskId}/prompts`, { silent: true }),
   create: (projectId, taskId, payload) => api.post(`/api/projects/${projectId}/tasks/${taskId}/prompts`, payload),
-  markUsed: (promptId) => api.patch(`/api/prompts/${promptId}/mark-used`)
+  markUsed: (promptId) => api.patch(`/api/prompts/${promptId}/mark-used`),
+  generate: (taskId) => api.post('/api/prompts/generate', { taskId }, { silent: true })
 };
 
 export const syncApi = {

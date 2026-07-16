@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { Sparkles } from 'lucide-react';
 import Modal from '../Modal';
 import { promptsApi } from '../../api/endpoints';
 
@@ -10,6 +11,11 @@ const TARGET_TOOLS = [
   ['OTHER', 'Other']
 ];
 
+// Flag-gated (Prompt 6): [Generate] only renders when the frontend build has
+// AI generation enabled. Backend independently gates the actual call, so
+// this is purely a UI toggle, not the source of truth for access.
+const AI_GENERATION_ENABLED = import.meta.env.VITE_ENABLE_AI_GENERATION === 'true';
+
 // Used for both "Create prompt" (no `current`) and "Change prompt" (current
 // pre-fills the form) -- either way Save always POSTs a new PromptVersion,
 // it never updates one in place.
@@ -18,6 +24,24 @@ export default function PromptFormModal({ projectId, taskId, current, onClose, o
   const [targetTool, setTargetTool] = useState(current?.targetTool || 'CLAUDE_CODE');
   const [directionNote, setDirectionNote] = useState(current?.directionNote || '');
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  // Tracks only whether Generate was used in *this* form session -- reopening
+  // "Change prompt" later starts false again, even if the saved version it's
+  // prefilled from was itself generated.
+  const [wasGenerated, setWasGenerated] = useState(false);
+
+  async function generate() {
+    setGenerating(true);
+    try {
+      const { data } = await promptsApi.generate(taskId);
+      setBody(data.body);
+      setWasGenerated(true);
+    } catch {
+      toast.error('Generation failed. Try again or edit manually.');
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   async function save() {
     if (!body.trim()) return toast.error('Prompt body is required');
@@ -26,7 +50,8 @@ export default function PromptFormModal({ projectId, taskId, current, onClose, o
       const { data } = await promptsApi.create(projectId, taskId, {
         body: body.trim(),
         targetTool,
-        directionNote: directionNote.trim() || undefined
+        directionNote: directionNote.trim() || undefined,
+        generated: wasGenerated
       });
       toast.success(current ? 'New prompt version saved' : 'Prompt created');
       onSaved(data);
@@ -56,7 +81,14 @@ export default function PromptFormModal({ projectId, taskId, current, onClose, o
       </div>
 
       <div className="mb-3">
-        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Prompt body</label>
+        <div className="mb-1 flex items-center justify-between">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-muted">Prompt body</label>
+          {AI_GENERATION_ENABLED && (
+            <button className="btn-ghost h-7" onClick={generate} disabled={generating}>
+              <Sparkles size={13} /> {generating ? 'Generating…' : 'Generate'}
+            </button>
+          )}
+        </div>
         <textarea
           className="field min-h-40 font-mono text-sm"
           value={body}
