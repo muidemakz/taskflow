@@ -1,10 +1,17 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import prisma from '../lib/prisma.js';
 import { requireProject, requireTask, requireGate, requireStatus } from '../lib/ownership.js';
 import { appendPosition } from '../lib/position.js';
 import { logActivityMany } from '../lib/activity.js';
 
 const router = Router();
+
+function shareUrlFor(token) {
+  if (!token) return null;
+  const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
+  return `${frontend.replace(/\/$/, '')}/share/${token}`;
+}
 
 function serializeTask(task) {
   return {
@@ -215,6 +222,22 @@ router.get('/tasks/:taskId/activity', async (req, res, next) => {
       orderBy: { changedAt: 'desc' }
     });
     res.json(activity);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Token is lazily generated the first time sharing is turned on and never
+// rotated afterward -- same behavior as Project/Gate's PATCH .../share.
+router.patch('/tasks/:taskId/share', async (req, res, next) => {
+  try {
+    const task = await requireTask(req.params.taskId, req.auth.sub);
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+    const shareEnabled = Boolean(req.body.shareEnabled);
+    const data = { shareEnabled };
+    if (shareEnabled && !task.shareToken) data.shareToken = randomUUID();
+    const updated = await prisma.task.update({ where: { id: task.id }, data });
+    res.json({ id: updated.id, shareEnabled: updated.shareEnabled, shareToken: updated.shareToken, shareUrl: shareUrlFor(updated.shareToken) });
   } catch (error) {
     next(error);
   }

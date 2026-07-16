@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, FileText, Layers, Plus, Star, Trash2, X } from 'lucide-react';
+import { AlertTriangle, FileText, Layers, Plus, Share2, Star, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../Modal';
 import DeleteConfirmModal from '../DeleteConfirmModal';
+import EntityShareModal from '../EntityShareModal';
 import TagMultiSelect from '../TagMultiSelect';
 import TaskActivityTimeline from './TaskActivityTimeline';
 import LinkedDocsPickerModal from './LinkedDocsPickerModal';
@@ -27,6 +28,32 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
   const [deleting, setDeleting] = useState(false);
   const [linkedDocs, setLinkedDocs] = useState([]);
   const [showDocPicker, setShowDocPicker] = useState(false);
+  const [pendingGateId, setPendingGateId] = useState(task.gateId);
+  const [showUnsavedGateModal, setShowUnsavedGateModal] = useState(false);
+  const [savingGate, setSavingGate] = useState(false);
+  const [sharing, setSharing] = useState(false);
+
+  const gateChangePending = pendingGateId !== current.gateId;
+
+  function gateName(gateId) {
+    if (!gateId) return 'Unscheduled';
+    return gates.find((g) => g.id === gateId)?.name || 'Unscheduled';
+  }
+
+  async function saveGateChange() {
+    setSavingGate(true);
+    const updated = await patch({ gateId: pendingGateId });
+    setSavingGate(false);
+    if (updated) toast.success(`Saved to ${gateName(updated.gateId)}`);
+  }
+
+  function handleClose() {
+    if (gateChangePending) {
+      setShowUnsavedGateModal(true);
+      return;
+    }
+    onClose();
+  }
 
   const options = statusOptions?.length ? statusOptions : statuses;
   // The current status can fall outside a gate-scoped dropdown's options
@@ -118,7 +145,7 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
   const pickableGates = gates.filter((g) => !placedGateIds.has(g.id));
 
   return (
-    <Modal title="Task details" onClose={onClose} maxWidthClass="max-w-2xl">
+    <Modal title="Task details" onClose={handleClose} maxWidthClass="max-w-2xl">
       <input
         className="field mb-3 border-transparent px-0 text-lg font-semibold focus:px-2"
         value={title}
@@ -144,14 +171,19 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Gate</label>
           <select
             className="field"
-            value={current.gateId || ''}
-            onChange={(e) => patch({ gateId: e.target.value || null })}
+            value={pendingGateId || ''}
+            onChange={(e) => setPendingGateId(e.target.value || null)}
           >
             <option value="">Unscheduled</option>
             {gates.map((g) => (
               <option key={g.id} value={g.id}>{g.name}{g.status === 'CLOSED' ? ' (Closed)' : ''}</option>
             ))}
           </select>
+          {gateChangePending && (
+            <button className="btn-primary mt-2 w-full justify-center" onClick={saveGateChange} disabled={savingGate}>
+              {savingGate ? 'Saving…' : `Save to ${gateName(pendingGateId)}`}
+            </button>
+          )}
         </div>
 
         <div>
@@ -300,7 +332,10 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
         <TaskActivityTimeline taskId={current.id} refreshKey={current.updatedAt} />
       </div>
 
-      <div className="mt-6 flex justify-end border-t border-border pt-4">
+      <div className="mt-6 flex justify-between border-t border-border pt-4">
+        <button className="btn-ghost" onClick={() => setSharing(true)}>
+          <Share2 size={15} /> Share task
+        </button>
         <button className="btn-ghost text-red-700 hover:bg-red-50" onClick={() => setDeleting(true)}>
           <Trash2 size={15} /> Delete task
         </button>
@@ -315,6 +350,18 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
         />
       )}
 
+      {sharing && (
+        <EntityShareModal
+          title="Share task"
+          entity={current}
+          onToggleShare={async (enabled) => {
+            const { data } = await tasksApi.share(current.id, { shareEnabled: enabled });
+            setCurrent({ ...current, shareEnabled: data.shareEnabled, shareToken: data.shareToken });
+          }}
+          onClose={() => setSharing(false)}
+        />
+      )}
+
       {showDocPicker && (
         <LinkedDocsPickerModal
           projectId={current.projectId}
@@ -323,6 +370,30 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
           onClose={() => setShowDocPicker(false)}
           onDone={() => { setShowDocPicker(false); loadLinkedDocs(); }}
         />
+      )}
+
+      {showUnsavedGateModal && (
+        <Modal title="Unsaved gate change" onClose={() => setShowUnsavedGateModal(false)}>
+          <p className="text-sm text-muted">
+            You changed the gate assignment without saving. Save the change to <strong>{gateName(pendingGateId)}</strong>?
+            Or revert to <strong>{gateName(current.gateId)}</strong>?
+          </p>
+          <div className="mt-4 flex flex-wrap justify-end gap-2">
+            <button className="btn-ghost" onClick={() => setShowUnsavedGateModal(false)}>Keep editing</button>
+            <button
+              className="btn-ghost"
+              onClick={() => { setPendingGateId(current.gateId); setShowUnsavedGateModal(false); onClose(); }}
+            >
+              Revert
+            </button>
+            <button
+              className="btn-primary"
+              onClick={async () => { await saveGateChange(); setShowUnsavedGateModal(false); onClose(); }}
+            >
+              Save
+            </button>
+          </div>
+        </Modal>
       )}
     </Modal>
   );

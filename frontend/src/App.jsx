@@ -6,6 +6,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import ProjectHome from './pages/ProjectHome';
 import ProjectDetail from './pages/ProjectDetail';
 import ProjectBoard from './pages/ProjectBoard';
 import RoadmapOverview from './pages/RoadmapOverview';
@@ -53,7 +54,8 @@ export default function App() {
       <Route path="/share/:shareToken" element={<ShareView />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/projects/:id" element={<ProjectHome />} />
+        <Route path="/projects/:id/legacy" element={<ProjectDetail />} />
         <Route path="/projects/:id/board" element={<ProjectBoard />} />
         <Route path="/projects/:id/roadmap" element={<RoadmapOverview />} />
         <Route path="/projects/:id/docs" element={<ProjectDocs />} />

@@ -19,6 +19,23 @@ async function ownedProject(id, ownerId) {
   return prisma.project.findFirst({ where: { id, ownerId, deletedAt: null }, include: projectInclude });
 }
 
+// gateCount/taskCount are project-wide counts (every gate in the project's
+// roadmap; every non-deleted task regardless of grouping), not the
+// legacy-model taskCounts() stats -- kept separate so an edge case in one
+// doesn't silently skew the other. Cheap enough to run per-project on every
+// list/detail response at this scale (no pagination anywhere in this API).
+async function projectMetrics(projectId) {
+  const [gateCount, taskCount] = await Promise.all([
+    prisma.gate.count({ where: { roadmap: { projectId }, deletedAt: null } }),
+    prisma.task.count({ where: { projectId, deletedAt: null } })
+  ]);
+  return { gateCount, taskCount };
+}
+
+async function withMetrics(project) {
+  return { ...toClientProject(project), stats: taskCounts(project), metrics: await projectMetrics(project.id) };
+}
+
 router.get('/', async (req, res, next) => {
   try {
     const projects = await prisma.project.findMany({
@@ -26,7 +43,7 @@ router.get('/', async (req, res, next) => {
       include: projectInclude,
       orderBy: { updatedAt: 'desc' }
     });
-    res.json(projects.map((project) => ({ ...toClientProject(project), stats: taskCounts(project) })));
+    res.json(await Promise.all(projects.map(withMetrics)));
   } catch (error) {
     next(error);
   }
@@ -48,7 +65,7 @@ router.post('/', async (req, res, next) => {
       });
       return tx.project.findUnique({ where: { id: created.id }, include: projectInclude });
     });
-    res.status(201).json(toClientProject(project));
+    res.status(201).json(await withMetrics(project));
   } catch (error) {
     next(error);
   }
@@ -58,7 +75,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const project = await ownedProject(req.params.id, req.auth.sub);
     if (!project) return res.status(404).json({ message: 'Project not found' });
-    res.json({ ...toClientProject(project), stats: taskCounts(project) });
+    res.json(await withMetrics(project));
   } catch (error) {
     next(error);
   }
@@ -79,7 +96,7 @@ router.patch('/:id', async (req, res, next) => {
       data.rolloverMode = req.body.rolloverMode;
     }
     const updated = await prisma.project.update({ where: { id: project.id }, data, include: projectInclude });
-    res.json({ ...toClientProject(updated), stats: taskCounts(updated) });
+    res.json(await withMetrics(updated));
   } catch (error) {
     next(error);
   }
@@ -131,9 +148,8 @@ router.patch('/:id/share', async (req, res, next) => {
     });
     const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
     res.json({
-      ...toClientProject(updated),
-      shareUrl: `${frontend.replace(/\/$/, '')}/share/${updated.shareToken}`,
-      stats: taskCounts(updated)
+      ...(await withMetrics(updated)),
+      shareUrl: `${frontend.replace(/\/$/, '')}/share/${updated.shareToken}`
     });
   } catch (error) {
     next(error);
@@ -151,7 +167,7 @@ router.post('/:id/groups', async (req, res, next) => {
       data: { order: serializeOrder([`group:${group.id}`, ...(orderArray(project).length ? orderArray(project) : defaultOrder(project))]) }
     });
     const updated = await ownedProject(project.id, req.auth.sub);
-    res.status(201).json({ ...toClientProject(updated), stats: taskCounts(updated) });
+    res.status(201).json(await withMetrics(updated));
   } catch (error) {
     next(error);
   }
@@ -204,7 +220,7 @@ router.post('/:id/tasks', async (req, res, next) => {
       });
     }
     const updated = await ownedProject(project.id, req.auth.sub);
-    res.status(201).json({ ...toClientProject(updated), stats: taskCounts(updated) });
+    res.status(201).json({ ...(await withMetrics(updated)), taskId: task.id });
   } catch (error) {
     next(error);
   }

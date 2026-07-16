@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import prisma from '../lib/prisma.js';
 import { requireProject, requireGate } from '../lib/ownership.js';
 import { planGateClose } from '../lib/rollover.js';
@@ -6,6 +7,12 @@ import { logActivityMany } from '../lib/activity.js';
 import { validateGateImportRows } from '../lib/gateImport.js';
 
 const router = Router();
+
+function shareUrlFor(token) {
+  if (!token) return null;
+  const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
+  return `${frontend.replace(/\/$/, '')}/share/${token}`;
+}
 
 // A project's Roadmap is provisioned lazily on first gate creation, not by
 // a separate "enable roadmap" step -- there was no other natural entry
@@ -48,6 +55,22 @@ router.patch('/gates/:gateId', async (req, res, next) => {
     if (!Object.keys(data).length) return res.status(400).json({ message: 'Nothing to update' });
     const updated = await prisma.gate.update({ where: { id: gate.id }, data });
     res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Token is lazily generated the first time sharing is turned on and never
+// rotated afterward -- same behavior as Project.shareToken's PATCH .../share.
+router.patch('/gates/:gateId/share', async (req, res, next) => {
+  try {
+    const gate = await requireGate(req.params.gateId, req.auth.sub);
+    if (!gate) return res.status(404).json({ message: 'Gate not found' });
+    const shareEnabled = Boolean(req.body.shareEnabled);
+    const data = { shareEnabled };
+    if (shareEnabled && !gate.shareToken) data.shareToken = randomUUID();
+    const updated = await prisma.gate.update({ where: { id: gate.id }, data });
+    res.json({ ...updated, shareUrl: shareUrlFor(updated.shareToken) });
   } catch (error) {
     next(error);
   }

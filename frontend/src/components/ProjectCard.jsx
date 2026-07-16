@@ -9,7 +9,9 @@ export default function ProjectCard({ project, onOpen, onDelete }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold leading-snug">{project.title}</h3>
-          <p className="mt-1 text-sm text-muted">{project.groups?.length || 0} groups · created {formatDate(project.createdAt)}</p>
+          <p className="mt-1 text-sm text-muted">
+            {project.metrics ? `${project.metrics.gateCount} gate${project.metrics.gateCount === 1 ? '' : 's'} · ${project.metrics.taskCount} task${project.metrics.taskCount === 1 ? '' : 's'}` : `created ${formatDate(project.createdAt)}`}
+          </p>
         </div>
         <span
           className="btn-icon text-red-700 hover:bg-red-50"

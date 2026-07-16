@@ -72,8 +72,12 @@ export default function MyTasks() {
           value={quickTitle}
           onChange={(e) => setQuickTitle(e.target.value)}
         />
-        <select className="field sm:w-48" value={quickProjectId} onChange={(e) => setQuickProjectId(e.target.value)}>
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+        <select className="field sm:w-56" value={quickProjectId} onChange={(e) => setQuickProjectId(e.target.value)}>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.title}{p.metrics ? ` (${p.metrics.gateCount}g · ${p.metrics.taskCount}t)` : ''}
+            </option>
+          ))}
         </select>
         <button className="btn-primary shrink-0" disabled={adding || !quickTitle.trim() || !quickProjectId}>
           <Plus size={16} /> Add

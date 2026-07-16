@@ -1,13 +1,14 @@
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ArrowLeft, Copy, FolderPlus, LayoutGrid, Plus, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, FolderPlus, LayoutGrid, Plus, Share2, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import GroupCard from '../components/GroupCard';
 import ProjectTabs from '../components/ProjectTabs';
 import Modal from '../components/Modal';
+import ShareProjectModal from '../components/ShareProjectModal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import ProgressBar from '../components/ProgressBar';
 import TaskCard from '../components/TaskCard';
@@ -33,7 +34,6 @@ export default function ProjectDetail() {
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [mergeModal, setMergeModal] = useState(false);
   const [shareModal, setShareModal] = useState(false);
-  const [shareUrl, setShareUrl] = useState('');
   const [deletingProject, setDeletingProject] = useState(false);
   const [deletingTaskId, setDeletingTaskId] = useState(null);
 
@@ -95,7 +95,7 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      <ProjectTabs projectId={id} active="tasks" />
+      <ProjectTabs projectId={id} active="tasks" tasksTo={`/projects/${id}/legacy`} />
 
       <section className="border-b border-border bg-white/80">
         <div className="mx-auto max-w-6xl px-4 py-4">
@@ -173,19 +173,11 @@ export default function ProjectDetail() {
       )}
 
       {shareModal && (
-        <Modal title="Share project" onClose={() => setShareModal(false)}>
-          <p className="mb-3 text-sm text-muted">Turn sharing on to create a public read-only project URL.</p>
-          <div className="flex gap-2">
-            <button className="btn-primary" onClick={async () => setShareUrl(await store.toggleShare(true))}>Enable sharing</button>
-            <button className="btn-ghost" onClick={() => store.toggleShare(false)}>Disable sharing</button>
-          </div>
-          {(shareUrl || project.shareEnabled) && (
-            <div className="mt-4 flex gap-2">
-              <input className="field" readOnly value={shareUrl || `${window.location.origin}/share/${project.shareToken}`} />
-              <button className="btn-icon" onClick={() => { navigator.clipboard.writeText(shareUrl || `${window.location.origin}/share/${project.shareToken}`); toast.success('Share URL copied'); }}><Copy size={16} /></button>
-            </div>
-          )}
-        </Modal>
+        <ShareProjectModal
+          project={project}
+          onToggleShare={async (enabled) => { await store.toggleShare(enabled); }}
+          onClose={() => setShareModal(false)}
+        />
       )}
 
       {deletingProject && (

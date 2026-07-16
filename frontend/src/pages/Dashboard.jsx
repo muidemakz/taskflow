@@ -21,7 +21,7 @@ export default function Dashboard() {
     const project = await createProject(form);
     setModal(false);
     setForm({ title: '', description: '' });
-    navigate(`/projects/${project.id}`);
+    navigate(`/projects/${project.id}/board`);
   }
 
   return (
@@ -47,7 +47,7 @@ export default function Dashboard() {
             <ProjectCard
               key={project.id}
               project={project}
-              onOpen={() => navigate(`/projects/${project.id}`)}
+              onOpen={() => navigate(project.hasRoadmap ? `/projects/${project.id}/roadmap` : `/projects/${project.id}/board`)}
               onDelete={() => setDeletingProject(project)}
             />
           ))}

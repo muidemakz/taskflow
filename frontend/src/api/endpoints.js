@@ -28,7 +28,8 @@ export const groupsApi = {
 export const tasksApi = {
   update: (id, payload) => api.patch(`/api/tasks/${id}`, payload),
   remove: (id) => api.delete(`/api/tasks/${id}`),
-  move: (id, payload) => api.patch(`/api/tasks/${id}/move`, payload)
+  move: (id, payload) => api.patch(`/api/tasks/${id}/move`, payload),
+  share: (id, payload) => api.patch(`/api/tasks/${id}/share`, payload)
 };
 
 export const shareApi = {
@@ -60,7 +61,8 @@ export const gatesApi = {
   remove: (gateId, payload) => api.delete(`/api/gates/${gateId}`, { data: payload }),
   close: (gateId, payload) => api.post(`/api/gates/${gateId}/close`, payload),
   reopen: (gateId, payload) => api.post(`/api/gates/${gateId}/reopen`, payload),
-  bulkImport: (projectId, rows) => api.post(`/api/projects/${projectId}/gates/bulk-import`, { rows })
+  bulkImport: (projectId, rows) => api.post(`/api/projects/${projectId}/gates/bulk-import`, { rows }),
+  share: (gateId, payload) => api.patch(`/api/gates/${gateId}/share`, payload)
 };
 
 export const boardApi = {

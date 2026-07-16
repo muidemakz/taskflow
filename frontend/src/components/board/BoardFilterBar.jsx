@@ -7,12 +7,17 @@ export default function BoardFilterBar({ filters, onChange, availableTags }) {
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white p-2">
-      <TagMultiSelect
-        selectedTags={selectedTags}
-        availableTags={availableTags}
-        onAdd={(tagId) => onChange({ ...filters, tagIds: [...filters.tagIds, tagId] })}
-        onRemove={(tagId) => onChange({ ...filters, tagIds: filters.tagIds.filter((id) => id !== tagId) })}
-      />
+      <div className="flex items-center gap-1.5">
+        <span className={`text-sm font-semibold ${selectedTags.length ? 'text-primary' : 'text-muted'}`}>
+          Tags{selectedTags.length ? ` (${selectedTags.length})` : ''}
+        </span>
+        <TagMultiSelect
+          selectedTags={selectedTags}
+          availableTags={availableTags}
+          onAdd={(tagId) => onChange({ ...filters, tagIds: [...filters.tagIds, tagId] })}
+          onRemove={(tagId) => onChange({ ...filters, tagIds: filters.tagIds.filter((id) => id !== tagId) })}
+        />
+      </div>
 
       <select className="field w-auto" value={filters.priority} onChange={(e) => onChange({ ...filters, priority: e.target.value })}>
         <option value="">Any priority</option>

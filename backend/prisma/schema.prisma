@@ -131,6 +131,13 @@ model Task {
   externalId String?
   sourceUrl  String?
 
+  // Per-task public share link, lazily generated (nullable) the first time
+  // sharing is enabled -- unlike Project.shareToken (eager, cuid default),
+  // most tasks are never shared, so there's no reason to mint one for every
+  // task on creation. Same lazy-generation approach as Gate.shareToken.
+  shareToken   String?  @unique
+  shareEnabled Boolean  @default(false)
+
   tags           TaskTag[]
   roadmaps       TaskRoadmap[]
   gatePlacements TaskGatePlacement[]
@@ -217,6 +224,11 @@ model Gate {
   closedReason String?
   createdAt    DateTime   @default(now())
   deletedAt    DateTime?
+
+  // Lazily generated (nullable) the first time sharing is enabled for this
+  // gate -- most gates are never shared individually.
+  shareToken   String?  @unique
+  shareEnabled Boolean  @default(false)
 
   tasksHere      Task[]              @relation("TaskCurrentGate")
   tasksMovedFrom Task[]              @relation("TaskMovedFromGate")

@@ -1,15 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Settings } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, DoorClosed, DoorOpen, Plus, Settings, Share2 } from 'lucide-react';
 import KanbanBoard from '../components/board/KanbanBoard';
 import ListView from '../components/board/ListView';
 import BoardToolbar from '../components/board/BoardToolbar';
 import BoardFilterBar from '../components/board/BoardFilterBar';
 import TaskDetailModal from '../components/board/TaskDetailModal';
 import ProjectSettingsModal from '../components/settings/ProjectSettingsModal';
+import CloseGateModal from '../components/roadmap/CloseGateModal';
+import ReopenGateModal from '../components/roadmap/ReopenGateModal';
+import QuickAddTaskModal from '../components/roadmap/QuickAddTaskModal';
+import ShareProjectModal from '../components/ShareProjectModal';
+import EntityShareModal from '../components/EntityShareModal';
 import { useBoardStore } from '../store/boardStore';
-import { projectsApi } from '../api/endpoints';
+import { projectsApi, gatesApi } from '../api/endpoints';
 import { EMPTY_FILTERS, filterTasks } from '../utils/board';
+
+function formatClosedDate(iso) {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export default function ProjectBoard() {
   const { id } = useParams();
@@ -31,16 +40,25 @@ export default function ProjectBoard() {
   const setView = useBoardStore((s) => s.setView);
   const setSortKey = useBoardStore((s) => s.setSortKey);
   const loading = useBoardStore((s) => s.loading);
-  const [projectTitle, setProjectTitle] = useState('');
+  const [project, setProject] = useState(null);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [openTask, setOpenTask] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shareProjectOpen, setShareProjectOpen] = useState(false);
+  const [sharingGate, setSharingGate] = useState(null);
+  const [closingGate, setClosingGate] = useState(null);
+  const [reopeningGate, setReopeningGate] = useState(null);
+  const [addingTaskGate, setAddingTaskGate] = useState(undefined);
   const highlightTaskId = searchParams.get('taskId');
   const highlightApplied = useRef(false);
 
+  function refreshProject() {
+    return projectsApi.detail(id).then(({ data }) => setProject(data));
+  }
+
   useEffect(() => {
     loadProjectMeta(id);
-    projectsApi.detail(id).then(({ data }) => setProjectTitle(data.title));
+    refreshProject();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -77,7 +95,12 @@ export default function ProjectBoard() {
     return used.length ? used : statuses;
   }, [gateId, columns, statuses]);
 
+  const sortedGates = [...gates].sort((a, b) => a.order - b.order);
   const currentGate = gates.find((g) => g.id === gateId);
+  const currentGateIndex = currentGate ? sortedGates.findIndex((g) => g.id === currentGate.id) : -1;
+  const prevGate = currentGateIndex > 0 ? sortedGates[currentGateIndex - 1] : null;
+  const nextGate = currentGateIndex >= 0 && currentGateIndex < sortedGates.length - 1 ? sortedGates[currentGateIndex + 1] : null;
+
   const workflowContext = useMemo(
     () => ({
       gateOrderById: Object.fromEntries(gates.map((g) => [g.id, g.order])),
@@ -91,6 +114,12 @@ export default function ProjectBoard() {
     setOpenTask(updated);
   }
 
+  function refreshGateContext() {
+    loadProjectMeta(id);
+    loadBoard(id, gateId);
+  }
+
+  const projectTitle = project?.title || '';
   const title = isUnscheduledView ? 'Unscheduled' : currentGate ? currentGate.name : projectTitle;
   const subtitle = isUnscheduledView
     ? `${projectTitle} · not yet assigned to a gate`
@@ -100,26 +129,101 @@ export default function ProjectBoard() {
         ? 'Whole project'
         : null;
 
+  if (!project) return <main className="p-8 text-center text-muted">Loading board...</main>;
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <button
-            className="btn-icon shrink-0"
-            onClick={() => navigate(hasRoadmap ? `/projects/${id}/roadmap` : `/projects/${id}`)}
-            aria-label="Back"
-          >
-            <ArrowLeft size={17} />
-          </button>
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold">{title}</h1>
-            {subtitle && <p className="truncate text-sm text-muted">{subtitle}</p>}
+      <div className="mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              className="btn-icon shrink-0"
+              onClick={() => navigate(hasRoadmap ? `/projects/${id}/roadmap` : '/dashboard')}
+              aria-label="Back"
+            >
+              <ArrowLeft size={17} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold">{title}</h1>
+              {subtitle && <p className="truncate text-sm text-muted">{subtitle}</p>}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <BoardToolbar view={view} onViewChange={setView} sortKey={sortKey} onSortChange={setSortKey} />
+            <button className="btn-ghost" onClick={() => setShareProjectOpen(true)}><Share2 size={16} /> Share</button>
+            <button className="btn-icon" onClick={() => setSettingsOpen(true)} aria-label="Project settings">
+              <Settings size={16} />
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <BoardToolbar view={view} onViewChange={setView} sortKey={sortKey} onSortChange={setSortKey} />
-          <button className="btn-icon" onClick={() => setSettingsOpen(true)} aria-label="Project settings">
-            <Settings size={16} />
+
+        {(currentGate || isUnscheduledView) && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {currentGate && (
+              <div className="flex items-center gap-1 rounded-md border border-[#d8e0ea] bg-white p-1">
+                <button
+                  className="btn-icon h-7 w-7 border-none"
+                  disabled={!prevGate}
+                  onClick={() => navigate(`/projects/${id}/board?gateId=${prevGate.id}`)}
+                  aria-label="Previous gate"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <select
+                  className="border-0 bg-transparent text-sm font-semibold outline-none"
+                  value={currentGate.id}
+                  onChange={(e) => navigate(`/projects/${id}/board?gateId=${e.target.value}`)}
+                >
+                  {sortedGates.map((g) => <option key={g.id} value={g.id}>{g.name}{g.status === 'CLOSED' ? ' (Closed)' : ''}</option>)}
+                </select>
+                <button
+                  className="btn-icon h-7 w-7 border-none"
+                  disabled={!nextGate}
+                  onClick={() => navigate(`/projects/${id}/board?gateId=${nextGate.id}`)}
+                  aria-label="Next gate"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+
+            <button className="btn-ghost" onClick={() => setAddingTaskGate(currentGate || null)}>
+              <Plus size={14} /> Add task
+            </button>
+
+            {currentGate && (
+              <>
+                <button className="btn-icon" onClick={() => setSharingGate(currentGate)} aria-label="Share gate">
+                  <Share2 size={15} />
+                </button>
+                {currentGate.status === 'CLOSED' ? (
+                  <button className="btn-ghost" onClick={() => setReopeningGate(currentGate)}>
+                    <DoorOpen size={15} /> Reopen gate
+                  </button>
+                ) : (
+                  <button className="btn-ghost" onClick={() => setClosingGate(currentGate)}>
+                    <DoorClosed size={15} /> Close gate
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {currentGate?.status === 'CLOSED' && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm text-muted">
+            <DoorClosed size={14} />
+            Closed{currentGate.closedAt ? ` · ${formatClosedDate(currentGate.closedAt)}` : ''}
+            {currentGate.closedReason && <span className="italic">&ldquo;{currentGate.closedReason}&rdquo;</span>}
+          </div>
+        )}
+      </div>
+
+      <div className="mb-4 -mt-2 border-b border-border">
+        <div className="flex gap-1 pb-2">
+          <button className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-white">Tasks</button>
+          <button className="rounded-md px-3 py-1.5 text-sm font-semibold text-muted hover:bg-slate-50" onClick={() => navigate(`/projects/${id}/docs`)}>
+            Docs
           </button>
         </div>
       </div>
@@ -153,6 +257,48 @@ export default function ProjectBoard() {
             setSettingsOpen(false);
             loadBoard(id, gateId);
           }}
+        />
+      )}
+
+      {shareProjectOpen && (
+        <ShareProjectModal
+          project={project}
+          onToggleShare={async (enabled) => {
+            const { data } = await projectsApi.share(id, { shareEnabled: enabled });
+            setProject(data);
+          }}
+          onClose={() => setShareProjectOpen(false)}
+        />
+      )}
+
+      {sharingGate && (
+        <EntityShareModal
+          title={`Share ${sharingGate.name}`}
+          entity={sharingGate}
+          onToggleShare={async (enabled) => {
+            const { data } = await gatesApi.share(sharingGate.id, { shareEnabled: enabled });
+            setSharingGate(data);
+            loadProjectMeta(id);
+          }}
+          onClose={() => setSharingGate(null)}
+        />
+      )}
+
+      {closingGate && (
+        <CloseGateModal gate={closingGate} onClose={() => setClosingGate(null)} onDone={() => { setClosingGate(null); refreshGateContext(); }} />
+      )}
+
+      {reopeningGate && (
+        <ReopenGateModal gate={reopeningGate} onClose={() => setReopeningGate(null)} onDone={() => { setReopeningGate(null); refreshGateContext(); }} />
+      )}
+
+      {addingTaskGate !== undefined && (
+        <QuickAddTaskModal
+          projectId={id}
+          gate={addingTaskGate}
+          statuses={statuses}
+          onClose={() => setAddingTaskGate(undefined)}
+          onCreated={() => { setAddingTaskGate(undefined); refreshGateContext(); }}
         />
       )}
     </main>
