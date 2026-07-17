@@ -25,12 +25,13 @@ feature and the full Valideity dataset.
 
 **Current Work (all on `staging`, not yet merged to production):**
 - ✅ Trash permanent-delete + Account modals — `08ad9ed`, pending user visual verification
-- ✅ Security audit of recent changes — DONE this session; fixes in `e93a26a`
-- ✅ Task modal in-place fix (My Tasks / Search) — DONE this session, `5628ba1`
+- ✅ Security audit of recent changes — DONE; fixes in `e93a26a`
+- ✅ Task modal in-place fix (My Tasks / Search) — DONE, `5628ba1`
+- ✅ Doc markdown XSS — sanitized with DOMPurify, `5892373`
 - 🟡 Contract phase (optional cleanup) — not started
 - 🔴 **Open finding:** staging and production share the **same `JWT_SECRET`** — needs user decision (see Security section)
 
-**Batched for the next production merge:** `08ad9ed` → `e93a26a` → `5628ba1` (staging is 3 commits ahead of main).
+**Batched for the next production merge:** `08ad9ed` → `e93a26a` → `5628ba1` → `5892373` (plus docs `a1ed372`). Staging is ahead of `main` by these commits.
 
 ---
 
@@ -160,6 +161,7 @@ code (`9f72056`) is already on production.
 | 4 | Invite tokens: `expiresAt` enforced on accept, single-use | MED | ✅ **PASS** — `requireValidInvite` rejects expired/accepted; accept sets `acceptedAt` in a transaction |
 | 5 | `JWT_SECRET` differs staging vs prod; no secrets committed | MED | 🔴 **NEEDS-DECISION** — secrets NOT committed (only `.env.example` placeholder), but staging & prod `JWT_SECRET` are **identical** (sha256 matched) |
 | 6 | PAT auth gap (no role attached; admin routes 403 for PATs) | LOW | Documented, Phase 2 fix (fails closed) |
+| 7 | Doc markdown rendered via `marked` + `dangerouslySetInnerHTML` without sanitization | MED (self-XSS now; stored XSS if docs are ever shared) | ✅ **FIXED** (`5892373`) — `renderMarkdown` runs output through DOMPurify; strips `<script>`/`onerror`/`javascript:`, keeps heading-id anchors |
 
 **🔴 Finding #5 detail:** A stateless JWT access token minted for one environment validates on the
 other because both share the same secret. Refresh tokens are DB-scoped so they don't cross over, but
@@ -274,6 +276,7 @@ secret (invalidates active prod sessions). Left for the user to schedule.
 PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround: JWT for admin ops.
 
 ### ℹ️ Resolved This Cycle
+- Doc markdown XSS (`marked` output was unsanitized) → **DOMPurify sanitization at render** (`5892373`); heading-id anchors preserved
 - Trash permanent-delete ownership → **confirmed + negative-path test** (`e93a26a`)
 - customId unique-violation 500 → **clean 409**; over-length input → **400** (`e93a26a`)
 - Task modal navigation (My Tasks / Search redirected to board) → **opens in place** (`5628ba1`)
