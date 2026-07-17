@@ -42,17 +42,25 @@ feature and the full Valideity dataset.
 
 ### Production URLs
 - **Backend:** https://taskflow-production-d9c0.up.railway.app
-- **Frontend:** Netlify production site — URL not yet confirmed in this session (check Netlify dashboard)
+- **Frontend:** **https://muidemakztaskflow.netlify.app** (confirmed via prod `FRONTEND_URL`)
 - **Database:** Production Postgres (Railway)
 
 ### Production Database (verified 17 Jul 2026, read-only Prisma query)
 - **Users:** 3 — `admin@taskflow.app`, `demo@taskflow.app`, `testuser123@example.com`
 - **Projects:** 2 (non-deleted)
-  - **Fortnoto** — 279 tasks — owned by **admin@taskflow.app** (moved from demo)
+  - **Fortnoto** — 279 tasks — owned by **admin@taskflow.app** (moved from demo). Board statuses backfilled 17 Jul 2026 (see data-mutation note below).
   - **Valideity** — 91 tasks (all 91 have customId), 6 gates, docs/prompts, Gate A closed — owned by **admin@taskflow.app**
 - **customId:** all 91 Valideity tasks have IDs (A1.1 … W4.4) with clean titles; Fortnoto tasks are null (by design)
 - **Task descriptions:** Valideity enhanced comments (acceptance criteria, effort, priority, dependencies) applied
 - `demo@taskflow.app` currently owns **zero projects on production** (flagged; user hasn't requested a placeholder there)
+
+> **Data mutation — 17 Jul 2026 (production only):** Production Fortnoto had **0 statuses and all 279
+> `statusId`s null** (legacy project that predated the "5 default statuses on create" behavior), so its
+> kanban board rendered empty. Created the 5 default statuses (Backlog/To-do/In progress/In review/Done)
+> and backfilled `statusId` from each task's legacy `status`: `DONE → Done` (219), `TODO → To-do` (60).
+> Board API now returns populated columns. **This was a production-only fix** — staging Fortnoto already
+> had statuses from an earlier session, which is exactly why it worked on staging but not prod (data
+> mutations don't travel with merges). Reversible (delete the 5 statuses / null the `statusId`s).
 
 ### Staging Database (verified 17 Jul 2026, read-only Prisma query)
 - **Commit deployed:** `5628ba1`
@@ -276,6 +284,7 @@ secret (invalidates active prod sessions). Left for the user to schedule.
 PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround: JWT for admin ops.
 
 ### ℹ️ Resolved This Cycle
+- Production Fortnoto kanban board rendered empty → **statuses created + `statusId` backfilled on prod** (data mutation, see Production Database note). Root cause: legacy project with 0 statuses; fix never replayed from staging to prod.
 - Doc markdown XSS (`marked` output was unsanitized) → **DOMPurify sanitization at render** (`5892373`); heading-id anchors preserved
 - Trash permanent-delete ownership → **confirmed + negative-path test** (`e93a26a`)
 - customId unique-violation 500 → **clean 409**; over-length input → **400** (`e93a26a`)
