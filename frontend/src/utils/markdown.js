@@ -1,4 +1,5 @@
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 // Anchor format: slugified heading text ("design-principles"), with a
 // numeric suffix for repeats ("design-principles-2"). This exact string is
@@ -33,6 +34,13 @@ export function renderMarkdown(source) {
     return `<h${level} id="${id}">${text}</h${level}>\n`;
   };
 
-  const html = marked.parse(source || '', { renderer });
+  const rawHtml = marked.parse(source || '', { renderer });
+  // A doc body is untrusted input (author today, potentially a sharer/
+  // collaborator tomorrow) and marked does NOT strip HTML, so the parsed
+  // output is sanitized before it reaches dangerouslySetInnerHTML. ADD_ATTR
+  // keeps the heading `id`s this renderer emits -- DOMPurify allows `id` by
+  // default, but we pin it explicitly so the TOC/annotation anchors can never
+  // be silently stripped by a future default change.
+  const html = DOMPurify.sanitize(rawHtml, { ADD_ATTR: ['id'] });
   return { html, headings };
 }
