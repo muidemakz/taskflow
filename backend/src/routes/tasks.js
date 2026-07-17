@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
-import { normalizeTaskInput, orderArray, projectInclude, serializeOrder, taskCounts, toClientProject } from '../utils/project.js';
+import { normalizeTaskInput, orderArray, projectInclude, serializeOrder, taskCounts, taskInputError, toClientProject } from '../utils/project.js';
 
 const router = Router();
 
@@ -20,9 +20,20 @@ router.patch('/:tid', async (req, res, next) => {
   try {
     const task = await taskForUser(req.params.tid, req.auth.sub);
     if (!task) return res.status(404).json({ message: 'Task not found' });
+    const inputError = taskInputError(req.body);
+    if (inputError) return res.status(400).json({ message: inputError });
     const data = normalizeTaskInput(req.body);
     if (!Object.keys(data).length) return res.status(400).json({ message: 'Nothing to update' });
-    await prisma.task.update({ where: { id: task.id }, data });
+    try {
+      await prisma.task.update({ where: { id: task.id }, data });
+    } catch (error) {
+      // @@unique([projectId, customId]) -- surface a clean conflict instead
+      // of letting the raw Prisma error fall through as a 500.
+      if (error.code === 'P2002') {
+        return res.status(409).json({ message: 'That ID is already used by another task in this project' });
+      }
+      throw error;
+    }
     res.json(await projectPayload(task.projectId, req.auth.sub));
   } catch (error) {
     next(error);
