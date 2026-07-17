@@ -41,7 +41,16 @@ export const adminApi = {
   users: (params) => api.get('/api/admin/users', { params }),
   user: (id) => api.get(`/api/admin/users/${id}`),
   updateUser: (id, payload) => api.patch(`/api/admin/users/${id}`, payload),
-  deleteUser: (id) => api.delete(`/api/admin/users/${id}`)
+  deleteUser: (id) => api.delete(`/api/admin/users/${id}`),
+  invites: () => api.get('/api/admin/invites'),
+  createInvite: (payload) => api.post('/api/admin/invites', payload),
+  revokeInvite: (id) => api.delete(`/api/admin/invites/${id}`),
+  activity: (params) => api.get('/api/admin/activity', { params })
+};
+
+export const invitesApi = {
+  get: (token) => api.get(`/api/invites/${token}`, { silent: true }),
+  accept: (token, payload) => api.post(`/api/invites/${token}/accept`, payload)
 };
 
 export const statusesApi = {
@@ -88,7 +97,9 @@ export const meApi = {
 
 export const usersApi = {
   me: () => api.get('/api/users/me', { silent: true }),
-  update: (payload) => api.patch('/api/users/me', payload)
+  update: (payload) => api.patch('/api/users/me', payload),
+  changeEmail: (payload) => api.patch('/api/users/me/email', payload, { silent: true }),
+  changePassword: (payload) => api.patch('/api/users/me/password', payload, { silent: true })
 };
 
 // Mounted at /api/tokens (not /api/users/me/tokens) -- pre-existing from

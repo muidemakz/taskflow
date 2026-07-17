@@ -1,4 +1,4 @@
-import { BarChart3, Users } from 'lucide-react';
+import { BarChart3, ScrollText, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 export default function AdminSidebar() {
@@ -8,6 +8,7 @@ export default function AdminSidebar() {
       <nav className="flex gap-2 md:flex-col">
         <NavLink to="/admin" end className={link}><BarChart3 size={17} /> Overview</NavLink>
         <NavLink to="/admin/users" className={link}><Users size={17} /> Users</NavLink>
+        <NavLink to="/admin/activity" className={link}><ScrollText size={17} /> Activity</NavLink>
       </nav>
     </aside>
   );

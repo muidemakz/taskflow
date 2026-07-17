@@ -23,6 +23,8 @@ import AdminLayout from './pages/Admin/AdminLayout';
 import AdminOverview from './pages/Admin/AdminOverview';
 import AdminUsers from './pages/Admin/AdminUsers';
 import AdminUserDetail from './pages/Admin/AdminUserDetail';
+import AdminActivity from './pages/Admin/AdminActivity';
+import InviteAccept from './pages/InviteAccept';
 
 function ProtectedRoute() {
   const { user, loading } = useAuthStore();
@@ -64,6 +66,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/share/:shareToken" element={<ShareView />} />
+      <Route path="/invite/:token" element={<InviteAccept />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects/:id" element={<ProjectHome />} />
@@ -81,6 +84,7 @@ export default function App() {
             <Route index element={<AdminOverview />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="users/:id" element={<AdminUserDetail />} />
+            <Route path="activity" element={<AdminActivity />} />
           </Route>
         </Route>
       </Route>

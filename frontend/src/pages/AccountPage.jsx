@@ -167,6 +167,8 @@ export default function AccountPage() {
         </div>
       </section>
 
+      <SecuritySection user={user} />
+
       <section className="card mt-4 p-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">API Tokens</h2>
@@ -209,6 +211,80 @@ export default function AccountPage() {
 
       {createOpen && <CreateTokenModal onClose={() => setCreateOpen(false)} onCreated={refreshTokens} />}
     </main>
+  );
+}
+
+function SecuritySection({ user }) {
+  const navigate = useNavigate();
+  const { setUser, logout } = useAuthStore();
+
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  async function saveEmail(event) {
+    event.preventDefault();
+    setEmailError('');
+    if (!newEmail.trim() || !emailPassword) return setEmailError('New email and current password are required.');
+    setSavingEmail(true);
+    try {
+      const { data } = await usersApi.changeEmail({ email: newEmail.trim(), currentPassword: emailPassword });
+      setUser(data);
+      setNewEmail('');
+      setEmailPassword('');
+      toast.success('Email updated');
+    } catch (err) {
+      setEmailError(err.response?.data?.message || 'Could not update email');
+    } finally {
+      setSavingEmail(false);
+    }
+  }
+
+  async function savePassword(event) {
+    event.preventDefault();
+    setPasswordError('');
+    if (!currentPassword || newPassword.length < 8) return setPasswordError('Current password and an 8+ character new password are required.');
+    if (newPassword !== confirmPassword) return setPasswordError('New passwords must match.');
+    setSavingPassword(true);
+    try {
+      await usersApi.changePassword({ currentPassword, newPassword });
+      toast.success('Password changed. Please log in again.');
+      await logout(false);
+      navigate('/login');
+    } catch (err) {
+      setPasswordError(err.response?.data?.message || 'Could not change password');
+      setSavingPassword(false);
+    }
+  }
+
+  return (
+    <section className="card mt-4 p-4">
+      <h2 className="font-semibold">Security</h2>
+
+      <form onSubmit={saveEmail} className="mt-3 space-y-2 border-b border-border pb-4 dark:border-slate-700">
+        <p className="text-xs font-semibold text-muted">Change email (current: {user?.email})</p>
+        {emailError && <p className="rounded-md bg-red-50 p-2 text-xs text-red-700">{emailError}</p>}
+        <input className="field" type="email" placeholder="New email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+        <input className="field" type="password" placeholder="Current password" value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} />
+        <button className="btn-ghost w-full justify-center" disabled={savingEmail}>{savingEmail ? 'Saving…' : 'Update email'}</button>
+      </form>
+
+      <form onSubmit={savePassword} className="mt-4 space-y-2">
+        <p className="text-xs font-semibold text-muted">Change password</p>
+        {passwordError && <p className="rounded-md bg-red-50 p-2 text-xs text-red-700">{passwordError}</p>}
+        <input className="field" type="password" placeholder="Current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+        <input className="field" type="password" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+        <input className="field" type="password" placeholder="Confirm new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+        <button className="btn-ghost w-full justify-center" disabled={savingPassword}>{savingPassword ? 'Saving…' : 'Update password'}</button>
+      </form>
+    </section>
   );
 }
 

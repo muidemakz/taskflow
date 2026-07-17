@@ -4,6 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import authRoutes from './routes/auth.js';
+import inviteRoutes from './routes/invites.js';
 import projectRoutes from './routes/projects.js';
 import groupRoutes from './routes/groups.js';
 import taskRoutes from './routes/tasks.js';
@@ -49,6 +50,7 @@ app.use(morgan('dev'));
 
 app.get('/health', (_req, res) => res.json({ ok: true, name: 'Taskflow API' }));
 app.use('/api/auth', authRoutes);
+app.use('/api/invites', inviteRoutes);
 app.use('/api/projects', requireAuth, projectRoutes);
 app.use('/api/groups', requireAuth, groupRoutes);
 app.use('/api/tasks', requireAuth, taskRoutes);

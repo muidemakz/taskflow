@@ -28,6 +28,55 @@ model User {
   personalAccessTokens PersonalAccessToken[]
   taskActivity         TaskActivity[]
   docAnnotations       DocAnnotation[]
+
+  // --- Admin: invites + activity log ---
+  adminActivityAsActor  AdminActivity[] @relation("AdminActivityActor")
+  adminActivityAsTarget AdminActivity[] @relation("AdminActivityTarget")
+  invitesSent           UserInvite[]
+}
+
+enum AdminActivityEventType {
+  user_invited
+  user_invite_revoked
+  user_role_changed
+  user_email_changed
+  user_password_reset
+  user_deleted
+}
+
+// Append-only, same shape/convention as TaskActivity: no update endpoint,
+// every admin.js mutation that changes another user's account writes
+// exactly one row here. targetUser is nullable + SetNull so a later user
+// deletion doesn't take its own audit trail down with it.
+model AdminActivity {
+  id           String                  @id @default(cuid())
+  actor        User                    @relation("AdminActivityActor", fields: [actorId], references: [id], onDelete: Cascade)
+  actorId      String
+  targetUser   User?                   @relation("AdminActivityTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  targetUserId String?
+  eventType    AdminActivityEventType
+  oldValue     String?
+  newValue     String?
+  reason       String?
+  createdAt    DateTime                @default(now())
+
+  @@index([createdAt])
+}
+
+// No email sending in this app -- invites are a copyable one-time link
+// (token in the URL), same UX pattern as the PAT one-time reveal. Nullable
+// acceptedAt distinguishes pending from accepted; accepted invites are kept
+// (not deleted) as a record of who invited whom.
+model UserInvite {
+  id          String    @id @default(cuid())
+  email       String
+  role        Role      @default(USER)
+  token       String    @unique
+  invitedBy   User      @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  invitedById String
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  acceptedAt  DateTime?
 }
 
 enum ThemePreference {
