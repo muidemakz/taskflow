@@ -147,6 +147,20 @@ const WORKSTREAM_TASKS = [
 
 const ALL_TAGS = ['moat', 'content', 'legal', 'brand', 'ops', 'assistive'];
 
+// Mirrors DEFAULT_STATUSES in routes/projects.js and STARTER_CATEGORIES in
+// routes/docCategories.js exactly -- both are normally seeded by the
+// POST /api/projects route handler as part of its transaction, not by any
+// DB-level default, so calling prisma.project.create() directly (as this
+// script does, bypassing the route) skips them unless recreated here.
+const DEFAULT_STATUSES = [
+  { name: 'Backlog', order: 0, countsAsDone: false },
+  { name: 'To-do', order: 1, countsAsDone: false },
+  { name: 'In progress', order: 2, countsAsDone: false },
+  { name: 'In review', order: 3, countsAsDone: false },
+  { name: 'Done', order: 4, countsAsDone: true }
+];
+const STARTER_CATEGORIES = ['moat', 'decision', 'principle', 'reference', 'prd'];
+
 // Editorial addition (not in the source, which has no priority field):
 // HIGH for gate-verdict/go-no-go/critical-path items, LOW for explicitly
 // optional/parked/placeholder/design-only items, MID otherwise.
@@ -384,6 +398,9 @@ async function main() {
       order: []
     }
   });
+
+  await prisma.status.createMany({ data: DEFAULT_STATUSES.map((s) => ({ ...s, projectId: project.id })) });
+  await prisma.docCategory.createMany({ data: STARTER_CATEGORIES.map((name) => ({ name, projectId: project.id })) });
 
   const [statuses, categories] = await Promise.all([
     prisma.status.findMany({ where: { projectId: project.id }, orderBy: { order: 'asc' } }),
