@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Copy, LogOut, Shield, Trash2 } from 'lucide-react';
+import { Check, ChevronRight, Copy, KeyRound, LogOut, Mail, Shield, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { tokensApi, usersApi } from '../api/endpoints';
@@ -215,19 +215,55 @@ export default function AccountPage() {
 }
 
 function SecuritySection({ user }) {
-  const navigate = useNavigate();
-  const { setUser, logout } = useAuthStore();
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
+  return (
+    <section className="card mt-4 p-4">
+      <h2 className="font-semibold">Security</h2>
+
+      <div className="mt-3 divide-y divide-slate-100 dark:divide-slate-700">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-3 py-3 text-left"
+          onClick={() => setShowEmailModal(true)}
+        >
+          <span className="flex items-center gap-2.5">
+            <Mail size={16} className="text-muted" />
+            <span>
+              <span className="block text-sm font-medium">Change email</span>
+              <span className="block text-xs text-muted">{user?.email}</span>
+            </span>
+          </span>
+          <ChevronRight size={16} className="shrink-0 text-muted" />
+        </button>
+
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-3 py-3 text-left"
+          onClick={() => setShowPasswordModal(true)}
+        >
+          <span className="flex items-center gap-2.5">
+            <KeyRound size={16} className="text-muted" />
+            <span className="block text-sm font-medium">Change password</span>
+          </span>
+          <ChevronRight size={16} className="shrink-0 text-muted" />
+        </button>
+      </div>
+
+      {showEmailModal && <ChangeEmailModal user={user} onClose={() => setShowEmailModal(false)} />}
+      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
+    </section>
+  );
+}
+
+function ChangeEmailModal({ user, onClose }) {
+  const { setUser } = useAuthStore();
   const [newEmail, setNewEmail] = useState('');
   const [emailPassword, setEmailPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
-
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [savingPassword, setSavingPassword] = useState(false);
+  const [done, setDone] = useState(false);
 
   async function saveEmail(event) {
     event.preventDefault();
@@ -237,8 +273,7 @@ function SecuritySection({ user }) {
     try {
       const { data } = await usersApi.changeEmail({ email: newEmail.trim(), currentPassword: emailPassword });
       setUser(data);
-      setNewEmail('');
-      setEmailPassword('');
+      setDone(true);
       toast.success('Email updated');
     } catch (err) {
       setEmailError(err.response?.data?.message || 'Could not update email');
@@ -246,6 +281,62 @@ function SecuritySection({ user }) {
       setSavingEmail(false);
     }
   }
+
+  if (done) {
+    return (
+      <Modal title="Email updated" onClose={onClose}>
+        <div className="flex flex-col items-center gap-3 py-4 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-600 dark:bg-green-950">
+            <Check size={22} />
+          </div>
+          <p className="text-sm text-muted">
+            You're all set — sign-ins now use <span className="font-medium text-text">{newEmail.trim()}</span>.
+          </p>
+          <button className="btn-primary w-full justify-center" onClick={onClose}>Done</button>
+        </div>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal title="Change email" onClose={onClose}>
+      <p className="mb-4 text-sm text-muted">
+        Your current email is <span className="font-medium text-text">{user?.email}</span>. Enter the new address you'd
+        like to use, plus your current password to confirm it's you — you'll use the new email to sign in from now on.
+      </p>
+      <form onSubmit={saveEmail} className="space-y-2">
+        {emailError && <p className="rounded-md bg-red-50 p-2 text-xs text-red-700">{emailError}</p>}
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-muted">New email</label>
+          <input
+            className="field"
+            type="email"
+            placeholder="you@example.com"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-muted">Current password</label>
+          <input className="field" type="password" placeholder="Confirm it's you" value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} />
+        </div>
+        <button className="btn-primary mt-2 w-full justify-center" disabled={savingEmail}>
+          {savingEmail ? 'Updating…' : 'Update email'}
+        </button>
+      </form>
+    </Modal>
+  );
+}
+
+function ChangePasswordModal({ onClose }) {
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
 
   async function savePassword(event) {
     event.preventDefault();
@@ -265,26 +356,30 @@ function SecuritySection({ user }) {
   }
 
   return (
-    <section className="card mt-4 p-4">
-      <h2 className="font-semibold">Security</h2>
-
-      <form onSubmit={saveEmail} className="mt-3 space-y-2 border-b border-border pb-4 dark:border-slate-700">
-        <p className="text-xs font-semibold text-muted">Change email (current: {user?.email})</p>
-        {emailError && <p className="rounded-md bg-red-50 p-2 text-xs text-red-700">{emailError}</p>}
-        <input className="field" type="email" placeholder="New email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
-        <input className="field" type="password" placeholder="Current password" value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} />
-        <button className="btn-ghost w-full justify-center" disabled={savingEmail}>{savingEmail ? 'Saving…' : 'Update email'}</button>
-      </form>
-
-      <form onSubmit={savePassword} className="mt-4 space-y-2">
-        <p className="text-xs font-semibold text-muted">Change password</p>
+    <Modal title="Change password" onClose={onClose}>
+      <p className="mb-4 text-sm text-muted">
+        Choose a new password to keep your account secure. Once it's changed you'll be signed out here and anywhere
+        else you're logged in, so make sure you'll remember it (or save it in a password manager) before continuing.
+      </p>
+      <form onSubmit={savePassword} className="space-y-2">
         {passwordError && <p className="rounded-md bg-red-50 p-2 text-xs text-red-700">{passwordError}</p>}
-        <input className="field" type="password" placeholder="Current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-        <input className="field" type="password" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-        <input className="field" type="password" placeholder="Confirm new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-        <button className="btn-ghost w-full justify-center" disabled={savingPassword}>{savingPassword ? 'Saving…' : 'Update password'}</button>
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-muted">Current password</label>
+          <input className="field" type="password" placeholder="Your current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoFocus />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-muted">New password</label>
+          <input className="field" type="password" placeholder="At least 8 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-muted">Confirm new password</label>
+          <input className="field" type="password" placeholder="Type it again" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+        </div>
+        <button className="btn-primary mt-2 w-full justify-center" disabled={savingPassword}>
+          {savingPassword ? 'Updating…' : 'Update password'}
+        </button>
       </form>
-    </section>
+    </Modal>
   );
 }
 

@@ -151,4 +151,68 @@ router.post('/:type/:id/restore', async (req, res, next) => {
   }
 });
 
+// Hard-deletes a trashed item immediately instead of waiting out the
+// retention window. Postgres FK cascades (see schema.prisma) take care of
+// children the same way the retention sweep above does -- deleting a
+// Project cascades to its Tasks/Groups/Gates/Tags/Docs, deleting a Task
+// cascades to its TaskTags/PromptVersions/etc.
+router.delete('/:type/:id', async (req, res, next) => {
+  try {
+    const { type, id } = req.params;
+
+    if (type === 'project') {
+      const project = await prisma.project.findFirst({ where: { id, ownerId: req.auth.sub, deletedAt: { not: null } } });
+      if (!project) return res.status(404).json({ message: 'Trashed project not found' });
+      await prisma.project.delete({ where: { id: project.id } });
+      return res.json({ deleted: 'project', id: project.id });
+    }
+
+    if (type === 'task') {
+      const task = await prisma.task.findFirst({ where: { id, deletedAt: { not: null }, project: { ownerId: req.auth.sub } } });
+      if (!task) return res.status(404).json({ message: 'Trashed task not found' });
+      await prisma.task.delete({ where: { id: task.id } });
+      return res.json({ deleted: 'task', id: task.id });
+    }
+
+    if (type === 'group') {
+      const group = await prisma.group.findFirst({ where: { id, deletedAt: { not: null }, project: { ownerId: req.auth.sub } } });
+      if (!group) return res.status(404).json({ message: 'Trashed group not found' });
+      await prisma.group.delete({ where: { id: group.id } });
+      return res.json({ deleted: 'group', id: group.id });
+    }
+
+    if (type === 'gate') {
+      const gate = await prisma.gate.findFirst({ where: { id, deletedAt: { not: null }, roadmap: { project: { ownerId: req.auth.sub } } } });
+      if (!gate) return res.status(404).json({ message: 'Trashed gate not found' });
+      await prisma.gate.delete({ where: { id: gate.id } });
+      return res.json({ deleted: 'gate', id: gate.id });
+    }
+
+    if (type === 'tag') {
+      const tag = await prisma.tag.findFirst({ where: { id, deletedAt: { not: null }, project: { ownerId: req.auth.sub } } });
+      if (!tag) return res.status(404).json({ message: 'Trashed tag not found' });
+      await prisma.tag.delete({ where: { id: tag.id } });
+      return res.json({ deleted: 'tag', id: tag.id });
+    }
+
+    if (type === 'doc') {
+      const doc = await prisma.docEntry.findFirst({ where: { id, deletedAt: { not: null }, project: { ownerId: req.auth.sub } } });
+      if (!doc) return res.status(404).json({ message: 'Trashed doc not found' });
+      await prisma.docEntry.delete({ where: { id: doc.id } });
+      return res.json({ deleted: 'doc', id: doc.id });
+    }
+
+    if (type === 'category') {
+      const category = await prisma.docCategory.findFirst({ where: { id, deletedAt: { not: null }, project: { ownerId: req.auth.sub } } });
+      if (!category) return res.status(404).json({ message: 'Trashed category not found' });
+      await prisma.docCategory.delete({ where: { id: category.id } });
+      return res.json({ deleted: 'category', id: category.id });
+    }
+
+    res.status(400).json({ message: 'type must be one of: project, task, group, gate, tag, doc, category' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

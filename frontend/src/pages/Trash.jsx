@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { RotateCcw, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { projectsApi, trashApi } from '../api/endpoints';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 const TYPE_LABELS = { project: 'Project', task: 'Task', group: 'Group', gate: 'Gate', tag: 'Tag' };
 
@@ -20,6 +21,8 @@ export default function Trash() {
   const [projectTitles, setProjectTitles] = useState({});
   const [loading, setLoading] = useState(true);
   const [restoringId, setRestoringId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   function load() {
     setLoading(true);
@@ -44,6 +47,21 @@ export default function Trash() {
       toast.error('Could not restore item');
     } finally {
       setRestoringId(null);
+    }
+  }
+
+  async function confirmDeleteForever() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await trashApi.remove(deleteTarget.type, deleteTarget.id);
+      toast.success(`"${deleteTarget.title}" permanently deleted.`);
+      setDeleteTarget(null);
+      load();
+    } catch {
+      toast.error('Could not delete item');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -83,10 +101,28 @@ export default function Trash() {
                 <button className="btn-ghost" onClick={() => restore(item)} disabled={restoringId === item.id}>
                   <RotateCcw size={14} /> {restoringId === item.id ? 'Restoring…' : 'Restore'}
                 </button>
+                <button
+                  className="btn-icon shrink-0 text-red-600"
+                  onClick={() => setDeleteTarget(item)}
+                  aria-label={`Permanently delete "${item.title}"`}
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             );
           })}
         </div>
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={`Delete "${deleteTarget.title}" forever?`}
+          warning="This can't be undone -- it skips the rest of the retention window and removes it (and anything inside it) immediately."
+          confirmLabel="Delete forever"
+          loading={deleting}
+          onConfirm={confirmDeleteForever}
+          onClose={() => setDeleteTarget(null)}
+        />
       )}
     </main>
   );

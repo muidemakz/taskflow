@@ -112,7 +112,8 @@ export const tokensApi = {
 
 export const trashApi = {
   list: (projectId) => api.get('/api/trash', { params: projectId ? { projectId } : {} }),
-  restore: (type, id) => api.post(`/api/trash/${type}/${id}/restore`)
+  restore: (type, id) => api.post(`/api/trash/${type}/${id}/restore`),
+  remove: (type, id) => api.delete(`/api/trash/${type}/${id}`)
 };
 
 export const activityApi = {
