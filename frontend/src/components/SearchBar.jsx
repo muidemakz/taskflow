@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
+import InlineTaskModal from './board/InlineTaskModal';
 import { searchApi } from '../api/endpoints';
 
 export default function SearchBar() {
@@ -9,6 +10,7 @@ export default function SearchBar() {
   const [results, setResults] = useState(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [openTask, setOpenTask] = useState(null);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -38,9 +40,11 @@ export default function SearchBar() {
     setResults(null);
   }
 
+  // Opens the task right here instead of navigating to its board -- the
+  // dropdown closes and the query clears, but the page underneath stays put.
   function goToTask(task) {
     reset();
-    navigate(`/projects/${task.projectId}/board?taskId=${task.id}`);
+    setOpenTask({ taskId: task.id, projectId: task.projectId });
   }
 
   function goToProject(project) {
@@ -109,6 +113,10 @@ export default function SearchBar() {
             </div>
           )}
         </div>
+      )}
+
+      {openTask && (
+        <InlineTaskModal projectId={openTask.projectId} taskId={openTask.taskId} onClose={() => setOpenTask(null)} />
       )}
     </div>
   );

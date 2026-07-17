@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import InlineTaskModal from '../components/board/InlineTaskModal';
 import { meApi, projectsApi, roadmapApi, boardApi } from '../api/endpoints';
 import { formatDueDate, isOverdue, priorityMeta, tagColorClass } from '../utils/board';
 
@@ -16,8 +16,8 @@ const BUCKET_TABS = [
 ];
 
 export default function MyTasks() {
-  const navigate = useNavigate();
   const [buckets, setBuckets] = useState(null);
+  const [openTask, setOpenTask] = useState(null);
   const [activeTab, setActiveTab] = useState('today');
   const [projects, setProjects] = useState([]);
   const [quickTitle, setQuickTitle] = useState('');
@@ -119,9 +119,22 @@ export default function MyTasks() {
       <div className="card mt-3 divide-y divide-slate-100">
         {tasks.length === 0 && <div className="p-6 text-center text-muted">Nothing here.</div>}
         {tasks.map((task) => (
-          <TaskRow key={task.id} task={task} onOpen={() => navigate(`/projects/${task.projectId}/board?taskId=${task.id}`)} />
+          <TaskRow key={task.id} task={task} onOpen={() => setOpenTask({ taskId: task.id, projectId: task.projectId })} />
         ))}
       </div>
+
+      {openTask && (
+        <InlineTaskModal
+          projectId={openTask.projectId}
+          taskId={openTask.taskId}
+          onClose={() => {
+            setOpenTask(null);
+            // Reload the buckets so any edit (or delete) made in the modal
+            // is reflected in the rows -- the view itself never navigates.
+            loadTasks();
+          }}
+        />
+      )}
     </main>
   );
 }
