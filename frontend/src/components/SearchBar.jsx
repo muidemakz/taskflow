@@ -79,7 +79,10 @@ export default function SearchBar() {
               <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted">Tasks</div>
               {results.tasks.map((task) => (
                 <button key={task.id} className="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => goToTask(task)}>
-                  <span className="font-medium">{task.title}</span>
+                  <span className="font-medium">
+                    {task.customId && <span className="id-badge mr-1.5 align-middle">{task.customId}</span>}
+                    {task.title}
+                  </span>
                   <span className="text-xs text-muted">{task.projectTitle}{task.gateName ? ` · ${task.gateName}` : ''}</span>
                 </button>
               ))}

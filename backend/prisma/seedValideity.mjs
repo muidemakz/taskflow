@@ -439,7 +439,8 @@ async function main() {
     positionCounters[status.id] = (positionCounters[status.id] || 0) + 1000;
     const task = await prisma.task.create({
       data: {
-        title: `${def.id} ${def.title}`,
+        title: def.title,
+        customId: def.id,
         comment: def.ac,
         priority: inferPriority(def.title),
         projectId: project.id,

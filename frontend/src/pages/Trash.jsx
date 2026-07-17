@@ -70,7 +70,10 @@ export default function Trash() {
               <div key={`${item.type}-${item.id}`} className="flex flex-wrap items-center gap-3 p-3">
                 <span className="chip bg-slate-100 text-muted">{TYPE_LABELS[item.type] || item.type}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.title}</p>
+                  <p className="truncate text-sm font-medium">
+                    {item.customId && <span className="id-badge mr-1.5 align-middle">{item.customId}</span>}
+                    {item.title}
+                  </p>
                   <p className="text-xs text-muted">
                     {item.type !== 'project' && projectTitle ? `${projectTitle} · ` : ''}
                     Deleted {new Date(item.deletedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ·{' '}

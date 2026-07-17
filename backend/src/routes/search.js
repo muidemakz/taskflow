@@ -38,6 +38,7 @@ router.get('/', async (req, res, next) => {
         tasks: tasks.map((t) => ({
           id: t.id,
           title: t.title,
+          customId: t.customId,
           projectId: t.projectId,
           projectTitle: t.project.title,
           gateId: t.gateId,

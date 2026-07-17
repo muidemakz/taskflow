@@ -30,6 +30,9 @@
   .chip {
     @apply inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold;
   }
+  .id-badge {
+    @apply inline-flex shrink-0 items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-400;
+  }
   .progress-track {
     @apply h-[7px] overflow-hidden rounded-full bg-[#e7edf5];
   }

@@ -59,7 +59,7 @@ router.get('/', async (req, res, next) => {
       retentionDays: RETENTION_DAYS,
       items: [
         ...projects.map((p) => ({ type: 'project', id: p.id, title: p.title, deletedAt: p.deletedAt })),
-        ...tasks.map((t) => ({ type: 'task', id: t.id, title: t.title, projectId: t.projectId, deletedAt: t.deletedAt })),
+        ...tasks.map((t) => ({ type: 'task', id: t.id, title: t.title, customId: t.customId, projectId: t.projectId, deletedAt: t.deletedAt })),
         ...groups.map((g) => ({ type: 'group', id: g.id, title: g.title, projectId: g.projectId, deletedAt: g.deletedAt })),
         ...gates.map((g) => ({ type: 'gate', id: g.id, title: g.name, deletedAt: g.deletedAt })),
         ...tags.map((t) => ({ type: 'tag', id: t.id, title: t.name, projectId: t.projectId, deletedAt: t.deletedAt })),

@@ -160,6 +160,10 @@ model Group {
 model Task {
   id          String           @id @default(cuid())
   title       String
+  // Human-facing short id (e.g. "A1.1", "W2.3") for roadmap-style task
+  // lists. Optional and unset for tasks created through the normal UI;
+  // only assigned where a source list (like Valideity's) already has one.
+  customId    String?
   status      TaskStatusLegacy @default(TODO)
   priority    Priority         @default(NONE)
   comment     String?
@@ -225,6 +229,9 @@ model Task {
   // exactly the "idempotent external syncs" behavior needed, no partial
   // index required.
   @@unique([source, externalId])
+  // Same NULL-is-distinct behavior: customId is only required to be unique
+  // within a project once it's actually set.
+  @@unique([projectId, customId])
 }
 
 enum Role {

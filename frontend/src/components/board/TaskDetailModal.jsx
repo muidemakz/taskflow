@@ -147,6 +147,11 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
 
   return (
     <Modal title="Task details" onClose={handleClose} maxWidthClass="max-w-2xl">
+      {current.customId && (
+        <div className="mb-1.5">
+          <span className="id-badge">{current.customId}</span>
+        </div>
+      )}
       <input
         className="field mb-3 border-transparent px-0 text-lg font-semibold focus:px-2"
         value={title}

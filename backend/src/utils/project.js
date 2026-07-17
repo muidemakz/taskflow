@@ -31,6 +31,9 @@ export function normalizeTaskInput(data = {}) {
   }
   if (data.priority) patch.priority = String(data.priority).toUpperCase();
   if (typeof data.comment === 'string') patch.comment = data.comment;
+  // Optional, for future use -- no UI sets this yet; assigned today only by
+  // the Valideity data scripts. Empty string clears it back to unset.
+  if (typeof data.customId === 'string') patch.customId = data.customId.trim() || null;
   return patch;
 }
 

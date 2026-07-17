@@ -33,7 +33,10 @@ export default function BoardTaskCard({ task, onTap, onMoveTap, gatesById = {}, 
           </button>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium leading-snug">{task.title}</p>
+          <p className="text-sm font-medium leading-snug">
+            {task.customId && <span className="id-badge mr-1.5 align-middle">{task.customId}</span>}
+            {task.title}
+          </p>
           {task.tags?.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
               {task.tags.map((tag) => (

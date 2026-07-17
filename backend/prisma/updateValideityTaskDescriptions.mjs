@@ -338,7 +338,10 @@ async function main() {
   const tasks = await prisma.task.findMany({ where: { projectId: project.id, deletedAt: null } });
   const taskByShortId = {};
   for (const t of tasks) {
-    const shortId = t.title.split(' ')[0];
+    // Prefer the already-assigned customId (idempotent on reruns, after
+    // titles have been cleaned) and fall back to parsing the legacy
+    // "A1.1 Build intake form..." title prefix for a first-time run.
+    const shortId = t.customId || t.title.split(' ')[0];
     taskByShortId[shortId] = t;
   }
 
@@ -349,11 +352,17 @@ async function main() {
     if (!dbTask) { missing.push(def.id); continue; }
     const gate = def.gate ? gateByCode[def.gate] : null;
     const comment = buildComment(def, dbTask, gate);
-    await prisma.task.update({ where: { id: dbTask.id }, data: { comment } });
+    // Legacy titles are "<id> <title>" (e.g. "A1.1 Build intake form...");
+    // strip that exact prefix so the clean title stands alone. Titles that
+    // are already clean (customId already set, or title doesn't start with
+    // the id) are left untouched.
+    const legacyPrefix = `${def.id} `;
+    const cleanTitle = dbTask.title.startsWith(legacyPrefix) ? dbTask.title.slice(legacyPrefix.length) : dbTask.title;
+    await prisma.task.update({ where: { id: dbTask.id }, data: { comment, customId: def.id, title: cleanTitle } });
     updated++;
   }
 
-  console.log(`Updated ${updated}/${ALL_TASKS.length} task comments.`);
+  console.log(`Updated ${updated}/${ALL_TASKS.length} tasks (comment, customId, clean title).`);
   if (missing.length) console.log(`Missing (not found in DB): ${missing.join(', ')}`);
 }
 

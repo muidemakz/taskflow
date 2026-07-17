@@ -134,7 +134,10 @@ function TaskRow({ task, onOpen }) {
       onClick={onOpen}
     >
       <div className="min-w-0 flex-1">
-        <p className="font-medium leading-snug">{task.title}</p>
+        <p className="font-medium leading-snug">
+          {task.customId && <span className="id-badge mr-1.5 align-middle">{task.customId}</span>}
+          {task.title}
+        </p>
         <p className="mt-0.5 text-xs text-muted">
           {task.project?.title}
           {task.gate?.name ? ` · ${task.gate.name}` : ''}
