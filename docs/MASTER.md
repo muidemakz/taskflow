@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 18 July 2026 (TID scheme revision + customId generation + board/modal bug fixes + whole-project board unification)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — Commit 1 (UI standardization) and Commit 3 (tabs as state, now including the whole-project board) complete on staging; TID (customId) now generates on every task-creation path in a single frozen `<Letter><Cluster>.<Seq>` format, U-prefixed for Unscheduled, and every staging task now has one (328/328, backfilled 18 Jul 2026 — production Fortnoto/Valideity backfill still pending approval); chevron rotation direction still unverified in a browser
+**Last Updated:** 18 July 2026 (staging merged to production — main fast-forwarded to `5dec9ca`)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits (UI standardization, whole-project board unification, TID/customId generation + scheme revision, task-modal bug fixes) merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; production Fortnoto/Valideity TID backfill NOT yet run (staging-only so far, 328/328 there); chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -32,26 +32,26 @@ feature and the full Valideity dataset.
 - 🟡 Contract phase (optional cleanup) — not started
 - 🔴 **Open finding:** staging and production share the **same `JWT_SECRET`** — needs user decision (see Security section)
 
-**Batched for the next production merge:** `08ad9ed` → `e93a26a` → `5628ba1` → `5892373` → `9bbc534` (plus docs `a1ed372`). Staging is ahead of `main` by these commits.
+**Production merge:** ✅ DONE 18 Jul 2026 — all 28 commits through `5dec9ca` merged (fast-forward) and deployed. Nothing currently batched/pending merge; staging and main are at parity (`5dec9ca`).
 
 ---
 
 ## Production State (Current)
 
-**Commit:** `9f72056` (main HEAD; deployed via Railway + Netlify)
-**Migrations:** 13 migration directories, `0_init` … `12_add_task_custom_id` (latest), all applied cleanly
+**Commit:** `5dec9ca` (main HEAD; fast-forwarded from staging 18 Jul 2026, deployed via Railway + Netlify)
+**Migrations:** 13 migration directories, `0_init` … `12_add_task_custom_id` (latest), all applied cleanly — this merge shipped code only, **zero new migrations** (confirmed byte-identical `prisma/migrations` + `schema.prisma` between staging and main before merging; deploy log showed "13 migrations found ... No pending migrations to apply")
 
 ### Production URLs
 - **Backend:** https://taskflow-production-d9c0.up.railway.app
 - **Frontend:** **https://muidemakztaskflow.netlify.app** (confirmed via prod `FRONTEND_URL`)
 - **Database:** Production Postgres (Railway)
 
-### Production Database (verified 17 Jul 2026, read-only Prisma query)
+### Production Database (verified 17 Jul 2026, read-only Prisma query; TID/status counts re-verified 18 Jul 2026 post-merge)
 - **Users:** 3 — `admin@taskflow.app`, `demo@taskflow.app`, `testuser123@example.com`
 - **Projects:** 2 (non-deleted)
   - **Fortnoto** — 279 tasks — owned by **admin@taskflow.app** (moved from demo). Board statuses backfilled 17 Jul 2026 (see data-mutation note below).
   - **Valideity** — 91 tasks (all 91 have customId), 6 gates, docs/prompts, Gate A closed — owned by **admin@taskflow.app**
-- **customId:** all 91 Valideity tasks have IDs (A1.1 … W4.4) with clean titles; Fortnoto tasks are null (by design)
+- **customId / TID:** all 91 Valideity tasks have IDs (A1.1 … W4.4) with clean titles; Fortnoto's 279 are still null (backfill **not yet run on production** — staging-only per instruction; re-confirmed unchanged immediately after this merge)
 - **Task descriptions:** Valideity enhanced comments (acceptance criteria, effort, priority, dependencies) applied
 - `demo@taskflow.app` currently owns **zero projects on production** (flagged; user hasn't requested a placeholder there)
 
@@ -459,6 +459,33 @@ where `customId` is null — never overwrites an existing one):
 **Production Fortnoto (279, all Unscheduled) and production Valideity (91/91, already complete)
 are unchanged — explicitly not run per instruction.** Next: user approval to run the same script
 against production.
+
+**Merge to production — 18 Jul 2026, STEP 3 of a 5-step user-directed rollout (steps 4-5 not yet
+authorized) — `main` fast-forwarded `9f72056 → 5dec9ca`**
+
+- Pre-merge check (prior report): 28 commits staging-ahead-of-main, zero new Prisma migrations,
+  clean fast-forward (`main` a direct ancestor of `staging`, no divergent commits), working tree
+  clean.
+- Re-confirmed the fast-forward was still valid immediately before merging (re-fetched, re-ran
+  `git merge-base --is-ancestor`), then `git push origin staging:main` — fast-forward only, no
+  merge commit.
+- Watched the Railway production deploy through to completion via `railway logs`: build picked up
+  the new commit, `13 migrations found in prisma/migrations` / **"No pending migrations to
+  apply"** (matches the pre-merge confirmation that this batch is code-only), container
+  restarted cleanly, `Taskflow API listening on http://localhost:8080`. No errors in the deploy
+  log.
+- Post-deploy health checks (all read-only, no `JWT_SECRET` use per instruction):
+  - `GET /health` → `200 {"ok":true,"name":"Taskflow API"}`.
+  - Board-data integrity checked at the DB layer instead of through the authenticated board API
+    (avoids minting a JWT): every non-deleted project (Fortnoto, Valideity) has its 5 statuses
+    configured and every task has a valid `statusId` — **PASS**, no board-breaking data.
+  - TID/customId counts re-checked post-deploy and confirmed **unchanged**: Fortnoto still 0/279,
+    Valideity still 91/91 — proves the code-only deploy did not touch data and that no backfill
+    ran against production.
+  - Scanned recent production logs for `error|exception|fail` — no matches.
+- **Production verified healthy. Stopped here per instruction** — production TID backfill, the
+  Group→Tag migration, and any `JWT_SECRET` change are explicitly deferred to a separate
+  go-ahead.
 
 **CHUNK D + E (✅ COMPLETE, STAGING) — two task-modal bugs — `ec79d78`**
 
