@@ -1,0 +1,312 @@
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Check, Mic, MicOff, Pencil, Send, Sparkles, Trash2, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { notesApi } from '../api/endpoints';
+import Breadcrumb from '../components/Breadcrumb';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
+
+const SpeechRecognitionCtor = typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
+
+function formatTime(dateStr) {
+  return new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+export default function NoteChat() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [chat, setChat] = useState(null);
+  const [messages, setMessages] = useState(null);
+  const [composerText, setComposerText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [awaitingReply, setAwaitingReply] = useState(false);
+
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+
+  const [editingId, setEditingId] = useState(null);
+  const [editingBody, setEditingBody] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deletingMessage, setDeletingMessage] = useState(false);
+
+  const [recording, setRecording] = useState(false);
+  const [micError, setMicError] = useState(null);
+  const recognitionRef = useRef(null);
+  const recordingBaseTextRef = useRef('');
+
+  const streamEndRef = useRef(null);
+
+  function load() {
+    Promise.all([notesApi.detail(id), notesApi.messages(id)])
+      .then(([chatRes, messagesRes]) => {
+        setChat(chatRes.data);
+        setMessages(messagesRes.data);
+      })
+      .catch(() => navigate('/notes'));
+  }
+
+  useEffect(() => { load(); }, [id]);
+
+  useEffect(() => {
+    streamEndRef.current?.scrollIntoView({ block: 'end' });
+  }, [messages, awaitingReply]);
+
+  useEffect(() => () => recognitionRef.current?.stop(), []);
+
+  async function send() {
+    const body = composerText.trim();
+    if (!body || sending) return;
+    setSending(true);
+    if (chat.aiEnabled) setAwaitingReply(true);
+    try {
+      const { data } = await notesApi.sendMessage(id, body);
+      setComposerText('');
+      setMessages((prev) => {
+        const next = [...prev, data.userMessage];
+        if (data.assistantMessage) next.push(data.assistantMessage);
+        if (data.aiNotice) next.push({ id: `notice-${Date.now()}`, role: 'notice', body: data.aiNotice, createdAt: new Date().toISOString() });
+        return next;
+      });
+    } catch {
+      toast.error('Could not send message');
+    } finally {
+      setSending(false);
+      setAwaitingReply(false);
+    }
+  }
+
+  function onComposerKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  }
+
+  function startRename() {
+    setRenameValue(chat.title || '');
+    setRenaming(true);
+  }
+
+  async function saveRename() {
+    setRenaming(false);
+    const title = renameValue.trim() || null;
+    if (title === chat.title) return;
+    try {
+      const { data } = await notesApi.update(id, { title });
+      setChat(data);
+    } catch {
+      toast.error('Could not rename chat');
+    }
+  }
+
+  async function toggleAi() {
+    try {
+      const { data } = await notesApi.update(id, { aiEnabled: !chat.aiEnabled });
+      setChat(data);
+    } catch {
+      toast.error('Could not update Talk to AI');
+    }
+  }
+
+  function startEdit(message) {
+    setEditingId(message.id);
+    setEditingBody(message.body);
+  }
+
+  async function saveEdit(messageId) {
+    const body = editingBody.trim();
+    if (!body) return;
+    try {
+      const { data } = await notesApi.editMessage(messageId, body);
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? data : m)));
+      setEditingId(null);
+    } catch {
+      toast.error('Could not edit message');
+    }
+  }
+
+  async function confirmDeleteMessage() {
+    if (!deleteTarget) return;
+    setDeletingMessage(true);
+    try {
+      await notesApi.removeMessage(deleteTarget.id);
+      setMessages((prev) => prev.filter((m) => m.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch {
+      toast.error('Could not delete message');
+    } finally {
+      setDeletingMessage(false);
+    }
+  }
+
+  function startRecording() {
+    if (!SpeechRecognitionCtor) return;
+    setMicError(null);
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    recordingBaseTextRef.current = composerText;
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results).map((r) => r[0].transcript).join('');
+      const base = recordingBaseTextRef.current;
+      setComposerText(base ? `${base} ${transcript}` : transcript);
+    };
+    recognition.onerror = (event) => {
+      setMicError(
+        event.error === 'not-allowed' || event.error === 'permission-denied'
+          ? 'Microphone access was blocked. Enable it in your browser settings to use voice input.'
+          : 'Voice input failed. You can keep typing instead.'
+      );
+      setRecording(false);
+    };
+    recognition.onend = () => setRecording(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setRecording(true);
+  }
+
+  function stopRecording() {
+    recognitionRef.current?.stop();
+    setRecording(false);
+  }
+
+  if (!chat || messages === null) return <main className="page-container py-6 text-center text-muted">Loading chat...</main>;
+
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-4">
+      <Breadcrumb items={[{ label: 'Notes', to: '/notes' }, { label: chat.title || 'Untitled' }]} onBack={() => navigate('/notes')} />
+
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        {renaming ? (
+          <form
+            className="flex min-w-0 flex-1 items-center gap-1.5"
+            onSubmit={(e) => { e.preventDefault(); saveRename(); }}
+          >
+            <input
+              className="field"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="Untitled"
+              autoFocus
+              onBlur={saveRename}
+            />
+            <button type="submit" className="btn-icon shrink-0" aria-label="Save name"><Check size={15} /></button>
+          </form>
+        ) : (
+          <button type="button" className="min-w-0 truncate text-left text-lg font-semibold hover:underline" onClick={startRename}>
+            {chat.title || 'Untitled'}
+          </button>
+        )}
+
+        <button
+          type="button"
+          className={`btn-ghost shrink-0 ${chat.aiEnabled ? 'border-primary text-primary' : ''}`}
+          onClick={toggleAi}
+          aria-pressed={chat.aiEnabled}
+        >
+          <Sparkles size={15} /> Talk to AI: {chat.aiEnabled ? 'On' : 'Off'}
+        </button>
+      </div>
+
+      <div className="space-y-3 pb-3">
+        {!messages.length && (
+          <div className="card p-8 text-center text-sm text-muted">Nothing here yet. Say something below.</div>
+        )}
+        {messages.map((message) => {
+          if (message.role === 'notice') {
+            return (
+              <div key={message.id} className="mx-auto max-w-sm rounded-md bg-amber-50 px-3 py-2 text-center text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                {message.body}
+              </div>
+            );
+          }
+          const isUser = message.role === 'user';
+          const isEditing = editingId === message.id;
+          return (
+            <div key={message.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+              <div className={`group max-w-[85%] rounded-lg px-3 py-2 ${isUser ? 'bg-primary text-white' : 'card'}`}>
+                {isEditing ? (
+                  <div className="space-y-1.5">
+                    <textarea
+                      className={`field text-sm ${isUser ? 'text-text dark:text-slate-100' : ''}`}
+                      rows={2}
+                      value={editingBody}
+                      onChange={(e) => setEditingBody(e.target.value)}
+                      autoFocus
+                    />
+                    <div className="flex justify-end gap-1.5">
+                      <button className="btn-icon h-7 w-7" onClick={() => setEditingId(null)} aria-label="Cancel edit"><X size={13} /></button>
+                      <button className="btn-icon h-7 w-7" onClick={() => saveEdit(message.id)} aria-label="Save edit"><Check size={13} /></button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="whitespace-pre-wrap text-sm">{message.body}</p>
+                    <div className={`mt-1 flex items-center gap-2 text-[11px] ${isUser ? 'text-blue-100' : 'text-muted'}`}>
+                      <span>{formatTime(message.createdAt)}</span>
+                      <span className="ml-auto hidden items-center gap-1 group-hover:flex">
+                        <button className="opacity-70 hover:opacity-100" onClick={() => startEdit(message)} aria-label="Edit message"><Pencil size={12} /></button>
+                        <button className="opacity-70 hover:opacity-100" onClick={() => setDeleteTarget(message)} aria-label="Delete message"><Trash2 size={12} /></button>
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        {awaitingReply && (
+          <div className="flex justify-start">
+            <div className="card px-3 py-2 text-sm text-muted">Thinking…</div>
+          </div>
+        )}
+        <div ref={streamEndRef} />
+      </div>
+
+      {micError && (
+        <p className="mb-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{micError}</p>
+      )}
+
+      {/* sticky, not fixed: stays 4rem (the BottomNav's reserved pb-16 space
+          in App.jsx) above the viewport bottom as the page scrolls, without
+          needing a bespoke fixed-height scroll container like the rest of
+          the app doesn't use anywhere else. */}
+      <div className="sticky bottom-16 z-10 flex items-end gap-2 border-t border-border bg-bg pt-3 dark:border-slate-700 dark:bg-slate-900">
+        {SpeechRecognitionCtor && (
+          <button
+            type="button"
+            className={`btn-icon shrink-0 ${recording ? 'animate-pulse border-red-400 text-red-600' : ''}`}
+            onClick={recording ? stopRecording : startRecording}
+            aria-label={recording ? 'Stop recording' : 'Start voice input'}
+          >
+            {recording ? <MicOff size={16} /> : <Mic size={16} />}
+          </button>
+        )}
+        <textarea
+          className="field flex-1 resize-none"
+          rows={1}
+          placeholder="Write a note..."
+          value={composerText}
+          onChange={(e) => setComposerText(e.target.value)}
+          onKeyDown={onComposerKeyDown}
+        />
+        <button className="btn-primary shrink-0" onClick={send} disabled={sending || !composerText.trim()} aria-label="Send">
+          <Send size={16} />
+        </button>
+      </div>
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title="Delete this message?"
+          warning="This can't be undone."
+          confirmLabel="Delete"
+          loading={deletingMessage}
+          onConfirm={confirmDeleteMessage}
+          onClose={() => setDeleteTarget(null)}
+        />
+      )}
+    </main>
+  );
+}

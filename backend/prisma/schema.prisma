@@ -33,6 +33,8 @@ model User {
   adminActivityAsActor  AdminActivity[] @relation("AdminActivityActor")
   adminActivityAsTarget AdminActivity[] @relation("AdminActivityTarget")
   invitesSent           UserInvite[]
+
+  noteChats NoteChat[]
 }
 
 enum AdminActivityEventType {
@@ -145,6 +147,8 @@ model Project {
   // the project down with it.
   promptRulesCategoryId String?
   promptRulesCategory   DocCategory? @relation("ProjectPromptRulesCategory", fields: [promptRulesCategoryId], references: [id], onDelete: SetNull)
+
+  noteChats NoteChat[]
 }
 
 model Group {
@@ -223,6 +227,7 @@ model Task {
   activity       TaskActivity[]
   docLinks       TaskDocLink[]
   promptVersions PromptVersion[]
+  noteChats      NoteChat[]
 
   // NULL externalId rows are each distinct under Postgres unique-constraint
   // semantics, so this is only enforced when externalId is actually set --
@@ -549,4 +554,52 @@ model PromptVersion {
   usedAt        DateTime?
 
   @@index([taskId, createdAt])
+}
+
+// --- Notes: chat-style personal notes, optional per-chat "Talk to AI" mode ---
+
+enum NoteMessageRole {
+  user
+  assistant
+}
+
+// title is nullable -- an untitled chat is rendered client-side as
+// "Untitled N" (numbered by creation order), never persisted as a literal
+// placeholder string, so a later rename never has to disambiguate against
+// stored text. project/task are optional context links (e.g. "notes about
+// this task"); SetNull so deleting the project/task never takes the chat
+// down with it -- a note chat's lifecycle is independent of what it's
+// linked to. aiEnabled defaults false: Talk to AI is opt-in per chat, and
+// even then only actually calls out if ENABLE_AI_GENERATION is also on
+// (see POST .../messages) -- same two-gate pattern as Prompt 6 generation.
+model NoteChat {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  title     String?
+  aiEnabled Boolean   @default(false)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?
+  task      Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  taskId    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  messages NoteMessage[]
+
+  @@index([userId, deletedAt, createdAt])
+}
+
+model NoteMessage {
+  id        String          @id @default(cuid())
+  chat      NoteChat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chatId    String
+  role      NoteMessageRole
+  body      String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  deletedAt DateTime?
+
+  @@index([chatId, deletedAt, createdAt])
 }

@@ -160,3 +160,15 @@ export const syncApi = {
   accept: (id) => api.post(`/api/sync/proposals/${id}/accept`),
   dismiss: (id) => api.post(`/api/sync/proposals/${id}/dismiss`)
 };
+
+export const notesApi = {
+  list: () => api.get('/api/notes/chats'),
+  detail: (chatId) => api.get(`/api/notes/chats/${chatId}`),
+  create: (payload) => api.post('/api/notes/chats', payload || {}),
+  update: (chatId, payload) => api.patch(`/api/notes/chats/${chatId}`, payload),
+  remove: (chatId) => api.delete(`/api/notes/chats/${chatId}`),
+  messages: (chatId) => api.get(`/api/notes/chats/${chatId}/messages`),
+  sendMessage: (chatId, body) => api.post(`/api/notes/chats/${chatId}/messages`, { body }),
+  editMessage: (messageId, body) => api.patch(`/api/notes/messages/${messageId}`, { body }),
+  removeMessage: (messageId) => api.delete(`/api/notes/messages/${messageId}`)
+};

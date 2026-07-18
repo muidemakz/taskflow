@@ -52,7 +52,12 @@ export default function SearchBar() {
     navigate(`/projects/${project.id}`);
   }
 
-  const hasResults = Boolean(results && (results.tasks.length || results.projects.length || results.docs.length));
+  function goToNote(note) {
+    reset();
+    navigate(`/notes/${note.id}`);
+  }
+
+  const hasResults = Boolean(results && (results.tasks.length || results.projects.length || results.docs.length || results.notes?.length));
 
   return (
     <div className="relative w-full max-w-xs" ref={containerRef}>
@@ -105,10 +110,22 @@ export default function SearchBar() {
           )}
 
           {!loading && results?.docs.length > 0 && (
-            <div className="py-1">
+            <div className="border-b border-slate-100 py-1">
               <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted">Docs</div>
               {results.docs.map((doc) => (
                 <div key={doc.id} className="px-3 py-2 text-sm">{doc.title}</div>
+              ))}
+            </div>
+          )}
+
+          {!loading && results?.notes?.length > 0 && (
+            <div className="py-1">
+              <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted">Notes</div>
+              {results.notes.map((note) => (
+                <button key={note.id} className="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => goToNote(note)}>
+                  <span className="font-medium">{note.title || 'Untitled'}</span>
+                  {note.snippet && <span className="truncate text-xs text-muted">{note.snippet}</span>}
+                </button>
               ))}
             </div>
           )}

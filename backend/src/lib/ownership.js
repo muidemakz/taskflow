@@ -62,3 +62,19 @@ export async function requirePromptVersion(promptVersionId, userId) {
     include: { task: true }
   });
 }
+
+// Notes: userId is the direct owner (not routed through a project), unlike
+// every other helper above -- there is no shared-membership concept here,
+// so this is the simplest possible check, but it's still centralized here
+// rather than inlined per route for the same reason as everything else in
+// this file.
+export async function requireNoteChat(chatId, userId) {
+  return prisma.noteChat.findFirst({ where: { id: chatId, userId, deletedAt: null } });
+}
+
+export async function requireNoteMessage(messageId, userId) {
+  return prisma.noteMessage.findFirst({
+    where: { id: messageId, deletedAt: null, chat: { userId, deletedAt: null } },
+    include: { chat: true }
+  });
+}

@@ -15,6 +15,7 @@ import RoadmapOverview from './pages/RoadmapOverview';
 import DocDetail from './pages/DocDetail';
 import Trash from './pages/Trash';
 import Notes from './pages/Notes';
+import NoteChat from './pages/NoteChat';
 import MyTasks from './pages/MyTasks';
 import CatchUp from './pages/CatchUp';
 import AccountPage from './pages/AccountPage';
@@ -85,6 +86,7 @@ export default function App() {
         <Route path="/projects/:id/docs/:docId" element={<DocDetail />} />
         <Route path="/trash" element={<Trash />} />
         <Route path="/notes" element={<Notes />} />
+        <Route path="/notes/:id" element={<NoteChat />} />
         <Route path="/my-tasks" element={<MyTasks />} />
         <Route path="/review" element={<CatchUp />} />
         <Route path="/account" element={<AccountPage />} />
