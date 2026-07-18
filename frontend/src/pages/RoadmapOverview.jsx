@@ -76,7 +76,7 @@ export default function RoadmapOverview() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6">
-      <Breadcrumb items={[{ label: 'Projects', to: '/dashboard' }, { label: project.title }]} />
+      <Breadcrumb items={[{ label: 'Projects', to: '/dashboard' }, { label: project.title }]} onBack={() => navigate('/dashboard')} />
 
       <ProjectDetailCard
         project={project}

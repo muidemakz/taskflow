@@ -67,7 +67,7 @@ export default function ProjectDetailCard({ project, stats, tagCount = 0, onShar
           aria-expanded={!collapsed}
           aria-label={collapsed ? 'Expand project details' : 'Collapse project details'}
         >
-          <ChevronDown size={16} className={`transition-transform duration-300 ${collapsed ? 'rotate-90' : ''}`} />
+          <ChevronDown size={16} className={`transition-transform duration-300 ${collapsed ? '-rotate-90' : ''}`} />
         </button>
       </div>
 

@@ -18,7 +18,7 @@ export default function GroupCard({ group, groups, readOnly = false, selectable 
         {selectable && <input type="checkbox" checked={selected} onChange={() => onSelect?.(group.id)} className="h-4 w-4" />}
         {!readOnly && <GripVertical size={16} className="text-slate-400" />}
         <button className="btn-icon h-8 w-8" onClick={() => setOpen((value) => !value)}>
-          <ChevronDown size={16} className={`transition-transform duration-300 ${open ? '' : 'rotate-90'}`} />
+          <ChevronDown size={16} className={`transition-transform duration-300 ${open ? '' : '-rotate-90'}`} />
         </button>
         <input className="field border-transparent font-semibold" value={title} readOnly={readOnly} onChange={(event) => setTitle(event.target.value)} onBlur={(event) => onRename?.(group.id, event.target.value.trim() || group.title)} />
         <span className="chip bg-blue-50 text-primary"><Folder size={13} className="mr-1" /> Group</span>
