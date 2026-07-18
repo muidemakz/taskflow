@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 17 July 2026 (post security-audit + task-modal-in-place session)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — cleanup sprint in progress
+**Last Updated:** 18 July 2026 (post PAT auth revert + Commit 1 chunked work begins)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — UI standardization sprint in progress (Commit 1 scope divided into sequential chunks)
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -287,9 +287,30 @@ Invites (copyable one-time links), roles, password reset, activity log, self-ser
 
 ---
 
-## Remaining Work
+## Remaining Work — Commit 1 Chunked Implementation
 
-### This Sprint
+### Current Sprint (18 Jul 2026)
+**Commit 1 is being completed in SMALL SEQUENTIAL CHUNKS to prevent component debt.**
+Each chunk ends in a complete, integrated, committed state. No mid-flight context exhaustion.
+
+**CHUNK 1 (this week): Filter bar unification** 
+- Integrate SharedFilterBar into all filter locations (My Tasks, Board/Gate, Docs, ProjectDetail)
+- Delete superseded implementations (MyTasksFilterBar, BoardFilterBar)
+- Ensure exactly ONE filter bar definition in codebase
+- Status: In progress
+
+**CHUNK 2 (next session): Breadcrumbs, chevrons, labels, tab actions**
+- One breadcrumb structure across all pages
+- Expand chevron direction verified visually
+- Remove "Gates" label convention
+- Tab row context actions (Tasks → "Whole-project board", Docs → "New Entry")
+
+**CHUNK 3 (following session): PAGE WIDTH, card actions, last-activity**
+- CSS variable for max-width applied uniformly
+- Collapsed card quick-action buttons
+- Wire or remove "last activity" rendering
+
+### Sprint Backlog (as of 17 Jul, pre-chunking)
 1. ✅ customId field — COMPLETE & PRODUCTION
 2. ✅ Production data migration (Valideity seed + Fortnoto ownership) — COMPLETE
 3. ✅ Security audit (6 items) — COMPLETE (fixes in `e93a26a`; finding #5 escalated to user)
@@ -362,7 +383,17 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 
 ---
 
-## Fact-Check Corrections Log (17 Jul 2026)
+## Pending: Group → Tag Migration for Contract Phase (18 Jul 2026)
+
+**Status:** Investigation STARTED
+- **Staging:** ✅ Complete (35 groups → 35 tags, 100% overlap, 221 grouped tasks, 7 ungrouped left as-is)
+- **Production:** ⏳ Investigation needed (no inferred data; must query direct DB or use Railway SSH)
+- **Approach:** Single idempotent script to run on both environments; handles both cases (tags exist or need creation)
+- **Scheduled:** After Commit 1 completion (filter unification, breadcrumbs, page width)
+
+---
+
+## Fact-Check Corrections Log (17 Jul 2026 → 18 Jul additions)
 
 Corrected against the actual repo and live databases:
 - **Staging HEAD:** `08ad9ed` → **`5628ba1`** (two later commits: `e93a26a` security fixes, `5628ba1` task-modal). `main` HEAD `9f72056` confirmed correct.
