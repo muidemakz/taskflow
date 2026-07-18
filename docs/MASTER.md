@@ -299,16 +299,17 @@ Each chunk ends in a complete, integrated, committed state. No mid-flight contex
 - ✅ Ensure exactly ONE filter bar definition in codebase
 - Commits: `42cb6a2` (My Tasks/Board unification), `a9cb436` (Docs/ProjectDetail integration)
 
-**CHUNK 2b** (✅ COMPLETE): Breadcrumbs, chevrons, labels, tab actions — `130e663`
+**CHUNK 2b** (✅ COMPLETE): Breadcrumbs, chevrons, labels, tab actions — `130e663` → `15debc7` (corrections)
 - ✅ Breadcrumb: Remove stray chevron before first item (only render between items, not after back arrow)
-- ✅ Expand chevron direction: Fixed GroupCard to use rotate-90 (collapsed) consistently with ProjectDetailCard
+- ✅ Breadcrumb back arrows: Add onBack to ProjectBoard and RoadmapOverview for consistent back navigation
+- ✅ Expand chevron direction: Fixed both ProjectDetailCard and GroupCard to use -rotate-90 when collapsed (points RIGHT), empty when expanded (points DOWN)
 - ✅ Remove "Gates" label from RoadmapOverview gate filter controls
 - ✅ Tab row context action: ProjectTabs shows context-sensitive button (Tasks → "Whole-project board"; Docs → "New entry" with onNewEntry callback)
 
-**CHUNK 3 (following session): PAGE WIDTH, card actions, last-activity**
-- CSS variable for max-width applied uniformly
-- Collapsed card quick-action buttons
-- Wire or remove "last activity" rendering
+**CHUNK 3** (✅ COMPLETE): PAGE WIDTH, card actions, last-activity — `692f005`
+- ✅ PAGE WIDTH: Define --page-max-width CSS variable (72rem), create .page-container utility, apply uniformly to all main pages
+- ✅ COLLAPSED PROJECT CARD: Add compact icon-only action buttons (Share, Settings, Add task) to header when collapsed for always-accessible quick actions
+- ✅ LAST ACTIVITY: Remove dead slot from project card (no data being sent from backend)
 
 ### Sprint Backlog (as of 17 Jul, pre-chunking)
 1. ✅ customId field — COMPLETE & PRODUCTION
