@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 18 July 2026 (post PAT auth revert + Commit 1 chunked work begins)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — Commit 1 (UI standardization) complete on staging; Commit 3 (tabs as state) landed ahead of Commit 2; chevron rotation direction still unverified in a browser
+**Last Updated:** 18 July 2026 (customId generation + board/modal bug fixes + whole-project board unification)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — Commit 1 (UI standardization) and Commit 3 (tabs as state, now including the whole-project board) complete on staging; customId now generates on every task-creation path (staging only, backfill pending user approval); chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -364,6 +364,125 @@ points right) fix applied to `ProjectDetailCard` and `GroupCard` in commit `15de
 from CSS rotation mechanics (clockwise convention on a down-pointing glyph) and matches the
 user's explicit correction, but this is reasoning, not the requested browser confirmation --
 **do not treat this item as closed.**
+
+### customId Generation, Backfill Investigation, Board/Modal Bug Fixes (18 Jul 2026)
+
+**CHUNK A (✅ COMPLETE, STAGING ONLY) — customId generation on task creation — `9a43b39`**
+
+Bug: `customId` was only ever populated by the Valideity seed script -- nothing in the app
+generated one, so every project besides Valideity showed no IDs and new tasks got none, forever.
+
+Scheme (`backend/src/utils/customId.js`), mirroring Valideity's real seed-script ids exactly
+(read from `seedValideity.mjs` before choosing a format -- not invented):
+- Gated task → `<GateLetter>1.<n>`, e.g. `A1.7`. Valideity's seed clusters hand-authored tasks
+  into multiple numbered buckets per gate (A1.x, A2.x, A3.x...) reflecting theming with no
+  equivalent concept in the running app -- auto-generated tasks always land in bucket "1",
+  continuing that gate's own numbering rather than inventing a new axis.
+- Unscheduled task → bare incrementing number, e.g. `7`. **Proposed, not just applied** (per
+  instruction to flag the fallback format before broad use): chosen because it can never
+  collide with a gate-based id (those always start with a letter), whatever the gate count.
+- Retries with a freshly-computed id on a `P2002` unique-constraint hit; the numbering itself is
+  a pure, stateless function (10 unit tests in `backend/test/customId.test.js`) -- it never
+  writes anything, so nothing about it can renumber an existing id.
+- Wired into every task-creation path (grepped -- exactly two `prisma.task.create` call sites):
+  `POST /api/projects/:id/tasks` (now accepts an optional `gateId` so a task created straight
+  into a gate gets its final gate atomically, instead of Unscheduled-then-moved-by-a-separate-
+  call, which would have permanently stuck it with an Unscheduled-style id) and
+  `POST /api/sync/tasks` (external upsert, always Unscheduled by existing design).
+
+**CHUNK B (⏳ INVESTIGATION DONE, MUTATION NOT YET APPROVED) — backfill**
+
+Real numbers via Railway SSH (`railway ssh --service taskflow`, piping a script into `node` over
+stdin -- no script ever deployed to either environment):
+
+| Environment | Project | Total | Has customId | Gated | Unscheduled |
+|---|---|---|---|---|---|
+| Production | Fortnoto | 279 | 0 | 0 | 279 |
+| Production | Valideity | 91 | 91 | 76 | 15 |
+| Staging | Fortnoto | 226 | 0 | 0 | 226 |
+| Staging | Valideity | 92 | 91 | 77 | 15 |
+| Staging | Testing | 7 | 0 | 5 | 2 |
+| Staging | c.1.2 QA Project | 1 | 0 | 1 | 0 |
+| Staging | Again / Prompt 4 Docs QA | 0 | — | — | — |
+
+Confirms production Fortnoto is 279/279 Unscheduled (all numeric fallback), matching the
+expectation stated before investigating. Staging Valideity has one extra task beyond
+production's 91 (`"New ti check"`, gate B, QA-added) missing a customId; everything else is
+already covered. Sample generated ids previewed (dry run, no mutation): Fortnoto → `1, 2, 3 ...
+279`; staging Valideity's gap → `B1.8` (continues gate B past its existing max `B1.7`); Testing
+(mixed) → `A1.1`, `B1.1..B1.3`, plus Unscheduled numerics.
+
+**Stopped here, per instruction, for user approval before writing or running the mutation.**
+Next: idempotent backfill script (skip existing ids, never overwrite), run against both
+environments, verify by running twice, report final counts, delete the script, log results here.
+
+**CHUNK D + E (✅ COMPLETE, STAGING) — two task-modal bugs — `ec79d78`**
+
+1. **Status dropdown excluded empty statuses.** Root cause: `ProjectBoard.jsx`'s gate-scoped
+   modal derived its status options from `columns.filter(c => c.tasks.length)` -- a status with
+   zero tasks in the current gate was silently excluded, so a task could never be moved into an
+   empty column. Grepped every status selector in the app (`TaskDetailModal`,
+   `QuickAddTaskModal`, `TaskMoveSheet`, `ListView`) -- only this one had the bug; the others
+   already sourced the full project list. Fixed by having `TaskDetailModal` always render every
+   project status, in configured order, regardless of task count; removed the now-pointless
+   `statusOptions` prop and its column-derived memo entirely rather than leaving dead plumbing.
+2. **Status/field changes in the modal didn't reflect until a page refresh.** Two independent
+   root causes, fixed together since testing one without the other would have left the bug
+   half-fixed:
+   - **Board/list view:** `boardStore.updateTaskFields` replaced the task in place within
+     whichever column already held it, but never MOVED it to the column matching its fresh
+     `statusId` -- the write persisted correctly, but the task stayed visually stuck in its old
+     column until a full reload re-partitioned everything. Fixed to remove-then-reinsert into
+     the correct column (sorted by position), mirroring `moveTask`'s existing optimistic-update
+     pattern. Covers every editable field, not just status.
+   - **My Tasks:** has no visible status field at all (`TaskRow` never renders one), so the only
+     real symptom there is a completed task not disappearing from a "not-done tasks" list until
+     refresh -- and the PATCH response has no status/gate display objects or `countsAsDone` to
+     determine that client-side. Fixed at `InlineTaskModal`, the one place that already has both
+     lookup lists in scope: it now enriches `onUpdated` with the resolved gate/status objects and
+     a `countsAsDone` flag before handing it to the host page. My Tasks uses this for an
+     immediate, targeted merge into whichever bucket(s) hold the task -- dropping it everywhere
+     if now done, otherwise patching title/priority/dueDate/blocked/focus/tags/gate/customId in
+     place. The existing onClose-triggered full reload stays as a background consistency pass
+     (catches deletes and a task becoming newly relevant to a *different* bucket, e.g. a due-date
+     edit making it newly overdue) -- not introduced by this fix, and no longer what makes the
+     row look right in the meantime. Search's dropdown needed no change: it already clears its
+     results and closes before the modal opens, so there was no stale list to update.
+
+**CHUNK F (✅ COMPLETE, STAGING) — whole-project board unified into the Tasks tab — `be8440d`**
+
+Same problem Commit 3 fixed for Docs: the whole-project board (`/board`, no gateId) built its own
+chrome from scratch and had no in-app way out but the browser back button.
+
+- **Affordance chosen: the tabs-row "Whole-project board" button now toggles** between the gates
+  grid and the whole-project board, its label reflecting whichever view is NOT showing
+  ("Whole-project board" in gates mode, "Roadmap view" in board mode). Chosen over repurposing
+  the breadcrumb/back arrow because it reuses the exact existing entry point with zero
+  relocation, and keeps the back arrow single-purpose (navigate to the parent) instead of
+  overloading it with a second, view-toggling meaning.
+- `RoadmapOverview.jsx`'s Tasks tab now has two sub-views switched via `?view=board` --
+  breadcrumb, `ProjectDetailCard`, and the tabs row stay mounted and identical across the toggle.
+  Board rendering (`KanbanBoard`/`ListView`, `BoardToolbar`, `TaskDetailModal`, taskId
+  highlight-on-load) ported over from `ProjectBoard.jsx`'s whole-project branch; its filter bar
+  is the same `SharedFilterBar` shell/position as every other view, with the same tag/priority/
+  blocked/focus/due-date fields the whole-project board always had.
+- Switching Tasks ↔ Docs preserves the current Tasks sub-view (leaving board mode for Docs and
+  back returns to board mode, not always the gates grid).
+- `ProjectBoard.jsx`: a whole-project request (hasRoadmap project, no gateId, not Unscheduled)
+  now redirects to the unified `?tab=tasks&view=board` URL once `hasRoadmap` is known, carrying
+  a `taskId` deep link through if present, guarded so the old chrome never flashes first.
+  Gate-scoped, Unscheduled, and a roadmap-less project's own board (which IS that project's
+  home) are untouched -- genuine drill-down/home views, not the bug being fixed.
+- **Verified live against the staging dev server** (real DB, real JWT minted against the actual
+  staging `JWT_SECRET`, not guessed): toggle switches with no remount; `?view=board` reflected in
+  the URL and survives a tab round-trip; bare `/board` redirects to the unified board view;
+  `/board?taskId=X` redirects carrying `taskId` through and auto-opens the right task with every
+  status showing in its dropdown (confirms this sits correctly on top of the Chunk D fix);
+  gate-scoped `/board?gateId=X` untouched, its back arrow still returns to the roadmap; Docs tab
+  unaffected. No console errors on any of these.
+
+Gate (all three chunks): 53/53 backend tests pass, frontend build clean, no secrets in diff.
+Pushed to `staging` only.
 
 ### Sprint Backlog (as of 17 Jul, pre-chunking)
 1. ✅ customId field — COMPLETE & PRODUCTION
