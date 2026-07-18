@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
 **Last Updated:** 18 July 2026 (TID scheme revision + customId generation + board/modal bug fixes + whole-project board unification)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — Commit 1 (UI standardization) and Commit 3 (tabs as state, now including the whole-project board) complete on staging; TID (customId) now generates on every task-creation path in a single frozen `<Letter><Cluster>.<Seq>` format, U-prefixed for Unscheduled (staging only, backfill pending user approval); chevron rotation direction still unverified in a browser
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — Commit 1 (UI standardization) and Commit 3 (tabs as state, now including the whole-project board) complete on staging; TID (customId) now generates on every task-creation path in a single frozen `<Letter><Cluster>.<Seq>` format, U-prefixed for Unscheduled, and every staging task now has one (328/328, backfilled 18 Jul 2026 — production Fortnoto/Valideity backfill still pending approval); chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -426,33 +426,39 @@ fallback:**
   that project, so no collision); reran the same scan afterward and confirmed **zero** bare-
   numeric ids remain on staging.
 
-**CHUNK B (⏳ INVESTIGATION REFRESHED UNDER THE NEW SCHEME, MUTATION STILL NOT APPROVED) — backfill**
+**CHUNK B (✅ COMPLETE ON STAGING ONLY — production still pending approval) — backfill**
 
-Original per-project/per-environment counts (still accurate — see table below); the dry-run
-preview was re-run against the revised TID scheme via the same Railway SSH method (piping a
-script into `node` over stdin -- no script ever deployed to either environment):
+Dry-run counts immediately before mutating (via Railway SSH, script piped into `node` over
+stdin — never deployed to either environment):
 
-| Environment | Project | Total | Has TID | Gated | Unscheduled |
-|---|---|---|---|---|---|
-| Production | Fortnoto | 279 | 0 | 0 | 279 |
-| Production | Valideity | 91 | 91 | 76 | 15 |
-| Staging | Fortnoto | 226 | 0 | 0 | 226 |
-| Staging | Valideity | 92 | 91 | 77 | 15 |
-| Staging | Testing | 9 | 1 (after cleanup above) | 5 | 3 |
-| Staging | c.1.2 QA Project | 1 | 0 | 1 | 0 |
+| Environment | Project | Total | Has TID (before) | Missing (before) |
+|---|---|---|---|---|
+| Staging | Valideity | 92 | 91 | 1 |
+| Staging | Testing | 9 | 2 (post bare-numeric cleanup above) | 7 |
+| Staging | c.1.2 QA Project | 1 | 0 | 1 |
+| Staging | Fortnoto | 226 | 0 | 226 |
+| **Staging TOTAL** | | **328** | **93** | **235** |
 
-Fresh sample ids under the new scheme (dry run, no mutation):
-- **Production Fortnoto** → `U1.1 … U1.279` (confirmed exactly 279, all Unscheduled, as expected).
-- **Staging Fortnoto** → `U1.1 … U1.226` (confirmed exactly 226, all Unscheduled, as expected).
-- **Staging Valideity**'s one gap (`"New ti check"`, gate B) → `B1.8` (continues gate B past its
-  existing max `B1.7`) — unchanged by the scheme revision since it's a gated id.
-- **Staging Testing** (mixed) → `B1.2`, `B1.3`, `B1.4`, `A1.1`, `U1.2` (continues past the
-  cleaned-up `U1.1`) — no more bare numerics anywhere in the preview.
-- **c.1.2 QA Project** → `C1.1`.
+Approved by user 18 Jul 2026, **staging only** ("Do NOT run it on production yet"). Ran the
+idempotent backfill script (skips any task that already has a TID; only ever writes to tasks
+where `customId` is null — never overwrites an existing one):
 
-**Stopped here, per instruction, for user approval before writing or running the mutation.**
-Next: idempotent backfill script (skip existing ids, never overwrite), run against both
-environments, verify by running twice, report final counts, delete the script, log results here.
+- **First pass:** assigned all 235 missing TIDs. Samples: Valideity gap → `B1.8` (continues gate
+  B past its existing max `B1.7`); Testing (mixed) → `B1.2`, `B1.3`, `B1.4`, `U1.2`, `U1.3`,
+  `B1.5`; c.1.2 QA Project → `C1.1`; Fortnoto → `U1.1 … U1.226` (all 226, confirmed exactly
+  matching the predicted all-Unscheduled count).
+- **Counts after:** every project at 100% — Valideity 92/92, Testing 9/9, c.1.2 QA Project 1/1,
+  Fortnoto 226/226. **Staging TOTAL: 328/328 has a TID, 0 missing.**
+- **Second pass (idempotency proof):** reran the identical script — reported `328 tasks already
+  had a TID, 0 were missing one` and **assigned 0**. Confirms rerunning is a safe no-op.
+- **Uniqueness check:** scanned every project for duplicate TIDs post-backfill — **0 found**,
+  matching the `@@unique([projectId, customId])` constraint.
+- Backfill/count/verify scripts were scratchpad-only (piped via stdin over Railway SSH); nothing
+  was deployed to the repo or either environment's filesystem.
+
+**Production Fortnoto (279, all Unscheduled) and production Valideity (91/91, already complete)
+are unchanged — explicitly not run per instruction.** Next: user approval to run the same script
+against production.
 
 **CHUNK D + E (✅ COMPLETE, STAGING) — two task-modal bugs — `ec79d78`**
 
