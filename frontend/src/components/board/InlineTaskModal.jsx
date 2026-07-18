@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import Modal from '../Modal';
 import TaskDetailModal from './TaskDetailModal';
@@ -51,15 +52,11 @@ export default function InlineTaskModal({ projectId, taskId, onClose, onUpdated 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, taskId]);
 
-  if (!context) {
-    return (
-      <Modal title="Task details" onClose={onClose} maxWidthClass="max-w-2xl">
-        <p className="py-6 text-center text-sm text-muted">Loading task…</p>
-      </Modal>
-    );
-  }
-
-  return (
+  const modalElement = !context ? (
+    <Modal title="Task details" onClose={onClose} maxWidthClass="max-w-2xl">
+      <p className="py-6 text-center text-sm text-muted">Loading task…</p>
+    </Modal>
+  ) : (
     <TaskDetailModal
       task={context.task}
       statuses={context.statuses}
@@ -71,4 +68,7 @@ export default function InlineTaskModal({ projectId, taskId, onClose, onUpdated 
       onUpdated={onUpdated}
     />
   );
+
+  const modalContainer = document.getElementById('modals');
+  return modalContainer ? createPortal(modalElement, modalContainer) : null;
 }

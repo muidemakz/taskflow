@@ -12,10 +12,13 @@ export async function requireAuth(req, res, next) {
 
   if (token.startsWith(PAT_PREFIX)) {
     try {
-      const pat = await prisma.personalAccessToken.findUnique({ where: { tokenHash: hashPatToken(token) } });
+      const pat = await prisma.personalAccessToken.findUnique({
+        where: { tokenHash: hashPatToken(token) },
+        include: { user: { select: { role: true } } },
+      });
       if (!pat || pat.revokedAt) return res.status(401).json({ message: 'Invalid or revoked token' });
       prisma.personalAccessToken.update({ where: { id: pat.id }, data: { lastUsedAt: new Date() } }).catch(() => {});
-      req.auth = { sub: pat.userId, viaPat: true, patId: pat.id };
+      req.auth = { sub: pat.userId, role: pat.user.role, viaPat: true, patId: pat.id };
       return next();
     } catch {
       return res.status(401).json({ message: 'Invalid or expired token' });

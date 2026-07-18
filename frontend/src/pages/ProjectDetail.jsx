@@ -97,19 +97,19 @@ export default function ProjectDetail() {
 
       <ProjectTabs projectId={id} active="tasks" tasksTo={`/projects/${id}/legacy`} />
 
-      <section className="border-b border-border bg-white/80">
+      <section className="border-b border-border bg-white/80 dark:bg-slate-900/50">
         <div className="mx-auto max-w-6xl px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="flex-1"><ProgressBar value={st.pct} /></div>
             <span className="text-sm text-muted">{st.done} of {st.total} done · <strong>{st.pct}%</strong></span>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <input className="field max-w-sm" placeholder="Search tasks or comments" value={filters.query} onChange={(e) => setFilters({ ...filters, query: e.target.value })} />
-            <div className="rounded-md border border-[#d8e0ea] bg-white p-1">
-              {['all', 'TODO', 'DONE'].map((value) => <button key={value} className={`rounded px-3 py-1.5 text-sm font-semibold ${filters.status === value ? 'bg-primary text-white' : 'text-muted'}`} onClick={() => setFilters({ ...filters, status: value })}>{value === 'all' ? 'All' : value === 'TODO' ? 'To-do' : 'Done'}</button>)}
+            <input className="field max-w-sm dark:bg-slate-800 dark:text-white dark:border-slate-700" placeholder="Search tasks or comments" value={filters.query} onChange={(e) => setFilters({ ...filters, query: e.target.value })} />
+            <div className="rounded-md border border-[#d8e0ea] bg-white p-1 dark:border-slate-700 dark:bg-slate-800">
+              {['all', 'TODO', 'DONE'].map((value) => <button key={value} className={`rounded px-3 py-1.5 text-sm font-semibold ${filters.status === value ? 'bg-primary text-white' : 'text-muted dark:text-slate-400'}`} onClick={() => setFilters({ ...filters, status: value })}>{value === 'all' ? 'All' : value === 'TODO' ? 'To-do' : 'Done'}</button>)}
             </div>
-            <input className="field w-auto" type="date" value={filters.completedAfter} onChange={(e) => setFilters({ ...filters, completedAfter: e.target.value })} />
-            <select className="field w-auto" value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
+            <input className="field w-auto dark:bg-slate-800 dark:text-white dark:border-slate-700" type="date" value={filters.completedAfter} onChange={(e) => setFilters({ ...filters, completedAfter: e.target.value })} />
+            <select className="field w-auto dark:bg-slate-800 dark:text-white dark:border-slate-700" value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
               <option value="default">Default order</option>
               <option value="todo-first">To-do first</option>
               <option value="done-first">Completed first</option>
