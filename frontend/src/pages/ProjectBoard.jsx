@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus, Settings, Share2 } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, Plus, Settings, Share2, Star } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
 import GateDetailCard from '../components/roadmap/GateDetailCard';
 import KanbanBoard from '../components/board/KanbanBoard';
 import ListView from '../components/board/ListView';
 import BoardToolbar from '../components/board/BoardToolbar';
-import BoardFilterBar from '../components/board/BoardFilterBar';
+import SharedFilterBar from '../components/SharedFilterBar';
+import TagMultiSelect from '../components/TagMultiSelect';
 import TaskDetailModal from '../components/board/TaskDetailModal';
 import ProjectSettingsModal from '../components/settings/ProjectSettingsModal';
 import CloseGateModal from '../components/roadmap/CloseGateModal';
@@ -237,7 +238,79 @@ export default function ProjectBoard() {
         </>
       )}
 
-      <BoardFilterBar filters={filters} onChange={setFilters} availableTags={tags} />
+      <SharedFilterBar
+        filters={filters}
+        onChange={setFilters}
+        onClear={() => setFilters({ tagIds: [], priority: '', blockedOnly: false, focusOnly: false, dueFilter: '' })}
+        showSearch={false}
+        filterFields={[
+          {
+            key: 'tagIds',
+            render: (f, set) => {
+              const selectedTags = tags.filter((t) => f.tagIds.includes(t.id));
+              return (
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-sm font-semibold ${selectedTags.length ? 'text-primary' : 'text-muted'}`}>
+                    Tags{selectedTags.length ? ` (${selectedTags.length})` : ''}
+                  </span>
+                  <TagMultiSelect
+                    selectedTags={selectedTags}
+                    availableTags={tags}
+                    onAdd={(tagId) => set({ tagIds: [...f.tagIds, tagId] })}
+                    onRemove={(tagId) => set({ tagIds: f.tagIds.filter((id) => id !== tagId) })}
+                  />
+                </div>
+              );
+            }
+          },
+          {
+            key: 'priority',
+            render: (f, set) => (
+              <select className="field w-auto dark:bg-slate-700 dark:text-white dark:border-slate-600" value={f.priority} onChange={(e) => set({ priority: e.target.value })}>
+                <option value="">Any priority</option>
+                <option value="HIGH">High</option>
+                <option value="MID">Mid</option>
+                <option value="LOW">Low</option>
+                <option value="NONE">None</option>
+              </select>
+            )
+          },
+          {
+            key: 'blockedOnly',
+            render: (f, set) => (
+              <button
+                className={`btn-ghost ${f.blockedOnly ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-900/40 dark:text-red-300' : ''}`}
+                onClick={() => set({ blockedOnly: !f.blockedOnly })}
+              >
+                <AlertTriangle size={14} /> Blocked only
+              </button>
+            )
+          },
+          {
+            key: 'focusOnly',
+            render: (f, set) => (
+              <button
+                className={`btn-ghost ${f.focusOnly ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-900/40 dark:text-amber-300' : ''}`}
+                onClick={() => set({ focusOnly: !f.focusOnly })}
+              >
+                <Star size={14} /> Focus only
+              </button>
+            )
+          },
+          {
+            key: 'dueFilter',
+            render: (f, set) => (
+              <select className="field w-auto dark:bg-slate-700 dark:text-white dark:border-slate-600" value={f.dueFilter} onChange={(e) => set({ dueFilter: e.target.value })}>
+                <option value="">Any due date</option>
+                <option value="overdue">Overdue</option>
+                <option value="thisWeek">Due this week</option>
+                <option value="hasDate">Has a date</option>
+                <option value="noDate">No date</option>
+              </select>
+            )
+          }
+        ]}
+      />
 
       {loading ? (
         <div className="p-8 text-center text-muted">Loading board...</div>

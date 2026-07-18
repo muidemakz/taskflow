@@ -1,10 +1,36 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { AlertTriangle, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import InlineTaskModal from '../components/board/InlineTaskModal';
-import MyTasksFilterBar, { EMPTY_MY_TASK_FILTERS, countActiveMyTaskFilters } from '../components/MyTasksFilterBar';
+import SharedFilterBar from '../components/SharedFilterBar';
+import TagMultiSelect from '../components/TagMultiSelect';
 import { meApi, projectsApi, roadmapApi, boardApi } from '../api/endpoints';
 import { formatDueDate, isOverdue, priorityMeta, tagColorClass } from '../utils/board';
+
+export const EMPTY_MY_TASK_FILTERS = {
+  projectId: '',
+  tagIds: [],
+  priority: '',
+  statusId: '',
+  gateId: '',
+  blockedOnly: false,
+  dueFrom: '',
+  dueTo: '',
+  search: ''
+};
+
+export function countActiveMyTaskFilters(f) {
+  let n = 0;
+  if (f.projectId) n += 1;
+  if (f.tagIds.length) n += 1;
+  if (f.priority) n += 1;
+  if (f.statusId) n += 1;
+  if (f.gateId) n += 1;
+  if (f.blockedOnly) n += 1;
+  if (f.dueFrom || f.dueTo) n += 1;
+  if (f.search.trim()) n += 1;
+  return n;
+}
 
 const LAST_PROJECT_KEY = 'taskflow_last_project';
 
@@ -170,11 +196,94 @@ export default function MyTasks() {
         ))}
       </div>
 
-      <MyTasksFilterBar
+      <SharedFilterBar
         filters={filters}
         onChange={setFilters}
-        options={filterOptions}
         onClear={() => setFilters(EMPTY_MY_TASK_FILTERS)}
+        placeholder="Search title or ID..."
+        filterFields={[
+          {
+            key: 'projectId',
+            render: (f, set) => (
+              <select className="field" value={f.projectId} onChange={(e) => set({ projectId: e.target.value })}>
+                <option value="">Any project</option>
+                {filterOptions.projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+              </select>
+            )
+          },
+          {
+            key: 'statusId',
+            render: (f, set) => (
+              <select className="field" value={f.statusId} onChange={(e) => set({ statusId: e.target.value })}>
+                <option value="">Any status</option>
+                {filterOptions.statuses.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            )
+          },
+          {
+            key: 'priority',
+            render: (f, set) => (
+              <select className="field" value={f.priority} onChange={(e) => set({ priority: e.target.value })}>
+                <option value="">Any priority</option>
+                <option value="HIGH">High</option>
+                <option value="MID">Mid</option>
+                <option value="LOW">Low</option>
+                <option value="NONE">None</option>
+              </select>
+            )
+          },
+          {
+            key: 'gateId',
+            render: (f, set) => (
+              <select className="field" value={f.gateId} onChange={(e) => set({ gateId: e.target.value })}>
+                <option value="">Any gate</option>
+                {filterOptions.hasUnscheduled && <option value="__none__">Unscheduled</option>}
+                {filterOptions.gates.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+            )
+          },
+          {
+            key: 'dueDate',
+            render: (f, set) => (
+              <div className="flex items-center gap-2 rounded-md border border-border bg-white px-2 dark:bg-slate-800 dark:border-slate-700">
+                <span className="text-sm text-muted">Due</span>
+                <input type="date" className="field border-0 px-1" value={f.dueFrom} onChange={(e) => set({ dueFrom: e.target.value })} aria-label="Due from" />
+                <span className="text-muted">–</span>
+                <input type="date" className="field border-0 px-1" value={f.dueTo} onChange={(e) => set({ dueTo: e.target.value })} aria-label="Due to" />
+              </div>
+            )
+          },
+          {
+            key: 'blockedOnly',
+            render: (f, set) => (
+              <button
+                className={`btn-ghost justify-start ${f.blockedOnly ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-900/40 dark:text-red-300' : ''}`}
+                onClick={() => set({ blockedOnly: !f.blockedOnly })}
+              >
+                <AlertTriangle size={14} /> Blocked only
+              </button>
+            )
+          },
+          {
+            key: 'tagIds',
+            render: (f, set) => {
+              const selectedTags = filterOptions.tags.filter((t) => f.tagIds.includes(t.id));
+              return (
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-sm font-semibold ${selectedTags.length ? 'text-primary' : 'text-muted'}`}>
+                    Tags{selectedTags.length ? ` (${selectedTags.length})` : ''}
+                  </span>
+                  <TagMultiSelect
+                    selectedTags={selectedTags}
+                    availableTags={filterOptions.tags}
+                    onAdd={(tagId) => set({ tagIds: [...f.tagIds, tagId] })}
+                    onRemove={(tagId) => set({ tagIds: f.tagIds.filter((tid) => tid !== tagId) })}
+                  />
+                </div>
+              );
+            }
+          }
+        ]}
       />
 
       {activeFilterCount > 0 && (
