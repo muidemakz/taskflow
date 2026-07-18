@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, DoorClosed, DoorOpen, Plus, Settings, Share2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Settings, Share2 } from 'lucide-react';
+import Breadcrumb from '../components/Breadcrumb';
+import GateDetailCard from '../components/roadmap/GateDetailCard';
 import KanbanBoard from '../components/board/KanbanBoard';
 import ListView from '../components/board/ListView';
 import BoardToolbar from '../components/board/BoardToolbar';
@@ -15,10 +17,6 @@ import EntityShareModal from '../components/EntityShareModal';
 import { useBoardStore } from '../store/boardStore';
 import { projectsApi, gatesApi } from '../api/endpoints';
 import { EMPTY_FILTERS, filterTasks } from '../utils/board';
-
-function formatClosedDate(iso) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 
 export default function ProjectBoard() {
   const { id } = useParams();
@@ -141,104 +139,103 @@ export default function ProjectBoard() {
         ? 'Whole project'
         : null;
 
+  // Breadcrumb: Projects / [Project] / [leaf]. The project crumb links to the
+  // roadmap when there is one (its true parent view); a roadmap-less project's
+  // board IS its home, so it stays the leaf with no third crumb.
+  const breadcrumbItems = [{ label: 'Projects', to: '/dashboard' }];
+  if (currentGate) {
+    const gateLetter = String.fromCharCode(65 + (currentGate.order ?? 0));
+    breadcrumbItems.push({ label: projectTitle, to: `/projects/${id}/roadmap` });
+    breadcrumbItems.push({ label: `${gateLetter} · ${currentGate.name}` });
+  } else if (isUnscheduledView) {
+    breadcrumbItems.push({ label: projectTitle, to: `/projects/${id}/roadmap` });
+    breadcrumbItems.push({ label: 'Unscheduled' });
+  } else if (hasRoadmap) {
+    breadcrumbItems.push({ label: projectTitle, to: `/projects/${id}/roadmap` });
+    breadcrumbItems.push({ label: 'Whole project' });
+  } else {
+    breadcrumbItems.push({ label: projectTitle });
+  }
+
   if (!project) return <main className="p-8 text-center text-muted">Loading board...</main>;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
-      <div className="mb-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <button
-              className="btn-icon shrink-0"
-              onClick={() => navigate(hasRoadmap ? `/projects/${id}/roadmap` : '/dashboard')}
-              aria-label="Back"
-            >
-              <ArrowLeft size={17} />
-            </button>
+      <Breadcrumb items={breadcrumbItems} />
+
+      {currentGate ? (
+        <>
+          <GateDetailCard
+            gate={currentGate}
+            onAddTask={(g) => setAddingTaskGate(g)}
+            onShareGate={setSharingGate}
+            onCloseGate={setClosingGate}
+            onReopenGate={setReopeningGate}
+          />
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 rounded-md border border-border bg-white p-1 dark:bg-slate-800">
+              <button
+                className="btn-icon h-7 w-7 border-none"
+                disabled={!prevGate}
+                onClick={() => navigate(`/projects/${id}/board?gateId=${prevGate.id}`)}
+                aria-label="Previous gate"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <select
+                className="border-0 bg-transparent text-sm font-semibold outline-none dark:bg-slate-800"
+                value={currentGate.id}
+                onChange={(e) => navigate(`/projects/${id}/board?gateId=${e.target.value}`)}
+              >
+                {sortedGates.map((g) => <option key={g.id} value={g.id}>{g.name}{g.status === 'CLOSED' ? ' (Closed)' : ''}</option>)}
+              </select>
+              <button
+                className="btn-icon h-7 w-7 border-none"
+                disabled={!nextGate}
+                onClick={() => navigate(`/projects/${id}/board?gateId=${nextGate.id}`)}
+                aria-label="Next gate"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+            <div className="ml-auto">
+              <BoardToolbar view={view} onViewChange={setView} sortKey={sortKey} onSortChange={setSortKey} />
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <h1 className="truncate text-xl font-bold">{title}</h1>
               {subtitle && <p className="truncate text-sm text-muted">{subtitle}</p>}
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <BoardToolbar view={view} onViewChange={setView} sortKey={sortKey} onSortChange={setSortKey} />
-            <button className="btn-ghost" onClick={() => setShareProjectOpen(true)}><Share2 size={16} /> Share</button>
-            <button className="btn-icon" onClick={() => setSettingsOpen(true)} aria-label="Project settings">
-              <Settings size={16} />
-            </button>
-          </div>
-        </div>
-
-        {(currentGate || isUnscheduledView) && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {currentGate && (
-              <div className="flex items-center gap-1 rounded-md border border-[#d8e0ea] bg-white p-1">
-                <button
-                  className="btn-icon h-7 w-7 border-none"
-                  disabled={!prevGate}
-                  onClick={() => navigate(`/projects/${id}/board?gateId=${prevGate.id}`)}
-                  aria-label="Previous gate"
-                >
-                  <ChevronLeft size={14} />
+            <div className="flex items-center gap-2">
+              {isUnscheduledView && (
+                <button className="btn-ghost" onClick={() => setAddingTaskGate(null)}>
+                  <Plus size={14} /> Add task
                 </button>
-                <select
-                  className="border-0 bg-transparent text-sm font-semibold outline-none"
-                  value={currentGate.id}
-                  onChange={(e) => navigate(`/projects/${id}/board?gateId=${e.target.value}`)}
-                >
-                  {sortedGates.map((g) => <option key={g.id} value={g.id}>{g.name}{g.status === 'CLOSED' ? ' (Closed)' : ''}</option>)}
-                </select>
-                <button
-                  className="btn-icon h-7 w-7 border-none"
-                  disabled={!nextGate}
-                  onClick={() => navigate(`/projects/${id}/board?gateId=${nextGate.id}`)}
-                  aria-label="Next gate"
-                >
-                  <ChevronRight size={14} />
+              )}
+              <BoardToolbar view={view} onViewChange={setView} sortKey={sortKey} onSortChange={setSortKey} />
+              <button className="btn-ghost" onClick={() => setShareProjectOpen(true)}><Share2 size={16} /> Share</button>
+              <button className="btn-icon" onClick={() => setSettingsOpen(true)} aria-label="Project settings">
+                <Settings size={16} />
+              </button>
+            </div>
+          </div>
+
+          {!isUnscheduledView && (
+            <div className="mb-4 border-b border-border">
+              <div className="flex gap-1 pb-2">
+                <button className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-white">Tasks</button>
+                <button className="rounded-md px-3 py-1.5 text-sm font-semibold text-muted hover:bg-slate-50 dark:hover:bg-slate-800" onClick={() => navigate(`/projects/${id}/docs`)}>
+                  Docs
                 </button>
               </div>
-            )}
-
-            <button className="btn-ghost" onClick={() => setAddingTaskGate(currentGate || null)}>
-              <Plus size={14} /> Add task
-            </button>
-
-            {currentGate && (
-              <>
-                <button className="btn-icon" onClick={() => setSharingGate(currentGate)} aria-label="Share gate">
-                  <Share2 size={15} />
-                </button>
-                {currentGate.status === 'CLOSED' ? (
-                  <button className="btn-ghost" onClick={() => setReopeningGate(currentGate)}>
-                    <DoorOpen size={15} /> Reopen gate
-                  </button>
-                ) : (
-                  <button className="btn-ghost" onClick={() => setClosingGate(currentGate)}>
-                    <DoorClosed size={15} /> Close gate
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {currentGate?.status === 'CLOSED' && (
-          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm text-muted">
-            <DoorClosed size={14} />
-            Closed{currentGate.closedAt ? ` · ${formatClosedDate(currentGate.closedAt)}` : ''}
-            {currentGate.closedReason && <span className="italic">&ldquo;{currentGate.closedReason}&rdquo;</span>}
-          </div>
-        )}
-      </div>
-
-      <div className="mb-4 -mt-2 border-b border-border">
-        <div className="flex gap-1 pb-2">
-          <button className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-white">Tasks</button>
-          <button className="rounded-md px-3 py-1.5 text-sm font-semibold text-muted hover:bg-slate-50" onClick={() => navigate(`/projects/${id}/docs`)}>
-            Docs
-          </button>
-        </div>
-      </div>
+            </div>
+          )}
+        </>
+      )}
 
       <BoardFilterBar filters={filters} onChange={setFilters} availableTags={tags} />
 

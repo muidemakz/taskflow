@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, LayoutGrid, Settings, Share2 } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
+import Breadcrumb from '../components/Breadcrumb';
+import ProjectDetailCard from '../components/ProjectDetailCard';
 import GateCard from '../components/roadmap/GateCard';
 import UnscheduledCard from '../components/roadmap/UnscheduledCard';
 import CloseGateModal from '../components/roadmap/CloseGateModal';
@@ -12,14 +14,22 @@ import EntityShareModal from '../components/EntityShareModal';
 import { useBoardStore } from '../store/boardStore';
 import { boardApi, projectsApi, gatesApi } from '../api/endpoints';
 
+const GATE_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'open', label: 'Open' },
+  { key: 'closed', label: 'Closed' }
+];
+
 export default function RoadmapOverview() {
   const { id } = useParams();
   const navigate = useNavigate();
   const loadProjectMeta = useBoardStore((s) => s.loadProjectMeta);
   const gates = useBoardStore((s) => s.gates);
   const statuses = useBoardStore((s) => s.statuses);
+  const tags = useBoardStore((s) => s.tags);
   const hasRoadmap = useBoardStore((s) => s.hasRoadmap);
   const [unscheduledCount, setUnscheduledCount] = useState(0);
+  const [gateFilter, setGateFilter] = useState('all');
   const [closingGate, setClosingGate] = useState(null);
   const [reopeningGate, setReopeningGate] = useState(null);
   const [addingTaskGate, setAddingTaskGate] = useState(undefined);
@@ -55,39 +65,61 @@ export default function RoadmapOverview() {
     }
   }, [project]);
 
-  const sortedGates = [...gates].sort((a, b) => a.order - b.order);
+  const sortedGates = useMemo(() => [...gates].sort((a, b) => a.order - b.order), [gates]);
+  const visibleGates = useMemo(() => {
+    if (gateFilter === 'open') return sortedGates.filter((g) => g.status !== 'CLOSED');
+    if (gateFilter === 'closed') return sortedGates.filter((g) => g.status === 'CLOSED');
+    return sortedGates;
+  }, [sortedGates, gateFilter]);
 
   if (loading || !project) return <main className="p-8 text-center text-muted">Loading roadmap...</main>;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <button className="btn-icon" onClick={() => navigate('/dashboard')} aria-label="Back"><ArrowLeft size={17} /></button>
-          <div>
-            <h1 className="text-xl font-bold">{project.title} · Roadmap</h1>
-            <p className="text-sm text-muted">Gates in sequence</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="btn-ghost" onClick={() => navigate(`/projects/${id}/board`)}>
-            <LayoutGrid size={16} /> Whole-project board
-          </button>
-          <button className="btn-ghost" onClick={() => setShareModal(true)}><Share2 size={16} /> Share</button>
-          <button className="btn-icon" onClick={() => setSettingsOpen(true)} aria-label="Project settings">
-            <Settings size={16} />
-          </button>
-        </div>
-      </div>
+      <Breadcrumb items={[{ label: 'Projects', to: '/dashboard' }, { label: project.title }]} />
 
-      <div className="mb-5 border-b border-border">
+      <ProjectDetailCard
+        project={project}
+        stats={project.stats}
+        tagCount={tags.length}
+        onShare={() => setShareModal(true)}
+        onSettings={() => setSettingsOpen(true)}
+        onAddTask={() => setAddingTaskGate(null)}
+      />
+
+      <div className="mb-4 flex items-center justify-between gap-2 border-b border-border">
         <div className="flex gap-1 pb-2">
           <button className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-white">Tasks</button>
-          <button className="rounded-md px-3 py-1.5 text-sm font-semibold text-muted hover:bg-slate-50" onClick={() => navigate(`/projects/${id}/docs`)}>
+          <button className="rounded-md px-3 py-1.5 text-sm font-semibold text-muted hover:bg-slate-50 dark:hover:bg-slate-800" onClick={() => navigate(`/projects/${id}/docs`)}>
             Docs
           </button>
         </div>
+        <button className="btn-ghost mb-2 hidden sm:inline-flex" onClick={() => navigate(`/projects/${id}/board`)}>
+          <LayoutGrid size={16} /> Whole-project board
+        </button>
       </div>
+
+      {sortedGates.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white p-2 dark:bg-slate-800">
+          <span className="text-sm font-semibold text-muted">Gates</span>
+          <div className="flex gap-1">
+            {GATE_FILTERS.map((f) => (
+              <button
+                key={f.key}
+                className={`rounded-md px-2.5 py-1 text-sm font-semibold transition ${
+                  gateFilter === f.key ? 'bg-primary text-white' : 'text-muted hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+                onClick={() => setGateFilter(f.key)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <button className="btn-ghost ml-auto inline-flex sm:hidden" onClick={() => navigate(`/projects/${id}/board`)}>
+            <LayoutGrid size={15} /> Board
+          </button>
+        </div>
+      )}
 
       {!hasRoadmap && !sortedGates.length && (
         <div className="card p-8 text-center text-muted">
@@ -96,7 +128,7 @@ export default function RoadmapOverview() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {sortedGates.map((gate) => (
+        {visibleGates.map((gate) => (
           <GateCard
             key={gate.id}
             gate={gate}
@@ -108,11 +140,13 @@ export default function RoadmapOverview() {
             onEditGate={() => setSettingsOpen(true)}
           />
         ))}
-        <UnscheduledCard
-          count={unscheduledCount}
-          onOpen={() => navigate(`/projects/${id}/board?gateId=unscheduled`)}
-          onAddTask={() => setAddingTaskGate(null)}
-        />
+        {gateFilter !== 'closed' && (
+          <UnscheduledCard
+            count={unscheduledCount}
+            onOpen={() => navigate(`/projects/${id}/board?gateId=unscheduled`)}
+            onAddTask={() => setAddingTaskGate(null)}
+          />
+        )}
       </div>
 
       {closingGate && (

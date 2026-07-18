@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import InlineTaskModal from '../components/board/InlineTaskModal';
+import MyTasksFilterBar, { EMPTY_MY_TASK_FILTERS, countActiveMyTaskFilters } from '../components/MyTasksFilterBar';
 import { meApi, projectsApi, roadmapApi, boardApi } from '../api/endpoints';
 import { formatDueDate, isOverdue, priorityMeta, tagColorClass } from '../utils/board';
 
@@ -15,10 +16,34 @@ const BUCKET_TABS = [
   { key: 'allPending', label: 'All pending' }
 ];
 
+// Every dimension ANDs together, applied client-side over the already-loaded
+// buckets -- no new endpoint. gateId '__none__' is the sentinel for
+// Unscheduled (tasks with no gate).
+function applyMyTaskFilters(tasks, f) {
+  const q = f.search.trim().toLowerCase();
+  const from = f.dueFrom ? new Date(f.dueFrom) : null;
+  const to = f.dueTo ? new Date(`${f.dueTo}T23:59:59`) : null;
+  return tasks.filter((t) => {
+    if (f.projectId && t.projectId !== f.projectId) return false;
+    if (f.tagIds.length && !t.tags?.some((tag) => f.tagIds.includes(tag.id))) return false;
+    if (f.priority && (t.priority || 'NONE') !== f.priority) return false;
+    if (f.statusId && t.statusId !== f.statusId) return false;
+    if (f.gateId === '__none__') {
+      if (t.gateId) return false;
+    } else if (f.gateId && t.gateId !== f.gateId) return false;
+    if (f.blockedOnly && !t.blocked) return false;
+    if (from && (!t.dueDate || new Date(t.dueDate) < from)) return false;
+    if (to && (!t.dueDate || new Date(t.dueDate) > to)) return false;
+    if (q && !`${t.title} ${t.customId || ''}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
 export default function MyTasks() {
   const [buckets, setBuckets] = useState(null);
   const [openTask, setOpenTask] = useState(null);
   const [activeTab, setActiveTab] = useState('today');
+  const [filters, setFilters] = useState(EMPTY_MY_TASK_FILTERS);
   const [projects, setProjects] = useState([]);
   const [quickTitle, setQuickTitle] = useState('');
   const [quickProjectId, setQuickProjectId] = useState('');
@@ -70,9 +95,36 @@ export default function MyTasks() {
     }
   }
 
+  // Filter dropdown options are derived from the full pending set (a superset
+  // of every bucket) so they stay stable regardless of which bucket is active.
+  const filterOptions = useMemo(() => {
+    const all = buckets?.allPending || [];
+    const projMap = new Map();
+    const tagMap = new Map();
+    const statusMap = new Map();
+    const gateMap = new Map();
+    let hasUnscheduled = false;
+    for (const t of all) {
+      if (t.project) projMap.set(t.project.id, t.project.title);
+      for (const tag of t.tags || []) tagMap.set(tag.id, tag);
+      if (t.taskStatus) statusMap.set(t.taskStatus.id, t.taskStatus.name);
+      if (t.gate) gateMap.set(t.gate.id, t.gate.name);
+      if (!t.gateId) hasUnscheduled = true;
+    }
+    return {
+      projects: [...projMap].map(([id, title]) => ({ id, title })).sort((a, b) => a.title.localeCompare(b.title)),
+      tags: [...tagMap.values()],
+      statuses: [...statusMap].map(([id, name]) => ({ id, name })),
+      gates: [...gateMap].map(([id, name]) => ({ id, name })),
+      hasUnscheduled
+    };
+  }, [buckets]);
+
   if (!buckets) return <main className="p-8 text-center text-muted">Loading your tasks...</main>;
 
-  const tasks = buckets[activeTab] || [];
+  const rawTasks = buckets[activeTab] || [];
+  const tasks = applyMyTaskFilters(rawTasks, filters);
+  const activeFilterCount = countActiveMyTaskFilters(filters);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
@@ -107,7 +159,9 @@ export default function MyTasks() {
           <button
             key={tab.key}
             className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
-              activeTab === tab.key ? 'border-primary bg-primary text-white' : 'border-[#d8e0ea] bg-white text-muted'
+              activeTab === tab.key
+                ? 'border-primary bg-primary text-white'
+                : 'border-[#d8e0ea] bg-white text-muted dark:border-slate-700 dark:bg-slate-800'
             }`}
             onClick={() => setActiveTab(tab.key)}
           >
@@ -116,8 +170,23 @@ export default function MyTasks() {
         ))}
       </div>
 
-      <div className="card mt-3 divide-y divide-slate-100">
-        {tasks.length === 0 && <div className="p-6 text-center text-muted">Nothing here.</div>}
+      <MyTasksFilterBar
+        filters={filters}
+        onChange={setFilters}
+        options={filterOptions}
+        onClear={() => setFilters(EMPTY_MY_TASK_FILTERS)}
+      />
+
+      {activeFilterCount > 0 && (
+        <p className="mt-2 px-1 text-xs text-muted">Showing {tasks.length} of {rawTasks.length} in this bucket</p>
+      )}
+
+      <div className="card mt-3 divide-y divide-slate-100 dark:divide-slate-700">
+        {tasks.length === 0 && (
+          <div className="p-6 text-center text-muted">
+            {activeFilterCount > 0 ? 'No tasks match these filters.' : 'Nothing here.'}
+          </div>
+        )}
         {tasks.map((task) => (
           <TaskRow key={task.id} task={task} onOpen={() => setOpenTask({ taskId: task.id, projectId: task.projectId })} />
         ))}

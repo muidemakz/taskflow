@@ -9,6 +9,32 @@
   button, input, textarea, select {
     font: inherit;
   }
+
+  /* Gate accent hues (A->F, cycling with modulo past 6) plus the gate
+     card's tinted surface. Defined as CSS variables so both the accent
+     stripe and the tint stay themeable and dark-mode safe -- the .dark
+     block below re-points every token, so no component needs a dark:
+     variant for these. */
+  :root {
+    --gate-accent-0: #2563eb;
+    --gate-accent-1: #7c3aed;
+    --gate-accent-2: #0891b2;
+    --gate-accent-3: #059669;
+    --gate-accent-4: #ea580c;
+    --gate-accent-5: #db2777;
+    --gate-card-bg: #f5f8ff;
+    --gate-card-border: #dbe5f5;
+  }
+  :root.dark {
+    --gate-accent-0: #60a5fa;
+    --gate-accent-1: #a78bfa;
+    --gate-accent-2: #22d3ee;
+    --gate-accent-3: #34d399;
+    --gate-accent-4: #fb923c;
+    --gate-accent-5: #f472b6;
+    --gate-card-bg: #1c2740;
+    --gate-card-border: #334155;
+  }
 }
 
 @layer components {
@@ -23,6 +49,19 @@
   }
   .card {
     @apply rounded-lg border border-border bg-white shadow-card dark:border-slate-700 dark:bg-slate-800;
+  }
+  /* Gate detail card: same radius/shadow/border language as .card (sibling,
+     not a different system), but a tinted surface + a 4px left accent stripe
+     driven by --gate-accent (set inline per gate order) so it reads as an
+     obvious sub-level of the project card. */
+  .gate-detail-card {
+    @apply rounded-lg shadow-card;
+    background: var(--gate-card-bg);
+    border: 1px solid var(--gate-card-border);
+    border-left: 4px solid var(--gate-accent, var(--gate-accent-0));
+  }
+  .breadcrumb-link {
+    @apply text-muted transition hover:text-primary dark:hover:text-blue-400;
   }
   .field {
     @apply w-full rounded-md border border-[#d8e0ea] bg-white px-3 py-2 text-sm text-text outline-none transition focus:border-primary focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-blue-900/40;
