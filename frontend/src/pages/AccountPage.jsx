@@ -6,7 +6,6 @@ import { useAuthStore } from '../store/authStore';
 import { tokensApi, usersApi } from '../api/endpoints';
 import { applyTheme } from '../utils/theme';
 import Modal from '../components/Modal';
-import { TrashPanel } from './Trash';
 
 const THEME_OPTIONS = [
   { value: 'LIGHT', label: 'Light' },
@@ -317,13 +316,12 @@ function EditAvatarModal({ user, onClose }) {
   );
 }
 
-// Trash is a list view, not a form, so it doesn't fit the small
-// field-then-submit modal shape used for Name/Email/Password -- it opens
-// in a wider modal instead (matching TaskDetailModal's max-w-2xl), reusing
-// TrashPanel as-is rather than rebuilding its list/restore/delete-forever
-// logic here. The chevron-row entry point still matches the rest of the page.
+// Trash is a full page (/trash), not a modal -- a list this size, plus its
+// own search, deserved room to breathe rather than living in a modal. This
+// row is just the entry point; clicking it navigates there instead of
+// opening anything in place.
 function TrashSection() {
-  const [showTrash, setShowTrash] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <section className="card mt-4 p-4">
@@ -332,7 +330,7 @@ function TrashSection() {
         <button
           type="button"
           className="flex w-full items-center justify-between gap-3 py-1 text-left"
-          onClick={() => setShowTrash(true)}
+          onClick={() => navigate('/trash')}
         >
           <span className="flex items-center gap-2.5">
             <Trash2 size={16} className="text-muted" />
@@ -341,12 +339,6 @@ function TrashSection() {
           <ChevronRight size={16} className="shrink-0 text-muted" />
         </button>
       </div>
-
-      {showTrash && (
-        <Modal title="Trash" onClose={() => setShowTrash(false)} maxWidthClass="max-w-2xl">
-          <TrashPanel showHeading={false} />
-        </Modal>
-      )}
     </section>
   );
 }

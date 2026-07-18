@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
-import { RotateCcw, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { RotateCcw, Search, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { projectsApi, trashApi } from '../api/endpoints';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import Breadcrumb from '../components/Breadcrumb';
 
 const TYPE_LABELS = { project: 'Project', task: 'Task', group: 'Group', gate: 'Gate', tag: 'Tag' };
 
@@ -11,13 +13,14 @@ function daysRemaining(deletedAt, retentionDays) {
   return Math.max(0, retentionDays - elapsedDays);
 }
 
-// The reusable list+actions content, with no outer page chrome of its own --
-// used both by the standalone /trash route (wrapped in <main> below) and by
-// the Account page's Trash section (wrapped in a Modal instead). `showHeading`
-// controls the internal "Trash" title: the standalone route needs it as its
-// only page heading, but the Account modal already renders "Trash" as the
-// Modal's own title, so showing it twice there would be redundant.
-export function TrashPanel({ showHeading = true }) {
+// Global, not per-project: a deleted Project itself isn't reachable from
+// within any project view. Reached from Account (a "Trash" chevron row that
+// navigates here rather than opening a modal -- this used to be a modal, but
+// a list this size deserved its own page with room for search), with a back
+// button returning there rather than relying on browser back, matching the
+// Breadcrumb pattern every other detail page in the app already uses.
+export default function Trash() {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [retentionDays, setRetentionDays] = useState(30);
   const [projectTitles, setProjectTitles] = useState({});
@@ -25,6 +28,7 @@ export function TrashPanel({ showHeading = true }) {
   const [restoringId, setRestoringId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [search, setSearch] = useState('');
 
   function load() {
     setLoading(true);
@@ -67,23 +71,62 @@ export function TrashPanel({ showHeading = true }) {
     }
   }
 
-  if (loading) return <p className="py-6 text-center text-sm text-muted">Loading trash...</p>;
+  const visibleItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((item) => item.title.toLowerCase().includes(q));
+  }, [items, search]);
+
+  if (loading) return <main className="page-container py-6 text-center text-muted">Loading trash...</main>;
 
   return (
-    <>
+    <main className="page-container py-6">
+      <Breadcrumb
+        items={[{ label: 'Account', to: '/account' }, { label: 'Trash' }]}
+        onBack={() => navigate('/account')}
+      />
+
       <div className="mb-5">
-        {showHeading && <h1 className="text-xl font-bold">Trash</h1>}
+        <h1 className="text-xl font-bold">Trash</h1>
         <p className="text-sm text-muted">Items are permanently deleted {retentionDays} days after being trashed</p>
       </div>
+
+      {items.length > 0 && (
+        <div className="card mb-3 p-2 dark:bg-slate-800">
+          <div className="relative min-w-0 flex-1">
+            <Search size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              className="field pl-8 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+              placeholder="Search trash..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button
+                type="button"
+                className="btn-icon absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2"
+                onClick={() => setSearch('')}
+                aria-label="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {!items.length ? (
         <div className="card p-10 text-center text-muted">
           <Trash2 size={28} className="mx-auto mb-3 text-slate-300" />
           Nothing in trash.
         </div>
+      ) : !visibleItems.length ? (
+        <div className="card p-10 text-center text-muted">
+          No trashed items match "{search}".
+        </div>
       ) : (
         <div className="card divide-y divide-slate-100 dark:divide-slate-700">
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const remaining = daysRemaining(item.deletedAt, retentionDays);
             const projectTitle = item.type === 'project' ? item.title : projectTitles[item.projectId];
             return (
@@ -126,18 +169,6 @@ export function TrashPanel({ showHeading = true }) {
           onClose={() => setDeleteTarget(null)}
         />
       )}
-    </>
-  );
-}
-
-// Global, not per-project: a deleted Project itself isn't reachable from
-// within any project view. Kept as its own routed page (/trash) for deep
-// linking even though the primary entry point is now a section inside the
-// Account page -- this is just TrashPanel wrapped in the page's own chrome.
-export default function Trash() {
-  return (
-    <main className="page-container py-6">
-      <TrashPanel />
     </main>
   );
 }

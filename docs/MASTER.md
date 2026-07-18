@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 18 July 2026 (nav restructure: Trash moved into Account, Notes slot opened — staging only)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370), each verified idempotent by a second no-op run with zero duplicate TIDs; Group→Tag migration investigated on production only (not run — production is 38 groups/6 tags/0% overlap, materially unlike staging's 35/35/100%); Account page Profile section (name + avatar) converted from inline editing to modals matching the Change Email/Change Password pattern; bottom nav now **My Tasks | Catch Up | Projects | Notes | Account**, Trash moved into Account as a section (`/trash` still valid as a deep link), Notes is a placeholder page pending the real feature — **all staging only, not yet merged**; chevron rotation direction still unverified in a browser
+**Last Updated:** 18 July 2026 (Trash revised from an Account modal to its own page — staging only)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370), each verified idempotent by a second no-op run with zero duplicate TIDs; Group→Tag migration investigated on production only (not run — production is 38 groups/6 tags/0% overlap, materially unlike staging's 35/35/100%); Account page Profile section (name + avatar) converted from inline editing to modals matching the Change Email/Change Password pattern; bottom nav now **My Tasks | Catch Up | Projects | Notes | Account**, Notes is a placeholder page pending the real feature, Trash is reached from Account but renders as its own full page at `/trash` (revised from an initial modal-in-Account approach) with a back button and search — **all staging only, not yet merged**; chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -665,6 +665,45 @@ horizontal overflow anywhere. No console errors in the clean tab at any point.
 
 Gate: 51/51 backend tests pass (no backend touched), frontend build clean, no secrets in diff.
 Pushed to `staging` only.
+
+### Revision: Trash modal → dedicated page (✅ COMPLETE, STAGING ONLY — 18 Jul 2026, commit `a98ce95` revised)
+
+The Trash section shipped above opened as a wide modal from Account; revised the same day to a
+full page instead, reached the same way (clicking "Trash" in Account) but landing on `/trash`
+directly rather than opening in place.
+
+- **`Trash.jsx`**: folded back into a single page component (the short-lived `TrashPanel`/
+  `showHeading` split from the modal version is gone now that nothing embeds it elsewhere) --
+  list/restore/delete-forever logic is **byte-identical**, confirmed via `git diff` showing zero
+  changed lines in `restore`/`confirmDeleteForever` -- this was purely a presentation/navigation
+  change, not a functional rebuild, exactly as instructed.
+  - Added a `Breadcrumb` (`Account → Trash`) with `onBack` returning to `/account` -- the same
+    established back-button pattern every other detail page in the app already uses (`DocDetail`,
+    etc.), not a bespoke control.
+  - Added search: a plain input filtering the list by title as the user types, styled to match
+    `SharedFilterBar`'s existing search box exactly (icon position, `field pl-8 dark:bg-slate-700`
+    classes) rather than pulling in the whole Filters-drawer machinery, which doesn't apply here --
+    Trash has nothing else to filter on. An inline clear ("×") button appears once there's a query.
+    Empty states: "Nothing in trash" (no items at all) vs. `No trashed items match "<query>"` (a
+    search with zero hits) -- distinct, so a user can tell the difference.
+- **`AccountPage.jsx`**: `TrashSection`'s chevron row now calls `navigate('/trash')` instead of
+  opening a `Modal`; the `showTrash` state and `TrashPanel` import are gone.
+
+**Verified live against the staging dev server** (fresh tab per this session's established
+practice, no accumulated console history): clicking Trash in Account navigates to `/trash`
+(confirmed via `window.location.pathname`, not just visually); the back button returns to
+`/account`; search filters the list correctly (typed "redirect" -> 1 of 3 items remained), the
+no-match empty state renders correctly, and Clear restores all 3; `/trash` still resolves
+directly as a deep link with identical content; dark mode at 380px confirmed via computed styles
+(search input `rgb(51,65,85)` bg / white text, list card `rgb(30,41,59)` bg, matching the rest of
+the app), no horizontal overflow. Zero console errors. Restore/permanent-delete were **not**
+re-exercised end-to-end this pass (would have mutated shared staging trash contents for a code
+path proven unchanged by the zero-diff above) -- relying on the diff plus the prior session's
+already-verified restore/delete-forever coverage rather than repeating a live mutation for its
+own sake.
+
+Gate: 51/51 backend tests pass (no backend touched), frontend build clean, no secrets in diff,
+no dead references (`TrashPanel`/`showTrash` grepped, zero hits). Pushed to `staging` only.
 
 ### Sprint Backlog (as of 17 Jul, pre-chunking)
 1. ✅ customId field — COMPLETE & PRODUCTION
