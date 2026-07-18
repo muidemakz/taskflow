@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 18 July 2026 (staging merged to production — main fast-forwarded to `5dec9ca`)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits (UI standardization, whole-project board unification, TID/customId generation + scheme revision, task-modal bug fixes) merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; production Fortnoto/Valideity TID backfill NOT yet run (staging-only so far, 328/328 there); chevron rotation direction still unverified in a browser
+**Last Updated:** 18 July 2026 (production TID backfill complete — STEP 4b)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill now complete on **both** environments (staging 328/328, production 370/370), each verified idempotent by a second no-op run with zero duplicate TIDs; Group→Tag migration investigated on production only (not run — production is 38 groups/6 tags/0% overlap, materially unlike staging's 35/35/100%); chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -46,12 +46,12 @@ feature and the full Valideity dataset.
 - **Frontend:** **https://muidemakztaskflow.netlify.app** (confirmed via prod `FRONTEND_URL`)
 - **Database:** Production Postgres (Railway)
 
-### Production Database (verified 17 Jul 2026, read-only Prisma query; TID/status counts re-verified 18 Jul 2026 post-merge)
+### Production Database (verified 17 Jul 2026, read-only Prisma query; TID/status counts re-verified 18 Jul 2026 post-merge and post-backfill)
 - **Users:** 3 — `admin@taskflow.app`, `demo@taskflow.app`, `testuser123@example.com`
 - **Projects:** 2 (non-deleted)
-  - **Fortnoto** — 279 tasks — owned by **admin@taskflow.app** (moved from demo). Board statuses backfilled 17 Jul 2026 (see data-mutation note below).
+  - **Fortnoto** — 279 tasks — owned by **admin@taskflow.app** (moved from demo). Board statuses backfilled 17 Jul 2026 (see data-mutation note below). Also has 38 Groups and (newly discovered 18 Jul) one real Gate ("Gate 1") with `hasRoadmap: true` and one task placed in it — evidently a prior isolated test of the roadmap feature directly on production, unrelated to this session's work.
   - **Valideity** — 91 tasks (all 91 have customId), 6 gates, docs/prompts, Gate A closed — owned by **admin@taskflow.app**
-- **customId / TID:** all 91 Valideity tasks have IDs (A1.1 … W4.4) with clean titles; Fortnoto's 279 are still null (backfill **not yet run on production** — staging-only per instruction; re-confirmed unchanged immediately after this merge)
+- **customId / TID:** ✅ **100% backfilled on production as of 18 Jul 2026** — Fortnoto 279/279 (278 as `U1.1…U1.278`, 1 as `A1.1` for the task in "Gate 1" above), Valideity 91/91 (unchanged, already complete). Verified idempotent (second run assigned 0) and duplicate-free.
 - **Task descriptions:** Valideity enhanced comments (acceptance criteria, effort, priority, dependencies) applied
 - `demo@taskflow.app` currently owns **zero projects on production** (flagged; user hasn't requested a placeholder there)
 
@@ -459,6 +459,37 @@ where `customId` is null — never overwrites an existing one):
 **Production Fortnoto (279, all Unscheduled) and production Valideity (91/91, already complete)
 are unchanged — explicitly not run per instruction.** Next: user approval to run the same script
 against production.
+
+**CHUNK B — production backfill (✅ COMPLETE, STEP 4b of the user-directed rollout) — 18 Jul 2026**
+
+Approved and run against **production**, using the identical script already verified idempotent
+on staging (piped into `node` over Railway SSH stdin; nothing written to the container):
+
+| Project | Total | Has TID (before) | Missing (before) | Has TID (after) |
+|---|---|---|---|---|
+| Fortnoto | 279 | 0 | 279 | 279 |
+| Valideity | 91 | 91 | 0 | 91 |
+| **PRODUCTION TOTAL** | **370** | **91** | **279** | **370** |
+
+- **First pass:** assigned all 279 missing TIDs. Sample: `U1.1 … U1.278` for 278 genuinely
+  Unscheduled Fortnoto tasks.
+- **One task deviated from the stated expectation, correctly:** Fortnoto is not 100% Unscheduled
+  on production — one task ("Parcel config table: add 'cost per km' column", created 29 May 2026)
+  is already assigned to a real gate ("Gate 1", order 0) under a `hasRoadmap: true` roadmap on
+  Fortnoto (evidently a prior test of the roadmap/gate feature directly on production data, unrelated
+  to this session). The backfill script correctly detected its `gateId` and assigned it `A1.1`
+  instead of a `U1.x` id — this is the letter-scheme working as designed (gate-scoped tasks always
+  get a gate letter, never `U`), not a bug. Confirmed via direct query: 278 tasks match `U1.<n>`
+  with no gaps (`U1.1…U1.278`), 1 task is `A1.1`, total 279 — counts fully reconcile.
+- **Second pass (idempotency proof):** reran the identical script — `370 tasks already had a TID,
+  0 were missing one`, **assigned 0**. Confirms rerunning is a safe no-op.
+- **Uniqueness check:** scanned every project for duplicate TIDs post-backfill — **0 found**.
+- No temp scripts were left on the production container (every script was piped via stdin, never
+  written to disk there). A pre-existing, git-tracked file unrelated to this backfill
+  (`backend/investigateGroupToTagMigration.js`, committed in `42cb6a2`, part of the regular deploy)
+  is present in `/app` — left untouched per "do not touch Group→Tag."
+
+**Both environments are now fully backfilled: staging 328/328, production 370/370.**
 
 **Merge to production — 18 Jul 2026, STEP 3 of a 5-step user-directed rollout (steps 4-5 not yet
 authorized) — `main` fast-forwarded `9f72056 → 5dec9ca`**
