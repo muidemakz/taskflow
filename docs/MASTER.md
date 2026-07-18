@@ -24,14 +24,15 @@ feature and the full Valideity dataset.
 - Valideity Seed Data: ✅ Complete & **Production** (seeded on prod)
 
 **Current Work (all on `staging`, not yet merged to production):**
-- ✅ Trash permanent-delete + Account modals — `08ad9ed`, pending user visual verification
+- ✅ Trash permanent-delete + Account modals — `08ad9ed`, **pending user visual verification**
 - ✅ Security audit of recent changes — DONE; fixes in `e93a26a`
 - ✅ Task modal in-place fix (My Tasks / Search) — DONE, `5628ba1`
 - ✅ Doc markdown XSS — sanitized with DOMPurify, `5892373`
+- ✅ UI overhaul: detail-card pattern — breadcrumb + collapsible project card + gate card with accent stripe + My Tasks filters, `9bbc534`, **pending visual verification**
 - 🟡 Contract phase (optional cleanup) — not started
 - 🔴 **Open finding:** staging and production share the **same `JWT_SECRET`** — needs user decision (see Security section)
 
-**Batched for the next production merge:** `08ad9ed` → `e93a26a` → `5628ba1` → `5892373` (plus docs `a1ed372`). Staging is ahead of `main` by these commits.
+**Batched for the next production merge:** `08ad9ed` → `e93a26a` → `5628ba1` → `5892373` → `9bbc534` (plus docs `a1ed372`). Staging is ahead of `main` by these commits.
 
 ---
 
@@ -130,6 +131,38 @@ See the Security section below for full PASS / FIXED / NEEDS-DECISION results. H
 - `/board?taskId=X` deep-link path is untouched — bookmarks/shares still resolve.
 - **Trash** left as-is by design: the modal live-PATCHes every control and all task routes exclude
   soft-deleted rows, so a trashed task can't be opened without a new backend read path.
+
+### 8. UI Overhaul: Detail-Card Pattern — ✅ STAGING (`9bbc534`), pending visual verification
+Brought the clean detail-card pattern from ShareView (read-only project/gate/task views) into the
+logged-in project and gate detail views. Consistent, polished hierarchy across the app.
+
+**New components:**
+- `Breadcrumb`: minimal nav bar (Projects / [Project] / [current]), truncates on mobile (~380px)
+- `ProjectDetailCard`: collapsible (chevron toggle, persisted per-project in localStorage),
+  shows title/description/progress (ProgressBar + "X of Y done · Z%")/metadata (gate count, tag
+  count, last activity)/quick actions (Share, Settings, Add task), smooth height transition via
+  CSS Grid 0fr/1fr trick
+- `GateDetailCard`: sub-level sibling of project card, left 4px accent stripe (colored A→F by gate
+  order via CSS variables), tinted secondary background (--gate-card-bg), compact single-line
+  metadata, Open/Closed pill top-right, progress bar matching project card styling
+- `MyTasksFilterBar`: search + collapsible filter panel (Project / Status / Priority / Gate /
+  Tag multi-select / Due-date range / Blocked-only toggle), all dimensions AND together,
+  active count + clear-all affordance, grid stacks to one column on mobile
+
+**Updated views:**
+- `RoadmapOverview` (project detail): breadcrumb + ProjectDetailCard + gate filter (All/Open/Closed)
+  + gate grid (existing)
+- `ProjectBoard` (gate-scoped): breadcrumb + GateDetailCard + gate nav selector + filter bar +
+  board/list view; whole-project view and unscheduled mode untouched
+- `MyTasks`: bucket tabs + search + collapsible filter bar, shows "X of Y" count when filters active
+
+**CSS enhancements:**
+- Gate accent variables (light/dark pairs): `--gate-accent-{0-5}`, `--gate-card-bg`,
+  `--gate-card-border` — all theme-aware via `:root.dark` overrides
+- `.gate-detail-card`: left-accent stripe via CSS border + inline `var()` per gate order
+
+All new code reuses existing ProgressBar, TagMultiSelect, modals, status dots. Dark-mode safe,
+mobile-first, no forked components.
 
 ### 7. Standing Tradition — Security & Debug Gate
 Before **every commit**, verify: (a) new/changed endpoints have ownership + auth checks and a
