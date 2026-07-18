@@ -61,6 +61,23 @@ export default function ProjectBoard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // The whole-project board (no gateId, no Unscheduled) is a sub-view of
+  // the unified Tasks tab now, not its own page here -- it built its own
+  // breadcrumb/chrome from scratch and had no way out but the browser back
+  // button. Redirect it to the equivalent ?view=board URL, carrying a
+  // taskId deep link through if present. Gate-scoped and Unscheduled stay
+  // right here (genuine drill-down views), as does a roadmap-less
+  // project's board, which IS that project's home -- there is no roadmap
+  // page to redirect it to.
+  const shouldRedirectToRoadmap = hasRoadmap && !gateId && !isUnscheduledView;
+  useEffect(() => {
+    if (!project || !shouldRedirectToRoadmap) return;
+    const params = new URLSearchParams({ tab: 'tasks', view: 'board' });
+    if (highlightTaskId) params.set('taskId', highlightTaskId);
+    navigate(`/projects/${id}/roadmap?${params.toString()}`, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, shouldRedirectToRoadmap, highlightTaskId, id]);
+
   // First-visit forced settings prompt (checkpoint c.1.3): fires once per
   // project, the moment its detail first loads with hasConfigured false.
   // The ref (not just the project field) guards against re-opening while
@@ -132,7 +149,11 @@ export default function ProjectBoard() {
 
   // Breadcrumb: Projects / [Project] / [leaf]. The project crumb links to the
   // roadmap when there is one (its true parent view); a roadmap-less project's
-  // board IS its home, so it stays the leaf with no third crumb.
+  // board IS its home, so it stays the leaf with no third crumb. The
+  // hasRoadmap branch below is now unreachable in practice (that combination
+  // redirects to the unified workspace above) but is left in place rather
+  // than special-cased away, since this function still needs to be correct
+  // for one render before the redirect effect fires.
   const breadcrumbItems = [{ label: 'Projects', to: '/dashboard' }];
   if (currentGate) {
     const gateLetter = String.fromCharCode(65 + (currentGate.order ?? 0));
@@ -153,7 +174,7 @@ export default function ProjectBoard() {
   // the project's home (no roadmap).
   const backTo = hasRoadmap ? `/projects/${id}/roadmap` : '/dashboard';
 
-  if (!project) return <main className="p-8 text-center text-muted">Loading board...</main>;
+  if (!project || shouldRedirectToRoadmap) return <main className="p-8 text-center text-muted">Loading board...</main>;
 
   return (
     <main className="page-container py-6">

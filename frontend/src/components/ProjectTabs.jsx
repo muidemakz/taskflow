@@ -6,7 +6,13 @@ import { Plus } from 'lucide-react';
 // this. Omit onSelectTab for a page that only ever shows one tab and needs
 // the other to navigate elsewhere (e.g. the legacy checklist view) -- that
 // mode falls back to real links.
-export default function ProjectTabs({ projectId, active, tasksTo, docsTo, onSelectTab, onNewEntry }) {
+//
+// boardMode/onToggleBoardView cover the Tasks tab's own sub-view (gates
+// grid vs. whole-project board): when provided, the button becomes a
+// toggle whose label reflects whichever view is NOT currently showing,
+// instead of a one-way link to a separate page. Omit both for the legacy
+// checklist view, which still just wants a plain link to the board.
+export default function ProjectTabs({ projectId, active, tasksTo, docsTo, onSelectTab, onNewEntry, boardMode, onToggleBoardView }) {
   const navigate = useNavigate();
   const resolvedDocsTo = docsTo || `/projects/${projectId}/roadmap?tab=docs`;
 
@@ -23,7 +29,12 @@ export default function ProjectTabs({ projectId, active, tasksTo, docsTo, onSele
           <TabButton tabKey="tasks" to={tasksTo || `/projects/${projectId}`}>Tasks</TabButton>
           <TabButton tabKey="docs" to={resolvedDocsTo}>Docs</TabButton>
         </div>
-        {active === 'tasks' && (
+        {active === 'tasks' && onToggleBoardView && (
+          <button className="btn-ghost" onClick={onToggleBoardView}>
+            {boardMode === 'board' ? 'Roadmap view' : 'Whole-project board'}
+          </button>
+        )}
+        {active === 'tasks' && !onToggleBoardView && (
           <button className="btn-ghost" onClick={() => navigate(`/projects/${projectId}/board`)}>
             Whole-project board
           </button>

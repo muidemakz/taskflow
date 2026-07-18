@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { AlertTriangle, Star } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
 import ProjectDetailCard from '../components/ProjectDetailCard';
 import ProjectTabs from '../components/ProjectTabs';
 import SharedFilterBar from '../components/SharedFilterBar';
+import TagMultiSelect from '../components/TagMultiSelect';
 import GateCard from '../components/roadmap/GateCard';
 import UnscheduledCard from '../components/roadmap/UnscheduledCard';
 import CloseGateModal from '../components/roadmap/CloseGateModal';
@@ -13,8 +15,13 @@ import ProjectSettingsModal from '../components/settings/ProjectSettingsModal';
 import ShareProjectModal from '../components/ShareProjectModal';
 import EntityShareModal from '../components/EntityShareModal';
 import DocEditModal from '../components/docs/DocEditModal';
+import KanbanBoard from '../components/board/KanbanBoard';
+import ListView from '../components/board/ListView';
+import BoardToolbar from '../components/board/BoardToolbar';
+import TaskDetailModal from '../components/board/TaskDetailModal';
 import { useBoardStore } from '../store/boardStore';
 import { boardApi, projectsApi, gatesApi, docsApi, docCategoriesApi } from '../api/endpoints';
+import { EMPTY_FILTERS, filterTasks } from '../utils/board';
 
 const GATE_FILTERS = [
   { key: '', label: 'All' },
@@ -34,23 +41,35 @@ function formatDocDate(iso) {
 
 // Unified project workspace: Tasks and Docs are tabs of ONE mounted page, not
 // separate routes. Breadcrumb, ProjectDetailCard, and the tabs row stay put
-// across a tab switch -- only the panel below (gates grid vs. docs list) and
-// the filter-bar contents (driven by activeTab) change. Tab state lives in
-// ?tab= so it's linkable/refreshable without remounting the page.
+// across a tab switch -- only the panel below and the filter-bar contents
+// (driven by activeTab, and for Tasks, by boardMode) change. The Tasks tab
+// itself has two sub-views: the gates grid (default) and the whole-project
+// board (kanban/list across every gate), toggled via ?view=board so it's
+// linkable and survives a refresh without remounting the page.
 export default function RoadmapOverview() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') === 'docs' ? 'docs' : 'tasks';
+  const boardMode = activeTab === 'tasks' && searchParams.get('view') === 'board' ? 'board' : 'gates';
 
   const loadProjectMeta = useBoardStore((s) => s.loadProjectMeta);
+  const loadBoard = useBoardStore((s) => s.loadBoard);
   const gates = useBoardStore((s) => s.gates);
   const statuses = useBoardStore((s) => s.statuses);
   const tags = useBoardStore((s) => s.tags);
   const hasRoadmap = useBoardStore((s) => s.hasRoadmap);
+  const columns = useBoardStore((s) => s.columns);
+  const boardLoading = useBoardStore((s) => s.loading);
+  const kanbanView = useBoardStore((s) => s.view);
+  const sortKey = useBoardStore((s) => s.sortKey);
+  const setKanbanView = useBoardStore((s) => s.setView);
+  const setSortKey = useBoardStore((s) => s.setSortKey);
 
   const [unscheduledCount, setUnscheduledCount] = useState(0);
   const [gateFilter, setGateFilter] = useState('');
+  const [boardFilters, setBoardFilters] = useState(EMPTY_FILTERS);
+  const [openTask, setOpenTask] = useState(null);
   const [closingGate, setClosingGate] = useState(null);
   const [reopeningGate, setReopeningGate] = useState(null);
   const [addingTaskGate, setAddingTaskGate] = useState(undefined);
@@ -66,6 +85,9 @@ export default function RoadmapOverview() {
   const [docStatus, setDocStatus] = useState('');
   const [docCategoryIds, setDocCategoryIds] = useState([]);
   const [creatingDoc, setCreatingDoc] = useState(false);
+
+  const highlightTaskId = searchParams.get('taskId');
+  const highlightApplied = useRef(false);
 
   function refreshProject() {
     return projectsApi.detail(id).then(({ data }) => setProject(data));
@@ -93,6 +115,27 @@ export default function RoadmapOverview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Whole-project board data loads only when that sub-view is actually
+  // shown, not on every Tasks-tab visit -- viewing the gates grid never
+  // needs board columns.
+  useEffect(() => {
+    if (boardMode === 'board') loadBoard(id, null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, boardMode]);
+
+  // Landing here from a /board?taskId=... deep link (redirected in by
+  // ProjectBoard.jsx) opens that task directly instead of leaving the user
+  // to find it themselves among possibly many columns.
+  useEffect(() => {
+    if (boardMode !== 'board' || !highlightTaskId || highlightApplied.current || !columns.length) return;
+    const found = columns.flatMap((c) => c.tasks).find((t) => t.id === highlightTaskId);
+    if (found) {
+      setOpenTask(found);
+      highlightApplied.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardMode, highlightTaskId, columns]);
+
   // First-visit forced settings prompt (checkpoint c.1.3) -- fires once per
   // project the moment it first loads with hasConfigured false.
   const firstVisitChecked = useRef(false);
@@ -109,6 +152,20 @@ export default function RoadmapOverview() {
     if (gateFilter === 'closed') return sortedGates.filter((g) => g.status === 'CLOSED');
     return sortedGates;
   }, [sortedGates, gateFilter]);
+
+  const displayColumns = useMemo(
+    () => columns.map((col) => ({ ...col, tasks: filterTasks(col.tasks, boardFilters) })),
+    [columns, boardFilters]
+  );
+
+  const workflowContext = useMemo(
+    () => ({
+      gateOrderById: Object.fromEntries(gates.map((g) => [g.id, g.order])),
+      statusOrderById: Object.fromEntries(statuses.map((s) => [s.id, s.order])),
+      hasRoadmap
+    }),
+    [gates, statuses, hasRoadmap]
+  );
 
   const filteredDocs = useMemo(() => {
     if (!docs) return [];
@@ -127,7 +184,23 @@ export default function RoadmapOverview() {
   }, [docs, docStatus, docCategoryIds, docSearch]);
 
   function selectTab(tab) {
-    setSearchParams(tab === 'docs' ? { tab: 'docs' } : {}, { replace: true });
+    if (tab === 'docs') {
+      setSearchParams({ tab: 'docs' }, { replace: true });
+      return;
+    }
+    // Switching back to Tasks restores whichever sub-view (gates/board) was
+    // last active, rather than always resetting to the gates grid.
+    setSearchParams(searchParams.get('view') === 'board' ? { view: 'board' } : {}, { replace: true });
+  }
+
+  function toggleBoardView() {
+    setSearchParams(boardMode === 'board' ? {} : { view: 'board' }, { replace: true });
+  }
+
+  function refreshGateContext() {
+    loadProjectMeta(id);
+    loadBoard(id, null);
+    boardApi.get(id).then(({ data }) => setUnscheduledCount(data.unassignedCount));
   }
 
   if (loading || !project) return <main className="p-8 text-center text-muted">Loading project...</main>;
@@ -150,9 +223,11 @@ export default function RoadmapOverview() {
         active={activeTab}
         onSelectTab={selectTab}
         onNewEntry={activeTab === 'docs' ? () => setCreatingDoc(true) : undefined}
+        boardMode={activeTab === 'tasks' ? boardMode : undefined}
+        onToggleBoardView={activeTab === 'tasks' ? toggleBoardView : undefined}
       />
 
-      {activeTab === 'tasks' ? (
+      {activeTab === 'tasks' && boardMode === 'gates' && (
         <SharedFilterBar
           filters={{ gateFilter }}
           onChange={(next) => setGateFilter(next.gateFilter ?? '')}
@@ -177,7 +252,85 @@ export default function RoadmapOverview() {
             }
           ]}
         />
-      ) : (
+      )}
+
+      {activeTab === 'tasks' && boardMode === 'board' && (
+        <SharedFilterBar
+          filters={boardFilters}
+          onChange={setBoardFilters}
+          onClear={() => setBoardFilters(EMPTY_FILTERS)}
+          showSearch={false}
+          filterFields={[
+            {
+              key: 'tagIds',
+              render: (f, set) => {
+                const selectedTags = tags.filter((t) => f.tagIds.includes(t.id));
+                return (
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-sm font-semibold ${selectedTags.length ? 'text-primary' : 'text-muted'}`}>
+                      Tags{selectedTags.length ? ` (${selectedTags.length})` : ''}
+                    </span>
+                    <TagMultiSelect
+                      selectedTags={selectedTags}
+                      availableTags={tags}
+                      onAdd={(tagId) => set({ tagIds: [...f.tagIds, tagId] })}
+                      onRemove={(tagId) => set({ tagIds: f.tagIds.filter((tid) => tid !== tagId) })}
+                    />
+                  </div>
+                );
+              }
+            },
+            {
+              key: 'priority',
+              render: (f, set) => (
+                <select className="field w-auto dark:bg-slate-700 dark:text-white dark:border-slate-600" value={f.priority} onChange={(e) => set({ priority: e.target.value })}>
+                  <option value="">Any priority</option>
+                  <option value="HIGH">High</option>
+                  <option value="MID">Mid</option>
+                  <option value="LOW">Low</option>
+                  <option value="NONE">None</option>
+                </select>
+              )
+            },
+            {
+              key: 'blockedOnly',
+              render: (f, set) => (
+                <button
+                  className={`btn-ghost ${f.blockedOnly ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-900/40 dark:text-red-300' : ''}`}
+                  onClick={() => set({ blockedOnly: !f.blockedOnly })}
+                >
+                  <AlertTriangle size={14} /> Blocked only
+                </button>
+              )
+            },
+            {
+              key: 'focusOnly',
+              render: (f, set) => (
+                <button
+                  className={`btn-ghost ${f.focusOnly ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-900/40 dark:text-amber-300' : ''}`}
+                  onClick={() => set({ focusOnly: !f.focusOnly })}
+                >
+                  <Star size={14} /> Focus only
+                </button>
+              )
+            },
+            {
+              key: 'dueFilter',
+              render: (f, set) => (
+                <select className="field w-auto dark:bg-slate-700 dark:text-white dark:border-slate-600" value={f.dueFilter} onChange={(e) => set({ dueFilter: e.target.value })}>
+                  <option value="">Any due date</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="thisWeek">Due this week</option>
+                  <option value="hasDate">Has a date</option>
+                  <option value="noDate">No date</option>
+                </select>
+              )
+            }
+          ]}
+        />
+      )}
+
+      {activeTab === 'docs' && (
         <SharedFilterBar
           filters={{ search: docSearch, status: docStatus, categoryIds: docCategoryIds }}
           onChange={(next) => {
@@ -224,7 +377,7 @@ export default function RoadmapOverview() {
         />
       )}
 
-      {activeTab === 'tasks' ? (
+      {activeTab === 'tasks' && boardMode === 'gates' && (
         <>
           {!hasRoadmap && !sortedGates.length && (
             <div className="card mt-3 p-8 text-center text-muted">
@@ -254,7 +407,25 @@ export default function RoadmapOverview() {
             )}
           </div>
         </>
-      ) : (
+      )}
+
+      {activeTab === 'tasks' && boardMode === 'board' && (
+        <>
+          <div className="mt-3 flex justify-end">
+            <BoardToolbar view={kanbanView} onViewChange={setKanbanView} sortKey={sortKey} onSortChange={setSortKey} />
+          </div>
+
+          {boardLoading ? (
+            <div className="p-8 text-center text-muted">Loading board...</div>
+          ) : kanbanView === 'board' ? (
+            <KanbanBoard onOpenTask={setOpenTask} sortKey={sortKey} workflowContext={workflowContext} columnsOverride={displayColumns} />
+          ) : (
+            <ListView columns={displayColumns} sortKey={sortKey} workflowContext={workflowContext} onOpenTask={setOpenTask} />
+          )}
+        </>
+      )}
+
+      {activeTab === 'docs' && (
         <>
           {!filteredDocs.length && <div className="card mt-3 p-10 text-center text-muted">No docs match.</div>}
 
@@ -283,15 +454,23 @@ export default function RoadmapOverview() {
         </>
       )}
 
+      {openTask && (
+        <TaskDetailModal
+          task={openTask}
+          statuses={statuses}
+          gates={gates}
+          tags={tags}
+          promptRulesCategoryId={project.promptRulesCategoryId}
+          onClose={() => setOpenTask(null)}
+          onUpdated={(updated) => setOpenTask(updated)}
+        />
+      )}
+
       {closingGate && (
         <CloseGateModal
           gate={closingGate}
           onClose={() => setClosingGate(null)}
-          onDone={() => {
-            setClosingGate(null);
-            loadProjectMeta(id);
-            boardApi.get(id).then(({ data }) => setUnscheduledCount(data.unassignedCount));
-          }}
+          onDone={() => { setClosingGate(null); refreshGateContext(); }}
         />
       )}
 
@@ -299,10 +478,7 @@ export default function RoadmapOverview() {
         <ReopenGateModal
           gate={reopeningGate}
           onClose={() => setReopeningGate(null)}
-          onDone={() => {
-            setReopeningGate(null);
-            loadProjectMeta(id);
-          }}
+          onDone={() => { setReopeningGate(null); refreshGateContext(); }}
         />
       )}
 
@@ -312,11 +488,7 @@ export default function RoadmapOverview() {
           gate={addingTaskGate}
           statuses={statuses}
           onClose={() => setAddingTaskGate(undefined)}
-          onCreated={() => {
-            setAddingTaskGate(undefined);
-            loadProjectMeta(id);
-            boardApi.get(id).then(({ data }) => setUnscheduledCount(data.unassignedCount));
-          }}
+          onCreated={() => { setAddingTaskGate(undefined); refreshGateContext(); }}
         />
       )}
 
@@ -338,8 +510,7 @@ export default function RoadmapOverview() {
           projectId={id}
           onClose={() => {
             setSettingsOpen(false);
-            loadProjectMeta(id);
-            boardApi.get(id).then(({ data }) => setUnscheduledCount(data.unassignedCount));
+            refreshGateContext();
             if (project && !project.hasConfigured) {
               projectsApi.update(id, { hasConfigured: true }).then(refreshProject);
             }
