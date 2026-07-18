@@ -101,7 +101,6 @@ export default function RoadmapOverview() {
 
       {sortedGates.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white p-2 dark:bg-slate-800">
-          <span className="text-sm font-semibold text-muted">Gates</span>
           <div className="flex gap-1">
             {GATE_FILTERS.map((f) => (
               <button

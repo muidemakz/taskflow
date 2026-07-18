@@ -20,7 +20,7 @@ export default function Breadcrumb({ items = [], onBack }) {
         const isLast = i === items.length - 1;
         return (
           <span key={`${item.label}-${i}`} className="flex min-w-0 items-center gap-1">
-            {(i > 0 || onBack) && <ChevronRight size={14} className="shrink-0 text-slate-400" />}
+            {i > 0 && <ChevronRight size={14} className="shrink-0 text-slate-400" />}
             {item.to && !isLast ? (
               <Link to={item.to} className="breadcrumb-link max-w-[45vw] truncate sm:max-w-none">
                 {item.label}

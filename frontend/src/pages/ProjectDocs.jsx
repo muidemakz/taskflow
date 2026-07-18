@@ -70,7 +70,7 @@ export default function ProjectDocs() {
         <button className="btn-primary" onClick={() => setCreating(true)}><Plus size={17} /> New entry</button>
       </div>
 
-      <ProjectTabs projectId={id} active="docs" />
+      <ProjectTabs projectId={id} active="docs" onNewEntry={() => setCreating(true)} />
 
       <SharedFilterBar
         filters={filters}
