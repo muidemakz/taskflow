@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import Topbar from './components/Topbar';
 import BottomNav from './components/BottomNav';
 import { useAuthStore } from './store/authStore';
@@ -12,7 +12,6 @@ import ProjectHome from './pages/ProjectHome';
 import ProjectDetail from './pages/ProjectDetail';
 import ProjectBoard from './pages/ProjectBoard';
 import RoadmapOverview from './pages/RoadmapOverview';
-import ProjectDocs from './pages/ProjectDocs';
 import DocDetail from './pages/DocDetail';
 import Trash from './pages/Trash';
 import MyTasks from './pages/MyTasks';
@@ -40,6 +39,14 @@ function ProtectedRoute() {
       <BottomNav />
     </>
   );
+}
+
+// Docs is now a tab of the unified project workspace (RoadmapOverview), not
+// its own route. This keeps old /docs links (bookmarks, other components)
+// working by sending them to the equivalent ?tab=docs URL.
+function DocsTabRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/projects/${id}/roadmap?tab=docs`} replace />;
 }
 
 function AdminRoute() {
@@ -73,7 +80,7 @@ export default function App() {
         <Route path="/projects/:id/legacy" element={<ProjectDetail />} />
         <Route path="/projects/:id/board" element={<ProjectBoard />} />
         <Route path="/projects/:id/roadmap" element={<RoadmapOverview />} />
-        <Route path="/projects/:id/docs" element={<ProjectDocs />} />
+        <Route path="/projects/:id/docs" element={<DocsTabRedirect />} />
         <Route path="/projects/:id/docs/:docId" element={<DocDetail />} />
         <Route path="/trash" element={<Trash />} />
         <Route path="/my-tasks" element={<MyTasks />} />

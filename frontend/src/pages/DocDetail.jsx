@@ -49,7 +49,7 @@ export default function DocDetail() {
     try {
       await docsApi.remove(id, docId);
       toast.success('Doc deleted. Restore it from Trash within 30 days.');
-      navigate(`/projects/${id}/docs`);
+      navigate(`/projects/${id}/roadmap?tab=docs`);
     } catch {
       toast.error('Could not delete doc');
       setDeleting(false);
@@ -66,10 +66,10 @@ export default function DocDetail() {
     <main className="page-container py-6">
       <Breadcrumb
         items={[
-          { label: 'Docs', to: `/projects/${id}/docs` },
+          { label: 'Docs', to: `/projects/${id}/roadmap?tab=docs` },
           { label: doc.title }
         ]}
-        onBack={() => navigate(`/projects/${id}/docs`)}
+        onBack={() => navigate(`/projects/${id}/roadmap?tab=docs`)}
       />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

@@ -158,11 +158,16 @@ export default function ProjectBoard() {
     breadcrumbItems.push({ label: projectTitle });
   }
 
+  // Back always goes one level up the trail above: into the roadmap for any
+  // gate/unscheduled/whole-project view, or the dashboard when this board IS
+  // the project's home (no roadmap).
+  const backTo = hasRoadmap ? `/projects/${id}/roadmap` : '/dashboard';
+
   if (!project) return <main className="p-8 text-center text-muted">Loading board...</main>;
 
   return (
     <main className="page-container py-6">
-      <Breadcrumb items={breadcrumbItems} onBack={() => navigate('/dashboard')} />
+      <Breadcrumb items={breadcrumbItems} onBack={() => navigate(backTo)} />
 
       {currentGate ? (
         <>
@@ -229,7 +234,7 @@ export default function ProjectBoard() {
             <div className="mb-4 border-b border-border">
               <div className="flex gap-1 pb-2">
                 <button className="rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-white">Tasks</button>
-                <button className="rounded-md px-3 py-1.5 text-sm font-semibold text-muted hover:bg-slate-50 dark:hover:bg-slate-800" onClick={() => navigate(`/projects/${id}/docs`)}>
+                <button className="rounded-md px-3 py-1.5 text-sm font-semibold text-muted hover:bg-slate-50 dark:hover:bg-slate-800" onClick={() => navigate(`/projects/${id}/roadmap?tab=docs`)}>
                   Docs
                 </button>
               </div>
