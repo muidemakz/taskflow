@@ -63,7 +63,7 @@ export default function DocDetail() {
   if (!doc) return <main className="p-8 text-center text-muted">Loading...</main>;
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6">
+    <main className="page-container py-6">
       <Breadcrumb
         items={[
           { label: 'Docs', to: `/projects/${id}/docs` },

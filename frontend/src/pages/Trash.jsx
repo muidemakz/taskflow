@@ -68,7 +68,7 @@ export default function Trash() {
   if (loading) return <main className="p-8 text-center text-muted">Loading trash...</main>;
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-6">
+    <main className="page-container py-6">
       <div className="mb-5">
         <h1 className="text-xl font-bold">Trash</h1>
         <p className="text-sm text-muted">Items are permanently deleted {retentionDays} days after being trashed</p>

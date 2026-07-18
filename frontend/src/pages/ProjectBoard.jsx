@@ -161,7 +161,7 @@ export default function ProjectBoard() {
   if (!project) return <main className="p-8 text-center text-muted">Loading board...</main>;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6">
+    <main className="page-container py-6">
       <Breadcrumb items={breadcrumbItems} onBack={() => navigate('/dashboard')} />
 
       {currentGate ? (

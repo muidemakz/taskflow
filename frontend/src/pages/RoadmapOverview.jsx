@@ -75,7 +75,7 @@ export default function RoadmapOverview() {
   if (loading || !project) return <main className="p-8 text-center text-muted">Loading roadmap...</main>;
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6">
+    <main className="page-container py-6">
       <Breadcrumb items={[{ label: 'Projects', to: '/dashboard' }, { label: project.title }]} onBack={() => navigate('/dashboard')} />
 
       <ProjectDetailCard

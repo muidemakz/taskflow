@@ -56,7 +56,7 @@ export default function ProjectDocs() {
   if (!docs) return <main className="p-8 text-center text-muted">Loading docs...</main>;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <main className="page-container py-6">
       <Breadcrumb
         items={[{ label: projectTitle, to: `/projects/${id}/board` }]}
         onBack={() => navigate('/dashboard')}
