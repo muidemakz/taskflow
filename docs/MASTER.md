@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 18 July 2026 (Account page: Profile editing converted to modals — staging only)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370), each verified idempotent by a second no-op run with zero duplicate TIDs; Group→Tag migration investigated on production only (not run — production is 38 groups/6 tags/0% overlap, materially unlike staging's 35/35/100%); Account page Profile section (name + avatar) converted from inline editing to modals matching the Change Email/Change Password pattern — **staging only, not yet merged**; chevron rotation direction still unverified in a browser
+**Last Updated:** 18 July 2026 (nav restructure: Trash moved into Account, Notes slot opened — staging only)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370), each verified idempotent by a second no-op run with zero duplicate TIDs; Group→Tag migration investigated on production only (not run — production is 38 groups/6 tags/0% overlap, materially unlike staging's 35/35/100%); Account page Profile section (name + avatar) converted from inline editing to modals matching the Change Email/Change Password pattern; bottom nav now **My Tasks | Catch Up | Projects | Notes | Account**, Trash moved into Account as a section (`/trash` still valid as a deep link), Notes is a placeholder page pending the real feature — **all staging only, not yet merged**; chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -631,6 +631,40 @@ signed off.
 Gate: 51/51 backend tests pass (unchanged -- no backend touched), frontend build clean, no
 secrets in diff, no dead code left behind (`savingProfile`/`onAvatarSelected`/`saveProfile`
 grepped, zero hits). Pushed to `staging` only.
+
+### Nav restructure: Trash → Account, Notes slot opened (✅ COMPLETE, STAGING ONLY — 18 Jul 2026)
+
+Bottom nav changes from `My Tasks | Catch Up | Projects | Trash | Account` to
+`My Tasks | Catch Up | Projects | Notes | Account`:
+
+- **`Trash.jsx` split**: the list/restore/delete-forever logic (previously the whole page) is now
+  an exported `TrashPanel({ showHeading })` component with no outer page chrome of its own; the
+  default-exported `Trash` page is now a thin wrapper (`<main><TrashPanel /></main>`) used only by
+  the still-valid `/trash` route. Nothing about the list/restore/permanent-delete logic itself
+  changed -- reused as-is, not rebuilt.
+- **`AccountPage.jsx`**: new `TrashSection` -- a "Data" card with a single chevron-row entry
+  ("Trash"), matching the visual language of the Security rows. Judgment call on the modal vs.
+  chevron-row pattern established for Profile editing: Trash is a list view, not a form, so instead
+  of the small field-then-submit modal shape, clicking it opens the same wide modal shape already
+  used for e.g. `TaskDetailModal` (`max-w-2xl`), with `TrashPanel` rendered inside (`showHeading=
+  false`, since the Modal's own title already says "Trash" -- avoids a duplicate heading).
+- **`Notes.jsx`** (new): placeholder page, empty state "No notes yet." Route `/notes` added
+  alongside the unchanged `/trash` route. Real feature ships separately (next prompt).
+- **`BottomNav.jsx`**: `Trash` tab entry replaced with `Notes` (`StickyNote` icon, same
+  active-tab-highlighting logic, unchanged for every other tab).
+
+**Verified live against the staging dev server**, including opening a brand-new browser tab with
+no accumulated console history (the first tab showed a stale HMR-cycle error from mid-edit saves
+that a hard reload didn't clear -- confirmed via a fresh tab that this was leftover console
+history, not a live bug: zero errors there from the start): nav shows Notes where Trash was,
+active-tab highlighting still correct; Trash section in Account opens the modal with the real
+list (3 items) and Restore buttons working; `/trash` deep link still resolves to the identical
+list outside Account; `/notes` renders the placeholder empty state; both the Trash modal and the
+bottom nav checked in dark mode at 380px -- correct panel colors (slate-800/slate-100), no
+horizontal overflow anywhere. No console errors in the clean tab at any point.
+
+Gate: 51/51 backend tests pass (no backend touched), frontend build clean, no secrets in diff.
+Pushed to `staging` only.
 
 ### Sprint Backlog (as of 17 Jul, pre-chunking)
 1. ✅ customId field — COMPLETE & PRODUCTION

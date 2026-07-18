@@ -11,11 +11,13 @@ function daysRemaining(deletedAt, retentionDays) {
   return Math.max(0, retentionDays - elapsedDays);
 }
 
-// Global, not per-project: a deleted Project itself isn't reachable from
-// within any project view, and Topbar already fits a global nav pattern
-// (matches the existing Admin link) better than nesting this under a
-// project you'd have to already be inside.
-export default function Trash() {
+// The reusable list+actions content, with no outer page chrome of its own --
+// used both by the standalone /trash route (wrapped in <main> below) and by
+// the Account page's Trash section (wrapped in a Modal instead). `showHeading`
+// controls the internal "Trash" title: the standalone route needs it as its
+// only page heading, but the Account modal already renders "Trash" as the
+// Modal's own title, so showing it twice there would be redundant.
+export function TrashPanel({ showHeading = true }) {
   const [items, setItems] = useState([]);
   const [retentionDays, setRetentionDays] = useState(30);
   const [projectTitles, setProjectTitles] = useState({});
@@ -65,12 +67,12 @@ export default function Trash() {
     }
   }
 
-  if (loading) return <main className="p-8 text-center text-muted">Loading trash...</main>;
+  if (loading) return <p className="py-6 text-center text-sm text-muted">Loading trash...</p>;
 
   return (
-    <main className="page-container py-6">
+    <>
       <div className="mb-5">
-        <h1 className="text-xl font-bold">Trash</h1>
+        {showHeading && <h1 className="text-xl font-bold">Trash</h1>}
         <p className="text-sm text-muted">Items are permanently deleted {retentionDays} days after being trashed</p>
       </div>
 
@@ -80,7 +82,7 @@ export default function Trash() {
           Nothing in trash.
         </div>
       ) : (
-        <div className="card divide-y divide-slate-100">
+        <div className="card divide-y divide-slate-100 dark:divide-slate-700">
           {items.map((item) => {
             const remaining = daysRemaining(item.deletedAt, retentionDays);
             const projectTitle = item.type === 'project' ? item.title : projectTitles[item.projectId];
@@ -124,6 +126,18 @@ export default function Trash() {
           onClose={() => setDeleteTarget(null)}
         />
       )}
+    </>
+  );
+}
+
+// Global, not per-project: a deleted Project itself isn't reachable from
+// within any project view. Kept as its own routed page (/trash) for deep
+// linking even though the primary entry point is now a section inside the
+// Account page -- this is just TrashPanel wrapped in the page's own chrome.
+export default function Trash() {
+  return (
+    <main className="page-container py-6">
+      <TrashPanel />
     </main>
   );
 }

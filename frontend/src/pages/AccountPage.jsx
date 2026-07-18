@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { tokensApi, usersApi } from '../api/endpoints';
 import { applyTheme } from '../utils/theme';
 import Modal from '../components/Modal';
+import { TrashPanel } from './Trash';
 
 const THEME_OPTIONS = [
   { value: 'LIGHT', label: 'Light' },
@@ -75,6 +76,8 @@ export default function AccountPage() {
       <ProfileSection user={user} />
 
       <SecuritySection user={user} />
+
+      <TrashSection />
 
       <section className="card mt-4 p-4">
         <div className="flex items-center justify-between">
@@ -311,6 +314,40 @@ function EditAvatarModal({ user, onClose }) {
         {saving ? 'Saving…' : 'Save photo'}
       </button>
     </Modal>
+  );
+}
+
+// Trash is a list view, not a form, so it doesn't fit the small
+// field-then-submit modal shape used for Name/Email/Password -- it opens
+// in a wider modal instead (matching TaskDetailModal's max-w-2xl), reusing
+// TrashPanel as-is rather than rebuilding its list/restore/delete-forever
+// logic here. The chevron-row entry point still matches the rest of the page.
+function TrashSection() {
+  const [showTrash, setShowTrash] = useState(false);
+
+  return (
+    <section className="card mt-4 p-4">
+      <h2 className="font-semibold">Data</h2>
+      <div className="mt-3">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-3 py-1 text-left"
+          onClick={() => setShowTrash(true)}
+        >
+          <span className="flex items-center gap-2.5">
+            <Trash2 size={16} className="text-muted" />
+            <span className="block text-sm font-medium">Trash</span>
+          </span>
+          <ChevronRight size={16} className="shrink-0 text-muted" />
+        </button>
+      </div>
+
+      {showTrash && (
+        <Modal title="Trash" onClose={() => setShowTrash(false)} maxWidthClass="max-w-2xl">
+          <TrashPanel showHeading={false} />
+        </Modal>
+      )}
+    </section>
   );
 }
 

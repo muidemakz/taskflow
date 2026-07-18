@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckSquare, Inbox, LayoutGrid, Trash2, User } from 'lucide-react';
+import { CheckSquare, Inbox, LayoutGrid, StickyNote, User } from 'lucide-react';
 import { syncApi } from '../api/endpoints';
 
 const TABS = [
   { to: '/my-tasks', label: 'My Tasks', icon: CheckSquare },
   { to: '/review', label: 'Catch Up', icon: Inbox },
   { to: '/dashboard', label: 'Projects', icon: LayoutGrid },
-  { to: '/trash', label: 'Trash', icon: Trash2 },
+  { to: '/notes', label: 'Notes', icon: StickyNote },
   { to: '/account', label: 'Account', icon: User }
 ];
 
