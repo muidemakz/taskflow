@@ -137,7 +137,7 @@ export default function TaskDetailModal({ task, statuses, gates, tags, promptRul
     <Modal title="Task details" onClose={handleClose} maxWidthClass="max-w-2xl">
       {current.customId && (
         <div className="mb-1.5">
-          <span className="id-badge">{current.customId}</span>
+          <span className="id-badge" title={`TID ${current.customId}`} aria-label={`TID ${current.customId}`}>{current.customId}</span>
         </div>
       )}
       <input

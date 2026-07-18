@@ -351,7 +351,7 @@ function TaskRow({ task, onOpen }) {
     >
       <div className="min-w-0 flex-1">
         <p className="font-medium leading-snug">
-          {task.customId && <span className="id-badge mr-1.5 align-middle">{task.customId}</span>}
+          {task.customId && <span className="id-badge mr-1.5 align-middle" title={`TID ${task.customId}`} aria-label={`TID ${task.customId}`}>{task.customId}</span>}
           {task.title}
         </p>
         <p className="mt-0.5 text-xs text-muted">

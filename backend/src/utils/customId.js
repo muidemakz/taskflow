@@ -1,18 +1,35 @@
-// customId scheme (mirrors Valideity's hand-authored IDs, e.g. A1.1, D3.11):
+// TID (customId column) scheme -- ONE shape, always a letter, never a bare
+// number (mirrors Valideity's hand-authored IDs, e.g. A1.1, D3.11):
 //   gated task  -> <GateLetter>1.<n>   e.g. A1.7, F1.2
-//   unscheduled -> <n>                 e.g. 7, 12
+//   unscheduled -> U1.<n>              e.g. U1.7, U1.12
 //
 // Valideity's seed data groups tasks into multiple numbered clusters per
 // gate (A1.x, A2.x, A3.x...) reflecting hand-authored theming that has no
 // equivalent concept anywhere in the running app. Auto-generated tasks have
 // no cluster to belong to, so they all land in a single "1" bucket per
-// gate, continuing that gate's own numbering rather than inventing a new
-// axis. Unscheduled tasks get a bare number with no letter prefix, which
-// can never collide with a gate-based id (those always start with a
-// letter) regardless of how many gates a project has.
+// gate/letter, continuing that gate's own numbering rather than inventing a
+// new axis. Unscheduled tasks use the reserved letter "U" as their gate
+// letter, so the exact same <Letter>1.<n> pattern and per-letter max-scan
+// covers both cases with no separate bare-numeric branch.
 //
-// Both namespaces are scoped per project via the existing
-// @@unique([projectId, customId]) constraint.
+// FROZEN AT CREATION: a TID never changes once assigned -- not on gate
+// assignment, not on a later gate move, not on rollover, not on gate
+// closure, not on reorder, not on a move back to Unscheduled. There is no
+// promotion/renumbering logic anywhere in this file, deliberately -- see
+// the "never renumbers on its own" test in customId.test.js.
+//
+// Both a gate's letter and "U" are scoped per project via the existing
+// @@unique([projectId, customId]) constraint. gateLetter() intentionally
+// matches the frontend's existing gate-letter display (GateDetailCard.jsx,
+// ProjectBoard.jsx breadcrumb: `String.fromCharCode(65 + order)`) so a
+// gate's TID prefix always matches its displayed letter -- a project's 21st
+// gate (order 20) would display as "U" and collide with Unscheduled's
+// reserved letter, but no project in practice has anywhere near 21 gates,
+// and diverging from the display letter to dodge that would create a worse,
+// permanent mismatch between what a gate is labeled and what its tasks'
+// TIDs say. Not handled; flagged here rather than silently patched over.
+
+const UNSCHEDULED_LETTER = 'U';
 
 export function gateLetter(order) {
   return String.fromCharCode(65 + ((order ?? 0) % 26));
@@ -23,14 +40,15 @@ export function gateLetter(order) {
 // target gate's `order` field, or null/undefined for Unscheduled.
 export function computeNextCustomId(existingIds, gateOrder) {
   const isGated = gateOrder !== null && gateOrder !== undefined;
-  const pattern = isGated ? new RegExp(`^${gateLetter(gateOrder)}1\\.(\\d+)$`) : /^(\d+)$/;
+  const letter = isGated ? gateLetter(gateOrder) : UNSCHEDULED_LETTER;
+  const pattern = new RegExp(`^${letter}1\\.(\\d+)$`);
   let max = 0;
   for (const id of existingIds) {
     const match = typeof id === 'string' ? id.match(pattern) : null;
     if (match) max = Math.max(max, Number(match[1]));
   }
   const seq = max + 1;
-  return isGated ? `${gateLetter(gateOrder)}1.${seq}` : String(seq);
+  return `${letter}1.${seq}`;
 }
 
 // gate is the full Gate row (needs .order), or null/undefined for Unscheduled.

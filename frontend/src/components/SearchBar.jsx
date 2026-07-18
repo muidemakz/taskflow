@@ -84,7 +84,7 @@ export default function SearchBar() {
               {results.tasks.map((task) => (
                 <button key={task.id} className="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => goToTask(task)}>
                   <span className="font-medium">
-                    {task.customId && <span className="id-badge mr-1.5 align-middle">{task.customId}</span>}
+                    {task.customId && <span className="id-badge mr-1.5 align-middle" title={`TID ${task.customId}`} aria-label={`TID ${task.customId}`}>{task.customId}</span>}
                     {task.title}
                   </span>
                   <span className="text-xs text-muted">{task.projectTitle}{task.gateName ? ` · ${task.gateName}` : ''}</span>

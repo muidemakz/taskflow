@@ -22,17 +22,10 @@ export function serializeOrder(order) {
   return Array.isArray(order) ? order : [];
 }
 
-export const CUSTOM_ID_MAX_LENGTH = 20;
-
-// Returns a user-facing message when the raw input is invalid, or null.
-// Kept separate from normalizeTaskInput so callers can 400 before writing.
-export function taskInputError(data = {}) {
-  if (typeof data.customId === 'string' && data.customId.trim().length > CUSTOM_ID_MAX_LENGTH) {
-    return `customId must be ${CUSTOM_ID_MAX_LENGTH} characters or fewer`;
-  }
-  return null;
-}
-
+// customId (TID) is deliberately excluded here: it is generated once at
+// creation (see utils/customId.js) and frozen forever after -- this route
+// must never let a client overwrite it, on top of everything else it's
+// stable against (gate moves, rollover, reorder).
 export function normalizeTaskInput(data = {}) {
   const patch = {};
   if (typeof data.title === 'string') patch.title = data.title.trim();
@@ -42,9 +35,6 @@ export function normalizeTaskInput(data = {}) {
   }
   if (data.priority) patch.priority = String(data.priority).toUpperCase();
   if (typeof data.comment === 'string') patch.comment = data.comment;
-  // Optional, for future use -- no UI sets this yet; assigned today only by
-  // the Valideity data scripts. Empty string clears it back to unset.
-  if (typeof data.customId === 'string') patch.customId = data.customId.trim() || null;
   return patch;
 }
 

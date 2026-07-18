@@ -34,7 +34,7 @@ function ListRow({ task, status, onOpenTask }) {
       onClick={() => onOpenTask?.(task)}
     >
       <span className={`h-2 w-2 shrink-0 rounded-full ${statusDotColor(status)}`} />
-      {task.customId && <span className="id-badge shrink-0">{task.customId}</span>}
+      {task.customId && <span className="id-badge shrink-0" title={`TID ${task.customId}`} aria-label={`TID ${task.customId}`}>{task.customId}</span>}
       <span className="min-w-0 flex-1 truncate font-medium">{task.title}</span>
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
         {task.tags?.slice(0, 2).map((tag) => (

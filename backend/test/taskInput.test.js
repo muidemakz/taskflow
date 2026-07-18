@@ -1,34 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { CUSTOM_ID_MAX_LENGTH, normalizeTaskInput, taskInputError } from '../src/utils/project.js';
+import { normalizeTaskInput } from '../src/utils/project.js';
 
-describe('taskInputError', () => {
-  it('rejects a customId longer than the cap', () => {
-    expect(taskInputError({ customId: 'X'.repeat(CUSTOM_ID_MAX_LENGTH + 1) })).toMatch(/20 characters/);
+describe('normalizeTaskInput customId immutability', () => {
+  // TID (customId) is generated once at creation (utils/customId.js) and
+  // frozen forever after -- this route must never let a client set or
+  // overwrite it, so normalizeTaskInput drops it unconditionally regardless
+  // of what the request body contains.
+  it('never includes customId in the patch, even when the request body sets one', () => {
+    expect('customId' in normalizeTaskInput({ customId: 'A1.1' })).toBe(false);
   });
 
-  it('accepts a customId at exactly the cap', () => {
-    expect(taskInputError({ customId: 'X'.repeat(CUSTOM_ID_MAX_LENGTH) })).toBeNull();
+  it('never includes customId when the request tries to clear it', () => {
+    expect('customId' in normalizeTaskInput({ customId: '' })).toBe(false);
   });
 
-  it('ignores requests that do not touch customId', () => {
-    expect(taskInputError({ title: 'X'.repeat(500) })).toBeNull();
-  });
-
-  it('measures the trimmed value, not raw padding', () => {
-    expect(taskInputError({ customId: `  ${'X'.repeat(CUSTOM_ID_MAX_LENGTH)}  ` })).toBeNull();
-  });
-});
-
-describe('normalizeTaskInput customId handling', () => {
-  it('trims and keeps a valid customId', () => {
-    expect(normalizeTaskInput({ customId: ' A1.1 ' }).customId).toBe('A1.1');
-  });
-
-  it('clears customId back to null on empty string', () => {
-    expect(normalizeTaskInput({ customId: '  ' }).customId).toBeNull();
-  });
-
-  it('leaves customId untouched when absent', () => {
-    expect('customId' in normalizeTaskInput({ title: 'hi' })).toBe(false);
+  it('still normalizes other fields normally alongside an ignored customId', () => {
+    const patch = normalizeTaskInput({ title: ' hi ', customId: 'A1.1' });
+    expect(patch.title).toBe('hi');
+    expect('customId' in patch).toBe(false);
   });
 });

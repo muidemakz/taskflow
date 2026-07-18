@@ -89,7 +89,7 @@ export default function Trash() {
                 <span className="chip bg-slate-100 text-muted">{TYPE_LABELS[item.type] || item.type}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
-                    {item.customId && <span className="id-badge mr-1.5 align-middle">{item.customId}</span>}
+                    {item.customId && <span className="id-badge mr-1.5 align-middle" title={`TID ${item.customId}`} aria-label={`TID ${item.customId}`}>{item.customId}</span>}
                     {item.title}
                   </p>
                   <p className="text-xs text-muted">

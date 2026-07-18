@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 18 July 2026 (customId generation + board/modal bug fixes + whole-project board unification)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — Commit 1 (UI standardization) and Commit 3 (tabs as state, now including the whole-project board) complete on staging; customId now generates on every task-creation path (staging only, backfill pending user approval); chevron rotation direction still unverified in a browser
+**Last Updated:** 18 July 2026 (TID scheme revision + customId generation + board/modal bug fixes + whole-project board unification)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — Commit 1 (UI standardization) and Commit 3 (tabs as state, now including the whole-project board) complete on staging; TID (customId) now generates on every task-creation path in a single frozen `<Letter><Cluster>.<Seq>` format, U-prefixed for Unscheduled (staging only, backfill pending user approval); chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -367,7 +367,8 @@ user's explicit correction, but this is reasoning, not the requested browser con
 
 ### customId Generation, Backfill Investigation, Board/Modal Bug Fixes (18 Jul 2026)
 
-**CHUNK A (✅ COMPLETE, STAGING ONLY) — customId generation on task creation — `9a43b39`**
+**CHUNK A (✅ COMPLETE, STAGING ONLY) — customId (TID) generation on task creation — `9a43b39`,
+scheme revised same day (see below)**
 
 Bug: `customId` was only ever populated by the Valideity seed script -- nothing in the app
 generated one, so every project besides Valideity showed no IDs and new tasks got none, forever.
@@ -378,39 +379,76 @@ Scheme (`backend/src/utils/customId.js`), mirroring Valideity's real seed-script
   into multiple numbered buckets per gate (A1.x, A2.x, A3.x...) reflecting theming with no
   equivalent concept in the running app -- auto-generated tasks always land in bucket "1",
   continuing that gate's own numbering rather than inventing a new axis.
-- Unscheduled task → bare incrementing number, e.g. `7`. **Proposed, not just applied** (per
-  instruction to flag the fallback format before broad use): chosen because it can never
-  collide with a gate-based id (those always start with a letter), whatever the gate count.
 - Retries with a freshly-computed id on a `P2002` unique-constraint hit; the numbering itself is
-  a pure, stateless function (10 unit tests in `backend/test/customId.test.js`) -- it never
-  writes anything, so nothing about it can renumber an existing id.
+  a pure, stateless function (unit tests in `backend/test/customId.test.js`) -- it never writes
+  anything, so nothing about it can renumber an existing id.
 - Wired into every task-creation path (grepped -- exactly two `prisma.task.create` call sites):
   `POST /api/projects/:id/tasks` (now accepts an optional `gateId` so a task created straight
   into a gate gets its final gate atomically, instead of Unscheduled-then-moved-by-a-separate-
   call, which would have permanently stuck it with an Unscheduled-style id) and
   `POST /api/sync/tasks` (external upsert, always Unscheduled by existing design).
 
-**CHUNK B (⏳ INVESTIGATION DONE, MUTATION NOT YET APPROVED) — backfill**
+**Revision (same day, before CHUNK B's mutation) — single frozen TID format, no bare-numeric
+fallback:**
+- The originally-proposed Unscheduled fallback (bare incrementing number, e.g. `7`) is replaced
+  before any backfill runs against it. There is now ONE shape, always a letter:
+  `<Letter><Cluster>.<Seq>`. Unscheduled tasks use the reserved letter `U` — `U1.<n>`, e.g.
+  `U1.3` — continuing the exact same per-letter max-scan gated tasks use, just with `U` standing
+  in for a gate letter. No separate bare-numeric branch remains.
+- **Label:** the id is called **"TID"** everywhere it's user-visible — added `title`/
+  `aria-label="TID <value>"` to every `id-badge` render site (`TaskDetailModal`, `BoardTaskCard`,
+  `ListView`, `SearchBar`, `MyTasks`, `Trash` — grepped for every instance) and reworded the one
+  user-facing string that said "ID" (`tasks.js`'s 409 conflict message → "That TID is already
+  used..."). The `customId` DB column and API field name are unchanged — a rename means a
+  migration plus touching every route/script/component for no visible gain, and wasn't asked for.
+- **Frozen-forever guarantee, closed a real gap:** the legacy `PATCH /api/tasks/:id` route
+  (`normalizeTaskInput` in `backend/src/utils/project.js`) accepted an optional `customId` in the
+  request body and would silently overwrite it -- dead code today (no frontend caller ever sends
+  that field; `grep`-confirmed), but a live contradiction of "never changes for any reason." TID
+  is now dropped unconditionally from that patch regardless of what the body contains, so the
+  guarantee is enforced server-side, not just by convention. `taskInputError`/
+  `CUSTOM_ID_MAX_LENGTH` (which existed solely to validate a client-supplied customId) removed as
+  dead code once that path was closed; `backend/test/taskInput.test.js` rewritten to assert the
+  new immutability behavior instead of the old length-cap behavior it can no longer reach.
+- Added unit tests asserting a TID is unchanged across gate assignment, a second gate move,
+  rollover, and a move back to Unscheduled (`customId.test.js`) -- trivially true since no
+  function in the module ever re-invokes generation for an existing row, but made explicit per
+  instruction.
+- **Known edge case, flagged not silently patched:** `gateLetter()` still matches the frontend's
+  existing gate-letter display (`GateDetailCard.jsx`, `ProjectBoard.jsx` breadcrumb) exactly, so a
+  project's 21st gate (order 20) would display as "U" and its TIDs would collide with the
+  Unscheduled prefix. No project has anywhere near 21 gates in practice, and diverging from the
+  display letter to dodge this would create a worse, permanent mismatch between a gate's shown
+  letter and its tasks' TID prefix -- left as-is, documented here rather than silently changed.
+- **Cleanup (staging only):** grepped staging for tasks stamped under the old bare-numeric
+  fallback before it existed only in test data — found exactly **one**: task "Are you a beans"
+  (project "Testing", Unscheduled, `customId: "1"`). Converted to `U1.1` (no existing `U1.x` in
+  that project, so no collision); reran the same scan afterward and confirmed **zero** bare-
+  numeric ids remain on staging.
 
-Real numbers via Railway SSH (`railway ssh --service taskflow`, piping a script into `node` over
-stdin -- no script ever deployed to either environment):
+**CHUNK B (⏳ INVESTIGATION REFRESHED UNDER THE NEW SCHEME, MUTATION STILL NOT APPROVED) — backfill**
 
-| Environment | Project | Total | Has customId | Gated | Unscheduled |
+Original per-project/per-environment counts (still accurate — see table below); the dry-run
+preview was re-run against the revised TID scheme via the same Railway SSH method (piping a
+script into `node` over stdin -- no script ever deployed to either environment):
+
+| Environment | Project | Total | Has TID | Gated | Unscheduled |
 |---|---|---|---|---|---|
 | Production | Fortnoto | 279 | 0 | 0 | 279 |
 | Production | Valideity | 91 | 91 | 76 | 15 |
 | Staging | Fortnoto | 226 | 0 | 0 | 226 |
 | Staging | Valideity | 92 | 91 | 77 | 15 |
-| Staging | Testing | 7 | 0 | 5 | 2 |
+| Staging | Testing | 9 | 1 (after cleanup above) | 5 | 3 |
 | Staging | c.1.2 QA Project | 1 | 0 | 1 | 0 |
-| Staging | Again / Prompt 4 Docs QA | 0 | — | — | — |
 
-Confirms production Fortnoto is 279/279 Unscheduled (all numeric fallback), matching the
-expectation stated before investigating. Staging Valideity has one extra task beyond
-production's 91 (`"New ti check"`, gate B, QA-added) missing a customId; everything else is
-already covered. Sample generated ids previewed (dry run, no mutation): Fortnoto → `1, 2, 3 ...
-279`; staging Valideity's gap → `B1.8` (continues gate B past its existing max `B1.7`); Testing
-(mixed) → `A1.1`, `B1.1..B1.3`, plus Unscheduled numerics.
+Fresh sample ids under the new scheme (dry run, no mutation):
+- **Production Fortnoto** → `U1.1 … U1.279` (confirmed exactly 279, all Unscheduled, as expected).
+- **Staging Fortnoto** → `U1.1 … U1.226` (confirmed exactly 226, all Unscheduled, as expected).
+- **Staging Valideity**'s one gap (`"New ti check"`, gate B) → `B1.8` (continues gate B past its
+  existing max `B1.7`) — unchanged by the scheme revision since it's a gated id.
+- **Staging Testing** (mixed) → `B1.2`, `B1.3`, `B1.4`, `A1.1`, `U1.2` (continues past the
+  cleaned-up `U1.1`) — no more bare numerics anywhere in the preview.
+- **c.1.2 QA Project** → `C1.1`.
 
 **Stopped here, per instruction, for user approval before writing or running the mutation.**
 Next: idempotent backfill script (skip existing ids, never overwrite), run against both
