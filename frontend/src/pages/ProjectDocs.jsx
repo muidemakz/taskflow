@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import Breadcrumb from '../components/Breadcrumb';
 import ProjectTabs from '../components/ProjectTabs';
 import DocEditModal from '../components/docs/DocEditModal';
 import { docsApi, docCategoriesApi, projectsApi } from '../api/endpoints';
@@ -60,68 +61,73 @@ export default function ProjectDocs() {
   if (!docs) return <main className="p-8 text-center text-muted">Loading docs...</main>;
 
   return (
-    <main>
-      <div className="border-b border-border bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <button className="btn-icon" onClick={() => navigate('/dashboard')} aria-label="Back"><ArrowLeft size={17} /></button>
-            <h1 className="truncate text-base font-semibold">{projectTitle}</h1>
-          </div>
-          <button className="btn-primary" onClick={() => setCreating(true)}><Plus size={16} /> New entry</button>
+    <main className="mx-auto max-w-3xl px-4 py-6">
+      <Breadcrumb
+        items={[{ label: projectTitle, to: `/projects/${id}/board` }]}
+        onBack={() => navigate('/dashboard')}
+      />
+
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Docs</h1>
+          <p className="mt-1 text-sm text-muted">Project documentation, knowledge base, and reference materials.</p>
         </div>
+        <button className="btn-primary" onClick={() => setCreating(true)}><Plus size={17} /> New entry</button>
       </div>
 
       <ProjectTabs projectId={id} active="docs" />
 
-      <section className="mx-auto max-w-6xl px-4 py-5">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <input className="field max-w-sm" placeholder="Search title or body..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          <div className="flex rounded-md border border-[#d8e0ea] bg-white p-1">
-            {STATUS_FILTERS.map(([value, label]) => (
-              <button
-                key={value}
-                className={`rounded px-3 py-1.5 text-sm font-semibold ${statusFilter === value ? 'bg-primary text-white' : 'text-muted'}`}
-                onClick={() => setStatusFilter(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-4 flex flex-wrap gap-1.5">
-          {[{ id: 'none', name: 'Uncategorized' }, ...categories].map((cat) => (
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <input className="field max-w-sm" placeholder="Search title or body..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="flex rounded-md border border-[#d8e0ea] bg-white p-1 dark:border-slate-700 dark:bg-slate-800">
+          {STATUS_FILTERS.map(([value, label]) => (
             <button
-              key={cat.id}
-              className={`chip border ${selectedCategoryIds.includes(cat.id) ? 'border-primary bg-blue-50 text-primary' : 'border-[#d8e0ea] text-muted'}`}
-              onClick={() => toggleCategory(cat.id)}
+              key={value}
+              className={`rounded px-3 py-1.5 text-sm font-semibold ${statusFilter === value ? 'bg-primary text-white' : 'text-muted'}`}
+              onClick={() => setStatusFilter(value)}
             >
-              {cat.name}
+              {label}
             </button>
           ))}
         </div>
+      </div>
 
-        {!filtered.length && <div className="card p-10 text-center text-muted">No docs match.</div>}
+      <div className="mb-4 flex flex-wrap gap-1.5">
+        {[{ id: 'none', name: 'Uncategorized' }, ...categories].map((cat) => (
+          <button
+            key={cat.id}
+            className={`chip border ${selectedCategoryIds.includes(cat.id) ? 'border-primary bg-blue-50 text-primary' : 'border-[#d8e0ea] text-muted dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}
+            onClick={() => toggleCategory(cat.id)}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
 
-        {Boolean(filtered.length) && (
-          <div className="card divide-y divide-slate-100">
-            {filtered.map((doc) => (
-              <button
-                key={doc.id}
-                className="flex w-full flex-wrap items-center gap-2 px-4 py-3 text-left text-sm hover:bg-slate-50 sm:flex-nowrap sm:gap-3"
-                onClick={() => navigate(`/projects/${id}/docs/${doc.id}`)}
-              >
-                <span className="min-w-0 flex-1 truncate font-medium">{doc.title}</span>
-                <span className="chip shrink-0 bg-slate-100 text-muted">{doc.category?.name || 'Uncategorized'}</span>
-                <span className={`chip shrink-0 ${doc.status === 'RETIRED' ? 'bg-slate-100 text-muted' : 'bg-emerald-50 text-emerald-700'}`}>
+      {!filtered.length && <div className="card p-10 text-center text-muted">No docs match.</div>}
+
+      {Boolean(filtered.length) && (
+        <div className="card divide-y divide-slate-100 dark:divide-slate-700">
+          {filtered.map((doc) => (
+            <button
+              key={doc.id}
+              className="flex w-full flex-col gap-1.5 px-3 py-3 text-left text-sm transition hover:bg-slate-50 sm:flex-row sm:items-center sm:gap-3 dark:hover:bg-slate-900/50"
+              onClick={() => navigate(`/projects/${id}/docs/${doc.id}`)}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{doc.title}</p>
+                <p className="mt-0.5 text-xs text-muted">{doc.category?.name || 'Uncategorized'}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className={`chip shrink-0 ${doc.status === 'RETIRED' ? 'bg-slate-100 text-muted dark:bg-slate-700 dark:text-slate-400' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>
                   {doc.status === 'RETIRED' ? 'Retired' : 'Active'}
                 </span>
-                <span className="w-20 shrink-0 text-right text-xs text-muted">{formatDate(doc.updatedAt)}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </section>
+                <span className="w-16 shrink-0 text-right text-xs text-muted">{formatDate(doc.updatedAt)}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       {creating && (
         <DocEditModal

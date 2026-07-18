@@ -54,14 +54,6 @@ export default function ProjectDetailCard({ project, stats, tagCount = 0, onShar
   return (
     <section className="card mb-5 overflow-hidden">
       <div className="flex items-center gap-3 p-4">
-        <button
-          className="btn-icon h-8 w-8 shrink-0"
-          onClick={toggle}
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? 'Expand project details' : 'Collapse project details'}
-        >
-          <ChevronDown size={16} className={`transition-transform duration-300 ${collapsed ? '-rotate-90' : ''}`} />
-        </button>
         <h1 className="min-w-0 flex-1 truncate text-xl font-bold">{project.title}</h1>
         {collapsed && (
           <div className="flex shrink-0 items-center gap-2">
@@ -69,6 +61,14 @@ export default function ProjectDetailCard({ project, stats, tagCount = 0, onShar
             <span className="text-sm font-semibold text-primary">{pct}%</span>
           </div>
         )}
+        <button
+          className="btn-icon h-8 w-8 shrink-0"
+          onClick={toggle}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Expand project details' : 'Collapse project details'}
+        >
+          <ChevronDown size={16} className={`transition-transform duration-300 ${collapsed ? 'rotate-90' : ''}`} />
+        </button>
       </div>
 
       <div

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Breadcrumb from '../components/Breadcrumb';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import DocEditModal from '../components/docs/DocEditModal';
 import TableOfContents from '../components/docs/TableOfContents';
@@ -63,19 +64,22 @@ export default function DocDetail() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6">
+      <Breadcrumb
+        items={[
+          { label: 'Docs', to: `/projects/${id}/docs` },
+          { label: doc.title }
+        ]}
+        onBack={() => navigate(`/projects/${id}/docs`)}
+      />
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <button className="btn-icon shrink-0" onClick={() => navigate(`/projects/${id}/docs`)} aria-label="Back">
-            <ArrowLeft size={17} />
-          </button>
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold">{doc.title}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              <span className="chip bg-slate-100 text-muted">{doc.category?.name || 'Uncategorized'}</span>
-              <span className={`chip ${doc.status === 'RETIRED' ? 'bg-slate-100 text-muted' : 'bg-emerald-50 text-emerald-700'}`}>
-                {doc.status === 'RETIRED' ? 'Retired' : 'Active'}
-              </span>
-            </div>
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-bold">{doc.title}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <span className="chip bg-slate-100 text-muted dark:bg-slate-700 dark:text-slate-400">{doc.category?.name || 'Uncategorized'}</span>
+            <span className={`chip ${doc.status === 'RETIRED' ? 'bg-slate-100 text-muted dark:bg-slate-700 dark:text-slate-400' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>
+              {doc.status === 'RETIRED' ? 'Retired' : 'Active'}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-2">
