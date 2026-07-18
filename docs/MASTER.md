@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 18 July 2026 (production TID backfill complete — STEP 4b)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill now complete on **both** environments (staging 328/328, production 370/370), each verified idempotent by a second no-op run with zero duplicate TIDs; Group→Tag migration investigated on production only (not run — production is 38 groups/6 tags/0% overlap, materially unlike staging's 35/35/100%); chevron rotation direction still unverified in a browser
+**Last Updated:** 18 July 2026 (Account page: Profile editing converted to modals — staging only)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370), each verified idempotent by a second no-op run with zero duplicate TIDs; Group→Tag migration investigated on production only (not run — production is 38 groups/6 tags/0% overlap, materially unlike staging's 35/35/100%); Account page Profile section (name + avatar) converted from inline editing to modals matching the Change Email/Change Password pattern — **staging only, not yet merged**; chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -585,6 +585,52 @@ chrome from scratch and had no in-app way out but the browser back button.
 
 Gate (all three chunks): 53/53 backend tests pass, frontend build clean, no secrets in diff.
 Pushed to `staging` only.
+
+### Account Page — Profile editing converted to modals (✅ COMPLETE, STAGING ONLY — 18 Jul 2026)
+
+UX-consistency change only, no new functionality: the inline Profile editor on the Account page
+(large clickable avatar + a "Name" text field + a "Save profile" button, all live-edited in
+place) is replaced with two chevron-row entry points -- **Photo** and **Name** -- opening modals
+that match the existing Change Email / Change Password pattern exactly (same `Modal` component,
+same instructional-copy-then-field-then-submit-button structure, same chevron-row visual
+language as the Security section immediately below it).
+
+- **`EditNameModal`**: single field, friendly copy, `Save name` button -- mirrors
+  `ChangeEmailModal`'s structure closely. Persists via the existing `PATCH /api/users/me`
+  (`usersApi.update({ name })`); no backend change, none was needed.
+- **`EditAvatarModal`**: opens with the *current* avatar shown; clicking it (or "Choose a
+  different photo") triggers the OS file picker, previews the resized image locally, and only
+  commits on an explicit `Save photo` click -- deliberately not auto-saving on file selection
+  (unlike the old inline behavior), so **Cancel truly discards** an in-progress selection instead
+  of relying on not having called the API yet. `Save photo` is disabled until the pending image
+  actually differs from the saved one. Reuses the existing `resizeImageToDataUrl` helper and
+  `usersApi.update({ avatarUrl })` unchanged.
+- Old inline avatar button, name `<input>`, and "Save profile" button fully removed --
+  `AccountPage`'s local `name`/`avatarUrl`/`savingProfile`/`uploadingAvatar` state and the
+  `saveProfile`/`onAvatarSelected` handlers are gone, not just hidden (grepped afterward to
+  confirm no references remain). Theme picker (Light/Dark/System) is unchanged and stays inline
+  in the same card -- out of scope, not a login/profile-identity field.
+- No backend changes were needed or made, as expected -- both fields already round-trip through
+  `PATCH /api/users/me`.
+
+**Verified live against the staging dev server** (already-running Vite on port 5183, real
+session): Edit-name modal opens from the chevron row, editing and Save persists and is reflected
+immediately in both the Account row and the Topbar (confirmed via DOM read, not a refresh);
+Cancel (closing without saving) correctly leaves the name unchanged, confirmed by reopening and
+reading the row; the Photo modal opens from its chevron row, shows the current avatar/initial
+fallback, and its `Save photo` button is correctly disabled until something changes (verified via
+computed `disabled` state) -- this is the mechanism that makes Cancel a true no-op for photos too.
+Both modals checked in dark mode at 380px width: `Modal` panel background/text colors resolve
+correctly (slate-800/slate-100), no horizontal overflow. No console errors observed at any point.
+**Caveat, stated plainly:** the Browser pane tooling used here has no file-upload capability, so
+the actual upload-a-real-image path (file picker → resize → preview → save) was not exercised
+end-to-end with a real file -- only the modal's open/cancel/disabled-until-changed logic was
+verified. The user should click through an actual photo upload before considering this fully
+signed off.
+
+Gate: 51/51 backend tests pass (unchanged -- no backend touched), frontend build clean, no
+secrets in diff, no dead code left behind (`savingProfile`/`onAvatarSelected`/`saveProfile`
+grepped, zero hits). Pushed to `staging` only.
 
 ### Sprint Backlog (as of 17 Jul, pre-chunking)
 1. ✅ customId field — COMPLETE & PRODUCTION

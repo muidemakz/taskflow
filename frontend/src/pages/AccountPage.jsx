@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronRight, Copy, KeyRound, LogOut, Mail, Shield, Trash2 } from 'lucide-react';
+import { Check, ChevronRight, Copy, KeyRound, LogOut, Mail, Shield, Trash2, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { tokensApi, usersApi } from '../api/endpoints';
@@ -41,14 +41,8 @@ function resizeImageToDataUrl(file, size = 128) {
 }
 
 export default function AccountPage() {
-  const { user, logout, setUser } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
-
-  const [name, setName] = useState(user?.name || '');
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [tokens, setTokens] = useState([]);
   const [loadingTokens, setLoadingTokens] = useState(true);
@@ -61,45 +55,6 @@ export default function AccountPage() {
   useEffect(() => {
     refreshTokens().finally(() => setLoadingTokens(false));
   }, []);
-
-  async function saveProfile(overrides = {}) {
-    setSavingProfile(true);
-    try {
-      const { data } = await usersApi.update({ name, avatarUrl, ...overrides });
-      setUser(data);
-      toast.success('Profile updated');
-    } catch {
-      toast.error('Could not update profile');
-    } finally {
-      setSavingProfile(false);
-    }
-  }
-
-  async function onAvatarSelected(e) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setUploadingAvatar(true);
-    try {
-      const dataUrl = await resizeImageToDataUrl(file);
-      setAvatarUrl(dataUrl);
-      await saveProfile({ avatarUrl: dataUrl });
-    } catch {
-      toast.error('Could not process that image');
-    } finally {
-      setUploadingAvatar(false);
-    }
-  }
-
-  async function changeTheme(theme) {
-    applyTheme(theme.toLowerCase());
-    try {
-      const { data } = await usersApi.update({ theme });
-      setUser(data);
-    } catch {
-      toast.error('Could not save theme preference');
-    }
-  }
 
   async function revokeToken(id) {
     try {
@@ -117,55 +72,7 @@ export default function AccountPage() {
     <main className="mx-auto max-w-md px-4 py-6">
       <h1 className="text-xl font-bold">Account</h1>
 
-      <section className="card mt-4 p-4">
-        <h2 className="font-semibold">Profile</h2>
-        <div className="mt-3 flex items-center gap-4">
-          <button
-            type="button"
-            className="group relative h-[100px] w-[100px] shrink-0 overflow-hidden rounded-full border border-border dark:border-slate-700"
-            onClick={() => fileInputRef.current?.click()}
-            aria-label="Change avatar"
-          >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-blue-50 text-3xl font-bold text-primary dark:bg-blue-950 dark:text-blue-300">
-                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
-            )}
-            <span className="absolute inset-0 hidden items-center justify-center bg-black/40 text-xs font-semibold text-white group-hover:flex">
-              {uploadingAvatar ? 'Uploading…' : 'Change'}
-            </span>
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onAvatarSelected} />
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <label className="block text-xs font-semibold text-muted">Name</label>
-            <input className="field" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-        </div>
-        <button className="btn-primary mt-4 w-full justify-center" disabled={savingProfile || !name.trim()} onClick={() => saveProfile()}>
-          Save profile
-        </button>
-
-        <div className="mt-5">
-          <label className="block text-xs font-semibold text-muted">Theme</label>
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            {THEME_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                className={`rounded-md border px-3 py-2 text-sm font-semibold transition ${
-                  user?.theme === opt.value
-                    ? 'border-primary bg-primary text-white'
-                    : 'border-[#d8e0ea] bg-white text-text dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'
-                }`}
-                onClick={() => changeTheme(opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      <ProfileSection user={user} />
 
       <SecuritySection user={user} />
 
@@ -211,6 +118,199 @@ export default function AccountPage() {
 
       {createOpen && <CreateTokenModal onClose={() => setCreateOpen(false)} onCreated={refreshTokens} />}
     </main>
+  );
+}
+
+function ProfileSection({ user }) {
+  const { setUser } = useAuthStore();
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+
+  async function changeTheme(theme) {
+    applyTheme(theme.toLowerCase());
+    try {
+      const { data } = await usersApi.update({ theme });
+      setUser(data);
+    } catch {
+      toast.error('Could not save theme preference');
+    }
+  }
+
+  return (
+    <section className="card mt-4 p-4">
+      <h2 className="font-semibold">Profile</h2>
+
+      <div className="mt-3 divide-y divide-slate-100 dark:divide-slate-700">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-3 py-3 text-left"
+          onClick={() => setShowAvatarModal(true)}
+        >
+          <span className="flex items-center gap-3">
+            <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-border dark:border-slate-700">
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center bg-blue-50 text-sm font-bold text-primary dark:bg-blue-950 dark:text-blue-300">
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </span>
+              )}
+            </span>
+            <span className="block text-sm font-medium">Photo</span>
+          </span>
+          <ChevronRight size={16} className="shrink-0 text-muted" />
+        </button>
+
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-3 py-3 text-left"
+          onClick={() => setShowNameModal(true)}
+        >
+          <span className="flex items-center gap-2.5">
+            <User size={16} className="text-muted" />
+            <span>
+              <span className="block text-sm font-medium">Name</span>
+              <span className="block text-xs text-muted">{user?.name}</span>
+            </span>
+          </span>
+          <ChevronRight size={16} className="shrink-0 text-muted" />
+        </button>
+      </div>
+
+      <div className="mt-5">
+        <label className="block text-xs font-semibold text-muted">Theme</label>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {THEME_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={`rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                user?.theme === opt.value
+                  ? 'border-primary bg-primary text-white'
+                  : 'border-[#d8e0ea] bg-white text-text dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'
+              }`}
+              onClick={() => changeTheme(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {showAvatarModal && <EditAvatarModal user={user} onClose={() => setShowAvatarModal(false)} />}
+      {showNameModal && <EditNameModal user={user} onClose={() => setShowNameModal(false)} />}
+    </section>
+  );
+}
+
+function EditNameModal({ user, onClose }) {
+  const { setUser } = useAuthStore();
+  const [name, setName] = useState(user?.name || '');
+  const [saving, setSaving] = useState(false);
+
+  async function saveName(event) {
+    event.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      const { data } = await usersApi.update({ name: name.trim() });
+      setUser(data);
+      toast.success('Name updated');
+      onClose();
+    } catch {
+      toast.error('Could not update name');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal title="Edit name" onClose={onClose}>
+      <p className="mb-4 text-sm text-muted">
+        This is the name shown across Taskflow — in the topbar, on tasks you create, and to
+        anyone you share a project or gate with.
+      </p>
+      <form onSubmit={saveName} className="space-y-2">
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-muted">Name</label>
+          <input className="field" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        </div>
+        <button className="btn-primary mt-2 w-full justify-center" disabled={saving || !name.trim()}>
+          {saving ? 'Saving…' : 'Save name'}
+        </button>
+      </form>
+    </Modal>
+  );
+}
+
+function EditAvatarModal({ user, onClose }) {
+  const { setUser } = useAuthStore();
+  const fileInputRef = useRef(null);
+  const [pendingUrl, setPendingUrl] = useState(user?.avatarUrl || '');
+  const [processing, setProcessing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function onFileSelected(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setProcessing(true);
+    try {
+      const dataUrl = await resizeImageToDataUrl(file);
+      setPendingUrl(dataUrl);
+    } catch {
+      toast.error('Could not process that image');
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function savePhoto() {
+    setSaving(true);
+    try {
+      const { data } = await usersApi.update({ avatarUrl: pendingUrl });
+      setUser(data);
+      toast.success('Photo updated');
+      onClose();
+    } catch {
+      toast.error('Could not update photo');
+      setSaving(false);
+    }
+  }
+
+  const changed = pendingUrl !== (user?.avatarUrl || '');
+
+  return (
+    <Modal title="Edit photo" onClose={onClose}>
+      <p className="mb-4 text-sm text-muted">
+        Upload a photo to personalize your account — it shows up in the topbar and anywhere your
+        name appears. Square photos work best; we'll crop and resize it automatically.
+      </p>
+      <div className="flex flex-col items-center gap-3">
+        <button
+          type="button"
+          className="group relative h-[100px] w-[100px] shrink-0 overflow-hidden rounded-full border border-border dark:border-slate-700"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="Choose photo"
+        >
+          {pendingUrl ? (
+            <img src={pendingUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-blue-50 text-3xl font-bold text-primary dark:bg-blue-950 dark:text-blue-300">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+          )}
+          <span className="absolute inset-0 hidden items-center justify-center bg-black/40 text-xs font-semibold text-white group-hover:flex">
+            {processing ? 'Processing…' : 'Choose photo'}
+          </span>
+        </button>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileSelected} />
+        <button type="button" className="btn-ghost text-sm" onClick={() => fileInputRef.current?.click()}>
+          Choose a different photo
+        </button>
+      </div>
+      <button className="btn-primary mt-4 w-full justify-center" disabled={saving || processing || !changed} onClick={savePhoto}>
+        {saving ? 'Saving…' : 'Save photo'}
+      </button>
+    </Modal>
   );
 }
 
