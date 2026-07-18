@@ -2,6 +2,8 @@ import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { defaultOrder, orderArray, projectInclude, serializeOrder, taskCounts, toClientProject } from '../utils/project.js';
 import { appendPosition } from '../lib/position.js';
+import { createTaskWithCustomId } from '../utils/customId.js';
+import { requireGate } from '../lib/ownership.js';
 import { STARTER_CATEGORIES } from './docCategories.js';
 
 const router = Router();
@@ -203,6 +205,20 @@ router.post('/:id/tasks', async (req, res, next) => {
     }
     const priority = ['LOW', 'MID', 'HIGH', 'NONE'].includes(req.body.priority) ? req.body.priority : 'NONE';
 
+    // Optional gateId lets callers create straight into a gate (quick-add
+    // from a gate card, or a gate picked in the quick-add modal) so the
+    // customId is generated against the task's real, final gate in one
+    // atomic step -- not assigned Unscheduled and then silently stuck that
+    // way once the caller's separate follow-up "move" call lands (customId
+    // never changes once set, so getting it right at creation matters here).
+    let gate = null;
+    if (req.body.gateId) {
+      gate = await requireGate(req.body.gateId, req.auth.sub);
+      if (!gate || gate.roadmap.projectId !== project.id) {
+        return res.status(400).json({ message: 'gateId does not belong to this project' });
+      }
+    }
+
     const backlogStatus = await prisma.status.findFirst({
       where: { projectId: project.id, countsAsDone: false },
       orderBy: { order: 'asc' }
@@ -216,15 +232,14 @@ router.post('/:id/tasks', async (req, res, next) => {
     }
     const maxPosition = (await prisma.task.aggregate({ where: { statusId: backlogStatus.id }, _max: { position: true } }))._max.position;
 
-    const task = await prisma.task.create({
-      data: {
-        title,
-        projectId: project.id,
-        groupId,
-        priority,
-        statusId: backlogStatus.id,
-        position: appendPosition(maxPosition)
-      }
+    const task = await createTaskWithCustomId(prisma, project.id, gate, {
+      title,
+      projectId: project.id,
+      groupId,
+      gateId: gate?.id || null,
+      priority,
+      statusId: backlogStatus.id,
+      position: appendPosition(maxPosition)
     });
     if (!groupId) {
       await prisma.project.update({

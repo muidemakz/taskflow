@@ -5,12 +5,13 @@ import Modal from '../Modal';
 import TagMultiSelect from '../TagMultiSelect';
 import { projectsApi, boardApi, tagsApi, docsApi, taskDocLinksApi } from '../../api/endpoints';
 
-// Creates via the legacy create-task endpoint (lands in the project's first
-// non-done status, Unscheduled) then immediately moves it via the board
-// endpoint if a different gate/status was chosen -- reuses that endpoint's
+// Creates with the target gate (if any) passed straight into the create
+// call, so the task lands in its real gate atomically -- this matters
+// because customId is generated from the task's gate at creation and never
+// changes afterward. Status is applied as a separate follow-up move via the
+// board endpoint if it differs from the default, reusing that endpoint's
 // validation, activity logging, and position handling instead of
-// duplicating them in a dedicated create-in-gate endpoint. gate === null
-// means Unscheduled (status only, no gate move needed).
+// duplicating them here. gate === null means Unscheduled.
 //
 // Comment/tags/linked docs (checkpoint c.1.3) are optional and collapsed
 // behind "Add details" by default so the common single-title-and-save case
@@ -58,10 +59,9 @@ export default function QuickAddTaskModal({ projectId, gate, statuses, onClose, 
     if (!title.trim()) return toast.error('Title is required');
     setSaving(true);
     try {
-      const { data } = await projectsApi.createTask(projectId, { title: title.trim() });
-      const needsMove = (gate && gate.id) || (statusId && statusId !== firstNonDone?.id);
-      if (needsMove) {
-        await boardApi.updateTask(data.taskId, { gateId: gate?.id || null, statusId });
+      const { data } = await projectsApi.createTask(projectId, { title: title.trim(), gateId: gate?.id || undefined });
+      if (statusId && statusId !== firstNonDone?.id) {
+        await boardApi.updateTask(data.taskId, { statusId });
       }
       if (comment.trim() || selectedTagIds.length) {
         await boardApi.updateTask(data.taskId, {

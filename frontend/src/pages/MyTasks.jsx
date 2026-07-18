@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import InlineTaskModal from '../components/board/InlineTaskModal';
 import SharedFilterBar from '../components/SharedFilterBar';
 import TagMultiSelect from '../components/TagMultiSelect';
-import { meApi, projectsApi, roadmapApi, boardApi } from '../api/endpoints';
+import { meApi, projectsApi, roadmapApi } from '../api/endpoints';
 import { formatDueDate, isOverdue, priorityMeta, tagColorClass } from '../utils/board';
 
 export const EMPTY_MY_TASK_FILTERS = {
@@ -106,10 +106,11 @@ export default function MyTasks() {
     if (!title || !quickProjectId) return;
     setAdding(true);
     try {
-      const { data } = await projectsApi.createTask(quickProjectId, { title });
-      // No gate picked -> leave it Unscheduled, exactly what createTask
-      // already does by default; only move it when the user chose one.
-      if (quickGateId) await boardApi.updateTask(data.taskId, { gateId: quickGateId });
+      // gateId passed straight into create (not a follow-up move) so the
+      // task's customId is generated against its real, final gate -- it
+      // never changes after creation, so Unscheduled-then-moved would leave
+      // a gated task stuck with an Unscheduled-style id forever.
+      await projectsApi.createTask(quickProjectId, { title, gateId: quickGateId || undefined });
       localStorage.setItem(LAST_PROJECT_KEY, quickProjectId);
       setQuickTitle('');
       toast.success('Task added');

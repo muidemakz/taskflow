@@ -3,6 +3,7 @@ import prisma from '../lib/prisma.js';
 import { requireProject, requireTask } from '../lib/ownership.js';
 import { appendPosition } from '../lib/position.js';
 import { logActivity } from '../lib/activity.js';
+import { createTaskWithCustomId } from '../utils/customId.js';
 
 const router = Router();
 
@@ -47,17 +48,15 @@ router.post('/tasks', async (req, res, next) => {
 
     const maxPosition = (await prisma.task.aggregate({ where: { statusId: firstNonDoneStatus.id }, _max: { position: true } }))._max.position;
 
-    const created = await prisma.task.create({
-      data: {
-        projectId: project.id,
-        title: title.trim(),
-        statusId: firstNonDoneStatus.id,
-        gateId: null,
-        position: appendPosition(maxPosition),
-        source,
-        externalId,
-        sourceUrl: sourceUrl || null
-      }
+    const created = await createTaskWithCustomId(prisma, project.id, null, {
+      projectId: project.id,
+      title: title.trim(),
+      statusId: firstNonDoneStatus.id,
+      gateId: null,
+      position: appendPosition(maxPosition),
+      source,
+      externalId,
+      sourceUrl: sourceUrl || null
     });
     res.status(201).json({ created: true, task: created });
   } catch (error) {
