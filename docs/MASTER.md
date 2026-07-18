@@ -293,17 +293,17 @@ Invites (copyable one-time links), roles, password reset, activity log, self-ser
 **Commit 1 is being completed in SMALL SEQUENTIAL CHUNKS to prevent component debt.**
 Each chunk ends in a complete, integrated, committed state. No mid-flight context exhaustion.
 
-**CHUNK 1 (this week): Filter bar unification** 
-- Integrate SharedFilterBar into all filter locations (My Tasks, Board/Gate, Docs, ProjectDetail)
-- Delete superseded implementations (MyTasksFilterBar, BoardFilterBar)
-- Ensure exactly ONE filter bar definition in codebase
-- Status: In progress
+**CHUNK 1 (completed)**: Filter bar unification ✅
+- ✅ Integrate SharedFilterBar into all filter locations (My Tasks, Board/Gate, Docs, ProjectDetail)
+- ✅ Delete superseded implementations (MyTasksFilterBar, BoardFilterBar)
+- ✅ Ensure exactly ONE filter bar definition in codebase
+- Commits: `42cb6a2` (My Tasks/Board unification), `a9cb436` (Docs/ProjectDetail integration)
 
-**CHUNK 2 (next session): Breadcrumbs, chevrons, labels, tab actions**
-- One breadcrumb structure across all pages
-- Expand chevron direction verified visually
-- Remove "Gates" label convention
-- Tab row context actions (Tasks → "Whole-project board", Docs → "New Entry")
+**CHUNK 2 (remaining)**: Breadcrumbs, chevrons, labels, tab actions
+- [ ] One breadcrumb structure across all pages (currently scattered, some pages have stray chevrons)
+- [ ] Expand chevron direction verified VISUALLY in browser (rotate-90 vs -rotate-90 — need browser check, not just class verification)
+- [ ] Remove "Gates" label from All/Open/Closed controls; apply same convention to similar labelled groups
+- [ ] Tab row context action: My Tasks → prominent "Whole-project board" button; ProjectDocs → "New Entry" button (doc creation)
 
 **CHUNK 3 (following session): PAGE WIDTH, card actions, last-activity**
 - CSS variable for max-width applied uniformly
