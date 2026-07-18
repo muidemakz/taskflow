@@ -299,11 +299,11 @@ Each chunk ends in a complete, integrated, committed state. No mid-flight contex
 - ✅ Ensure exactly ONE filter bar definition in codebase
 - Commits: `42cb6a2` (My Tasks/Board unification), `a9cb436` (Docs/ProjectDetail integration)
 
-**CHUNK 2 (remaining)**: Breadcrumbs, chevrons, labels, tab actions
-- [ ] One breadcrumb structure across all pages (currently scattered, some pages have stray chevrons)
-- [ ] Expand chevron direction verified VISUALLY in browser (rotate-90 vs -rotate-90 — need browser check, not just class verification)
-- [ ] Remove "Gates" label from All/Open/Closed controls; apply same convention to similar labelled groups
-- [ ] Tab row context action: My Tasks → prominent "Whole-project board" button; ProjectDocs → "New Entry" button (doc creation)
+**CHUNK 2b** (✅ COMPLETE): Breadcrumbs, chevrons, labels, tab actions — `130e663`
+- ✅ Breadcrumb: Remove stray chevron before first item (only render between items, not after back arrow)
+- ✅ Expand chevron direction: Fixed GroupCard to use rotate-90 (collapsed) consistently with ProjectDetailCard
+- ✅ Remove "Gates" label from RoadmapOverview gate filter controls
+- ✅ Tab row context action: ProjectTabs shows context-sensitive button (Tasks → "Whole-project board"; Docs → "New entry" with onNewEntry callback)
 
 **CHUNK 3 (following session): PAGE WIDTH, card actions, last-activity**
 - CSS variable for max-width applied uniformly
