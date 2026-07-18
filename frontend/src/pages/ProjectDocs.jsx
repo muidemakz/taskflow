@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
 import ProjectTabs from '../components/ProjectTabs';
+import SharedFilterBar from '../components/SharedFilterBar';
 import DocEditModal from '../components/docs/DocEditModal';
 import { docsApi, docCategoriesApi, projectsApi } from '../api/endpoints';
 
@@ -22,9 +23,7 @@ export default function ProjectDocs() {
   const [projectTitle, setProjectTitle] = useState('');
   const [docs, setDocs] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
-  const [statusFilter, setStatusFilter] = useState('ACTIVE');
-  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState({ search: '', status: 'ACTIVE', categoryIds: [] });
   const [creating, setCreating] = useState(false);
 
   function load() {
@@ -38,25 +37,21 @@ export default function ProjectDocs() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  function toggleCategory(catKey) {
-    setSelectedCategoryIds((prev) => (prev.includes(catKey) ? prev.filter((c) => c !== catKey) : [...prev, catKey]));
-  }
-
   const filtered = useMemo(() => {
     if (!docs) return [];
     return docs.filter((doc) => {
-      if (selectedCategoryIds.length) {
+      if (filters.categoryIds.length) {
         const catKey = doc.categoryId || 'none';
-        if (!selectedCategoryIds.includes(catKey)) return false;
+        if (!filters.categoryIds.includes(catKey)) return false;
       }
-      if (statusFilter && doc.status !== statusFilter) return false;
-      if (search.trim()) {
-        const q = search.trim().toLowerCase();
+      if (filters.status && doc.status !== filters.status) return false;
+      if (filters.search.trim()) {
+        const q = filters.search.trim().toLowerCase();
         if (!doc.title.toLowerCase().includes(q) && !doc.body.toLowerCase().includes(q)) return false;
       }
       return true;
     });
-  }, [docs, selectedCategoryIds, statusFilter, search]);
+  }, [docs, filters]);
 
   if (!docs) return <main className="p-8 text-center text-muted">Loading docs...</main>;
 
@@ -77,32 +72,46 @@ export default function ProjectDocs() {
 
       <ProjectTabs projectId={id} active="docs" />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <input className="field max-w-sm" placeholder="Search title or body..." value={search} onChange={(e) => setSearch(e.target.value)} />
-        <div className="flex rounded-md border border-[#d8e0ea] bg-white p-1 dark:border-slate-700 dark:bg-slate-800">
-          {STATUS_FILTERS.map(([value, label]) => (
-            <button
-              key={value}
-              className={`rounded px-3 py-1.5 text-sm font-semibold ${statusFilter === value ? 'bg-primary text-white' : 'text-muted'}`}
-              onClick={() => setStatusFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        {[{ id: 'none', name: 'Uncategorized' }, ...categories].map((cat) => (
-          <button
-            key={cat.id}
-            className={`chip border ${selectedCategoryIds.includes(cat.id) ? 'border-primary bg-blue-50 text-primary' : 'border-[#d8e0ea] text-muted dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}
-            onClick={() => toggleCategory(cat.id)}
-          >
-            {cat.name}
-          </button>
-        ))}
-      </div>
+      <SharedFilterBar
+        filters={filters}
+        onChange={setFilters}
+        onClear={() => setFilters({ search: '', status: 'ACTIVE', categoryIds: [] })}
+        placeholder="Search title or body..."
+        filterFields={[
+          {
+            key: 'status',
+            render: (f, set) => (
+              <div className="flex rounded-md border border-border bg-white p-1 dark:border-slate-700 dark:bg-slate-800">
+                {STATUS_FILTERS.map(([value, label]) => (
+                  <button
+                    key={value}
+                    className={`rounded px-3 py-1.5 text-sm font-semibold ${f.status === value ? 'bg-primary text-white' : 'text-muted'}`}
+                    onClick={() => set({ status: value })}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )
+          },
+          {
+            key: 'categoryIds',
+            render: (f, set) => (
+              <div className="flex flex-wrap gap-1.5">
+                {[{ id: 'none', name: 'Uncategorized' }, ...categories].map((cat) => (
+                  <button
+                    key={cat.id}
+                    className={`chip border ${f.categoryIds.includes(cat.id) ? 'border-primary bg-blue-50 text-primary dark:border-blue-600 dark:bg-blue-900/40 dark:text-blue-300' : 'border-border text-muted dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}
+                    onClick={() => set({ categoryIds: f.categoryIds.includes(cat.id) ? f.categoryIds.filter((c) => c !== cat.id) : [...f.categoryIds, cat.id] })}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            )
+          }
+        ]}
+      />
 
       {!filtered.length && <div className="card p-10 text-center text-muted">No docs match.</div>}
 

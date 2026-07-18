@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import GroupCard from '../components/GroupCard';
 import ProjectTabs from '../components/ProjectTabs';
+import SharedFilterBar from '../components/SharedFilterBar';
 import Modal from '../components/Modal';
 import ShareProjectModal from '../components/ShareProjectModal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
@@ -103,20 +104,58 @@ export default function ProjectDetail() {
             <div className="flex-1"><ProgressBar value={st.pct} /></div>
             <span className="text-sm text-muted">{st.done} of {st.total} done · <strong>{st.pct}%</strong></span>
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <input className="field max-w-sm dark:bg-slate-800 dark:text-white dark:border-slate-700" placeholder="Search tasks or comments" value={filters.query} onChange={(e) => setFilters({ ...filters, query: e.target.value })} />
-            <div className="rounded-md border border-[#d8e0ea] bg-white p-1 dark:border-slate-700 dark:bg-slate-800">
-              {['all', 'TODO', 'DONE'].map((value) => <button key={value} className={`rounded px-3 py-1.5 text-sm font-semibold ${filters.status === value ? 'bg-primary text-white' : 'text-muted dark:text-slate-400'}`} onClick={() => setFilters({ ...filters, status: value })}>{value === 'all' ? 'All' : value === 'TODO' ? 'To-do' : 'Done'}</button>)}
-            </div>
-            <input className="field w-auto dark:bg-slate-800 dark:text-white dark:border-slate-700" type="date" value={filters.completedAfter} onChange={(e) => setFilters({ ...filters, completedAfter: e.target.value })} />
-            <select className="field w-auto dark:bg-slate-800 dark:text-white dark:border-slate-700" value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
-              <option value="default">Default order</option>
-              <option value="todo-first">To-do first</option>
-              <option value="done-first">Completed first</option>
-              <option value="completed-desc">Newest completed</option>
-              <option value="completed-asc">Oldest completed</option>
-            </select>
-          </div>
+          <SharedFilterBar
+            filters={filters}
+            onChange={setFilters}
+            onClear={() => setFilters(filtersInitial)}
+            placeholder="Search tasks or comments..."
+            filterFields={[
+              {
+                key: 'status',
+                render: (f, set) => (
+                  <div className="rounded-md border border-border bg-white p-1 dark:border-slate-700 dark:bg-slate-800">
+                    {['all', 'TODO', 'DONE'].map((value) => (
+                      <button
+                        key={value}
+                        className={`rounded px-3 py-1.5 text-sm font-semibold ${f.status === value ? 'bg-primary text-white' : 'text-muted dark:text-slate-400'}`}
+                        onClick={() => set({ status: value })}
+                      >
+                        {value === 'all' ? 'All' : value === 'TODO' ? 'To-do' : 'Done'}
+                      </button>
+                    ))}
+                  </div>
+                )
+              },
+              {
+                key: 'completedAfter',
+                render: (f, set) => (
+                  <input
+                    className="field w-auto dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                    type="date"
+                    value={f.completedAfter}
+                    onChange={(e) => set({ completedAfter: e.target.value })}
+                    aria-label="Completed after date"
+                  />
+                )
+              },
+              {
+                key: 'sort',
+                render: (f, set) => (
+                  <select
+                    className="field w-auto dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                    value={f.sort}
+                    onChange={(e) => set({ sort: e.target.value })}
+                  >
+                    <option value="default">Default order</option>
+                    <option value="todo-first">To-do first</option>
+                    <option value="done-first">Completed first</option>
+                    <option value="completed-desc">Newest completed</option>
+                    <option value="completed-asc">Oldest completed</option>
+                  </select>
+                )
+              }
+            ]}
+          />
         </div>
       </section>
 
