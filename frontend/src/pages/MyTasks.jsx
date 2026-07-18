@@ -81,6 +81,27 @@ export default function MyTasks() {
     meApi.tasks().then(({ data }) => setBuckets(data.buckets));
   }
 
+  // Targeted update instead of a reload: patch the task in place, in every
+  // bucket it currently appears in (a task can be in several -- e.g. due
+  // today AND focused). A status that now counts as done takes it out of
+  // every bucket immediately, matching "every not-done task" -- otherwise
+  // this page has no visible status field to update, only the fields
+  // TaskRow renders (title, priority, due date, focus, tags, gate).
+  function applyTaskUpdate(updated) {
+    setBuckets((prev) => {
+      if (!prev) return prev;
+      const next = {};
+      for (const key of Object.keys(prev)) {
+        next[key] = updated.countsAsDone
+          ? prev[key].filter((t) => t.id !== updated.id)
+          : prev[key].map((t) => (t.id === updated.id
+            ? { ...t, title: updated.title, priority: updated.priority, dueDate: updated.dueDate, blocked: updated.blocked, focus: updated.focus, tags: updated.tags, gate: updated.gate, gateId: updated.gateId, customId: updated.customId }
+            : t));
+      }
+      return next;
+    });
+  }
+
   useEffect(() => {
     loadTasks();
     projectsApi.list().then(({ data }) => {
@@ -306,10 +327,13 @@ export default function MyTasks() {
         <InlineTaskModal
           projectId={openTask.projectId}
           taskId={openTask.taskId}
+          onUpdated={applyTaskUpdate}
           onClose={() => {
             setOpenTask(null);
-            // Reload the buckets so any edit (or delete) made in the modal
-            // is reflected in the rows -- the view itself never navigates.
+            // Background consistency pass on top of the immediate targeted
+            // update above -- catches anything that changes which bucket a
+            // task belongs to beyond "now done" (e.g. a due-date edit that
+            // makes it newly overdue), and deletes, which have no onUpdated.
             loadTasks();
           }}
         />

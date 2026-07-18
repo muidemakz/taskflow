@@ -96,16 +96,6 @@ export default function ProjectBoard() {
     return cols.map((col) => ({ ...col, tasks: filterTasks(col.tasks, filters) }));
   }, [columns, isUnscheduledView, filters]);
 
-  // Gate-scoped board: columns are already filtered to that gate's tasks by
-  // the backend (loadBoard(id, gateId)), so "that gate's statuses" is just
-  // whichever status columns currently hold at least one of its tasks.
-  // Whole-project / Unscheduled views (gateId null) get every status.
-  const statusOptionsForModal = useMemo(() => {
-    if (!gateId) return statuses;
-    const used = columns.filter((c) => c.tasks.length).map((c) => c.status);
-    return used.length ? used : statuses;
-  }, [gateId, columns, statuses]);
-
   const sortedGates = [...gates].sort((a, b) => a.order - b.order);
   const currentGate = gates.find((g) => g.id === gateId);
   const currentGateIndex = currentGate ? sortedGates.findIndex((g) => g.id === currentGate.id) : -1;
@@ -329,7 +319,6 @@ export default function ProjectBoard() {
         <TaskDetailModal
           task={openTask}
           statuses={statuses}
-          statusOptions={statusOptionsForModal}
           gates={gates}
           tags={tags}
           promptRulesCategoryId={project.promptRulesCategoryId}

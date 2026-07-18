@@ -119,18 +119,26 @@ export const useBoardStore = create((set, get) => ({
     set((state) => {
       // A real gate-scoped board (state.gateId set) only ever holds that
       // gate's tasks -- if this update moved the task to a different gate,
-      // it no longer belongs here and must be dropped, not just updated in
-      // place. Whole-project/Unscheduled views (gateId null) don't need
-      // this: their own client-side filtering already re-derives visibility
-      // from the task's (now-updated) gateId on every columns change.
+      // it no longer belongs here and must be dropped. Whole-project/
+      // Unscheduled views (gateId null) always keep it.
       const stillInScope = !state.gateId || data.gateId === state.gateId;
+      // Remove the task from wherever it currently sits, then (if still in
+      // scope) re-insert it into the column matching its fresh statusId --
+      // a plain in-place replace left a task that changed status visually
+      // stuck in its old column, since replace-by-id never moves an entry
+      // to a different column's tasks array. Mirrors the insert-sorted-by-
+      // position pattern moveTask already uses for its optimistic update.
+      const withoutTask = state.columns.map((col) => ({
+        ...col,
+        tasks: col.tasks.filter((t) => t.id !== taskId)
+      }));
+      if (!stillInScope) return { columns: withoutTask };
       return {
-        columns: state.columns.map((col) => ({
-          ...col,
-          tasks: stillInScope
-            ? col.tasks.map((t) => (t.id === taskId ? data : t))
-            : col.tasks.filter((t) => t.id !== taskId)
-        }))
+        columns: withoutTask.map((col) => {
+          if (col.status.id !== data.statusId) return col;
+          const tasks = [...col.tasks, data].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+          return { ...col, tasks };
+        })
       };
     });
     return data;

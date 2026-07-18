@@ -12,10 +12,7 @@ import PromptsPanel from './PromptsPanel';
 import { boardApi, tagsApi, tasksApi, taskDocLinksApi } from '../../api/endpoints';
 import { useBoardStore } from '../../store/boardStore';
 
-// statusOptions scopes the dropdown's choices (gate-scoped board vs.
-// whole-project board); statuses stays the full project list so the
-// current status can always be resolved even if it falls outside that scope.
-export default function TaskDetailModal({ task, statuses, statusOptions, gates, tags, promptRulesCategoryId, onClose, onUpdated }) {
+export default function TaskDetailModal({ task, statuses, gates, tags, promptRulesCategoryId, onClose, onUpdated }) {
   const navigate = useNavigate();
   const updateTaskFields = useBoardStore((s) => s.updateTaskFields);
   const refreshBoard = useBoardStore((s) => s.refreshBoard);
@@ -55,15 +52,6 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
     }
     onClose();
   }
-
-  const options = statusOptions?.length ? statusOptions : statuses;
-  // The current status can fall outside a gate-scoped dropdown's options
-  // (e.g. a task sitting in "Done" while the gate view only shows statuses
-  // its own tasks currently use) -- always include it so the select never
-  // silently shows the wrong value.
-  const statusSelectOptions = options.some((s) => s.id === current.statusId)
-    ? options
-    : [...options, ...statuses.filter((s) => s.id === current.statusId)];
 
   useEffect(() => {
     boardApi.taskRoadmaps(task.id).then(({ data }) => setRoadmapEntries(data.entries));
@@ -169,7 +157,7 @@ export default function TaskDetailModal({ task, statuses, statusOptions, gates, 
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Status</label>
           <select className="field" value={current.statusId || ''} onChange={(e) => patch({ statusId: e.target.value })}>
-            {statusSelectOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {statuses.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
 
