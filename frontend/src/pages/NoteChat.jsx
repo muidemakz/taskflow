@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { notesApi } from '../api/endpoints';
 import Breadcrumb from '../components/Breadcrumb';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import { withDisplayNumbers } from '../utils/notes';
 
 const SpeechRecognitionCtor = typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
 
@@ -38,9 +39,13 @@ export default function NoteChat() {
   const streamEndRef = useRef(null);
 
   function load() {
-    Promise.all([notesApi.detail(id), notesApi.messages(id)])
-      .then(([chatRes, messagesRes]) => {
-        setChat(chatRes.data);
+    Promise.all([notesApi.detail(id), notesApi.messages(id), notesApi.list()])
+      .then(([chatRes, messagesRes, listRes]) => {
+        // displayTitle needs every chat's createdAt to compute "Untitled N"
+        // consistently with the list page -- same shared helper, so a chat
+        // never shows a different number in its own header than it does there.
+        const [withNumber] = withDisplayNumbers(listRes.data).filter((c) => c.id === chatRes.data.id);
+        setChat({ ...chatRes.data, displayTitle: withNumber?.displayTitle || chatRes.data.title || 'Untitled' });
         setMessages(messagesRes.data);
       })
       .catch(() => navigate('/notes'));
@@ -94,7 +99,10 @@ export default function NoteChat() {
     if (title === chat.title) return;
     try {
       const { data } = await notesApi.update(id, { title });
-      setChat(data);
+      // A real title replaces the number outright; clearing it back to
+      // null falls back to the same "Untitled N" this chat already had,
+      // since its creation-order number never changes.
+      setChat({ ...data, displayTitle: data.title || chat.displayTitle });
     } catch {
       toast.error('Could not rename chat');
     }
@@ -103,7 +111,7 @@ export default function NoteChat() {
   async function toggleAi() {
     try {
       const { data } = await notesApi.update(id, { aiEnabled: !chat.aiEnabled });
-      setChat(data);
+      setChat({ ...data, displayTitle: chat.displayTitle });
     } catch {
       toast.error('Could not update Talk to AI');
     }
@@ -176,7 +184,7 @@ export default function NoteChat() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-4">
-      <Breadcrumb items={[{ label: 'Notes', to: '/notes' }, { label: chat.title || 'Untitled' }]} onBack={() => navigate('/notes')} />
+      <Breadcrumb items={[{ label: 'Notes', to: '/notes' }, { label: chat.displayTitle }]} onBack={() => navigate('/notes')} />
 
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         {renaming ? (
@@ -196,7 +204,7 @@ export default function NoteChat() {
           </form>
         ) : (
           <button type="button" className="min-w-0 truncate text-left text-lg font-semibold hover:underline" onClick={startRename}>
-            {chat.title || 'Untitled'}
+            {chat.displayTitle}
           </button>
         )}
 

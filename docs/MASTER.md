@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 18 July 2026 (Trash revised from an Account modal to its own page — staging only)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370), each verified idempotent by a second no-op run with zero duplicate TIDs; Group→Tag migration investigated on production only (not run — production is 38 groups/6 tags/0% overlap, materially unlike staging's 35/35/100%); Account page Profile section (name + avatar) converted from inline editing to modals matching the Change Email/Change Password pattern; bottom nav now **My Tasks | Catch Up | Projects | Notes | Account**, Notes is a placeholder page pending the real feature, Trash is reached from Account but renders as its own full page at `/trash` (revised from an initial modal-in-Account approach) with a back button and search — **all staging only, not yet merged**; chevron rotation direction still unverified in a browser
+**Last Updated:** 18 July 2026 (Notes feature shipped — chat-style personal notes + optional Talk to AI — staging only)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370); Group→Tag migration investigated on production only (not run); Account page Profile section converted to modals; Trash lives in Account as its own full page at `/trash`; **Notes is now a real feature** (migration `13_add_notes`, the 14th migration directory: `NoteChat`/`NoteMessage`, owner-scoped CRUD, global search integration, chat UI with voice-to-text) replacing the earlier placeholder, `ENABLE_AI_GENERATION` confirmed unchanged (still `false`) throughout — **all staging only, not yet merged**; chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -704,6 +704,91 @@ own sake.
 
 Gate: 51/51 backend tests pass (no backend touched), frontend build clean, no secrets in diff,
 no dead references (`TrashPanel`/`showTrash` grepped, zero hits). Pushed to `staging` only.
+
+### Notes feature: chat-style personal notes + optional Talk to AI (✅ COMPLETE, STAGING ONLY — 18 Jul 2026)
+
+Replaces the placeholder Notes page with a real feature, following the full-page navigation
+pattern established for Trash (not modals): `/notes` (list) and `/notes/:id` (an open chat).
+
+**Schema — migration `13_add_notes` (the 14th migration directory):**
+- `NoteChat`: `userId` (direct owner FK -- unlike every other resource in this app, notes have no
+  project/shared-membership concept, so ownership is the simplest possible check), `title`
+  (nullable -- "Untitled N" is a display-only number derived from creation order, never
+  persisted, so renaming/reordering never has to reconcile against a stored placeholder),
+  `aiEnabled` (default `false`), optional `project`/`task` links (`SetNull`), soft-deletable.
+- `NoteMessage`: `chatId` FK, `role` enum (`user`/`assistant`), `body`, soft-deletable.
+- Applied directly to the staging DB via `prisma migrate deploy` against the Railway proxy
+  connection string in `backend/.env.local` (same DB the deployed backend uses), then the SQL
+  was hand-written into the migration file from `prisma migrate diff`'s output and committed --
+  confirmed via the subsequent deploy log ("14 migrations found ... No pending migrations to
+  apply") that this matched exactly what the running database already had.
+
+**Backend (`backend/src/routes/notes.js`), all owner-scoped via new `requireNoteChat`/
+`requireNoteMessage` helpers in `lib/ownership.js` (cross-user access is 404, never 403, matching
+every other resource in the app):**
+- Full CRUD on chats/messages per spec, plus one deliberate addition beyond the original route
+  list: `GET /api/notes/chats/:id` -- the chat page needs one chat's title/`aiEnabled` on its own;
+  refetching the whole list just to find one row by id would have been wasteful.
+- `POST .../messages` always persists the user message first, then a two-gate check before ever
+  touching the AI -- per-chat `aiEnabled`, then the global `ENABLE_AI_GENERATION` flag (reuses the
+  exact client construction/model from `prompts.js`'s existing Prompt 6 generation, not forked):
+  `aiEnabled` false -> log only; `aiEnabled` true + flag off -> message saves, clear `aiNotice`,
+  no error, no API call; both true -> real Anthropic call, reply persisted as `role: assistant`.
+- Search (`search.js`): extended the existing tasks/projects query architecture with one more
+  `Promise.all` branch for notes (chat title + message body matches, deduped by chat, with a
+  snippet showing which message matched). **This turned out straightforward to extend, not the
+  "non-trivial" case the spec worried might apply** -- each content type is just another query
+  merged into the same response shape.
+
+**Frontend:**
+- `Notes.jsx` (list): "Untitled N" numbered by creation order (shared `utils/notes.js` helper, so
+  the list and an open chat's own header never disagree on a chat's number -- caught and fixed
+  during verification, when the chat header first showed a bare "Untitled" instead of "Untitled 2"),
+  newest-first, + New chat, per-chat delete.
+- `NoteChat.jsx` (open chat): message stream with timestamps, user/assistant visually distinguished
+  (primary-color bubble vs. `.card`), click-to-rename header, "Talk to AI: On/Off" toggle (pill-button
+  active-state convention already used for the Theme picker, not a new visual language), typing
+  indicator ("Thinking...") while awaiting a reply, per-message edit/delete with confirm. Composer:
+  Enter sends, Shift+Enter for a newline; sticky positioning (not a bespoke fixed-height scroll
+  container -- this app doesn't use that pattern anywhere else) keeps it 4rem above the viewport
+  bottom, exactly where the fixed BottomNav's reserved `pb-16` space already is.
+- **Voice-to-text**: the browser's native Web Speech API (`SpeechRecognition`) -- no new backend
+  dependency or API cost, as directed. Mic button hidden entirely when unsupported; pulsing-icon
+  recording state with a stop control; permission-denied shows a clear inline message rather than
+  failing silently.
+- **AI replies are a single response with a loading indicator, not streamed** -- the existing
+  Anthropic client usage in `prompts.js` doesn't stream either, so this matches that rather than
+  forking a new pattern for Notes alone.
+
+**Backend tests (`test/notes.test.js`, mocked Prisma + mocked Anthropic SDK, same convention as
+`trashDelete.test.js`):** ownership negative-path for every owner-scoped route (13 tests total,
+cross-user access always 404, never touches the row), plus all three `aiEnabled`/
+`ENABLE_AI_GENERATION` outcomes -- including the full `aiEnabled`-true-and-flag-on path with a
+mocked AI response, proving that code path works **without ever touching the real staging
+environment variable** (the test only flips `process.env.ENABLE_AI_GENERATION` inside its own
+process). `ENABLE_AI_GENERATION` was confirmed `false` on staging before this work and confirmed
+still `false` after -- never changed, per instruction.
+
+**Verified live against the staging dev server** (which points at the *deployed* staging
+backend, not local code -- the new routes had to be pushed and deployed before any of this could
+be tested, confirmed by an initial `404 Route not found` on `/api/notes/chats` until the deploy
+finished; deploy log showed "14 migrations found ... No pending migrations to apply", matching
+the direct-apply above): create -> "Untitled 1", second create -> "Untitled 2", rename works and
+is reflected consistently in both the list and the open chat's own header; Talk to AI OFF sends
+and persists a message with no assistant reply; Talk to AI ON with the flag off saves the message
+and shows the exact "AI replies are currently disabled..." notice with **no network request to
+Anthropic** (confirmed via the network log) and no error; message edit and delete both work and
+persist across a reload; global search finds a chat by title and by message-body content (a
+query with a typo'd substring correctly returned nothing, confirming the match is a real
+substring check, not a false positive) and navigates to `/notes/:id`; the mic button's
+permission-denied path was exercised for real (the Browser pane genuinely blocks microphone
+access) and showed the exact inline message with no console error and no stuck recording state;
+dark mode + 380px confirmed via computed styles on both pages (`rgb(30,41,59)` card background,
+no horizontal overflow); zero console errors throughout. Test chats cleaned up afterward; theme
+reverted to Light (shared account state, same hygiene as prior sessions).
+
+Gate: 64/64 backend tests pass (51 existing + 13 new), frontend build clean, no secrets in diff.
+Pushed to `staging` only, not merged to `main`.
 
 ### Sprint Backlog (as of 17 Jul, pre-chunking)
 1. ✅ customId field — COMPLETE & PRODUCTION

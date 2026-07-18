@@ -4,16 +4,7 @@ import { MessageSquarePlus, StickyNote, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { notesApi } from '../api/endpoints';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
-
-// "Untitled N" is never stored -- it's a display-only number derived from
-// creation order (oldest = 1), independent of the list's own sort order
-// (newest-first, per spec), so renaming/reordering never has to reconcile
-// against a placeholder that was written to the DB.
-function withDisplayNumbers(chats) {
-  const byCreatedAsc = [...chats].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  const numberById = new Map(byCreatedAsc.map((c, i) => [c.id, i + 1]));
-  return chats.map((c) => ({ ...c, displayTitle: c.title || `Untitled ${numberById.get(c.id)}` }));
-}
+import { withDisplayNumbers } from '../utils/notes';
 
 export default function Notes() {
   const navigate = useNavigate();
