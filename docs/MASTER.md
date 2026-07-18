@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
 **Last Updated:** 18 July 2026 (post PAT auth revert + Commit 1 chunked work begins)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — UI standardization sprint in progress (Commit 1 scope divided into sequential chunks)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — Commit 1 (UI standardization) complete on staging; Commit 3 (tabs as state) landed ahead of Commit 2; chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -310,6 +310,60 @@ Each chunk ends in a complete, integrated, committed state. No mid-flight contex
 - ✅ PAGE WIDTH: Define --page-max-width CSS variable (72rem), create .page-container utility, apply uniformly to all main pages
 - ✅ COLLAPSED PROJECT CARD: Add compact icon-only action buttons (Share, Settings, Add task) to header when collapsed for always-accessible quick actions
 - ✅ LAST ACTIVITY: Remove dead slot from project card (no data being sent from backend)
+
+This closes Commit 1 (UI consistency standardization). Commit 1 total: `ca24fb4` (PAT auth revert) → `42cb6a2` → `a9cb436` → `130e663` → `15debc7` → `692f005`.
+
+### Commit 3 (tabs as state, not navigation) — ✅ COMPLETE — `6483b7b`
+
+Landed ahead of Commit 2 (status colors) because it fixed a live bug: Tasks and Docs were
+separate routes (`/roadmap` and `/docs`), each building its own breadcrumb/project-card/tabs
+chrome from scratch, so switching tabs remounted the entire page -- losing the project detail
+card, refetching data, and showing two different breadcrumb structures for the same project.
+
+- **Merged** `ProjectDocs.jsx` into `RoadmapOverview.jsx` as one unified project workspace.
+  Breadcrumb, `ProjectDetailCard`, and the tabs row now mount once; only the panel below
+  (gates grid vs. docs list) and the filter-bar fields swap based on `activeTab`.
+- **Tab state lives in `?tab=docs`** via `useSearchParams` -- a query-param change, not a
+  route change, so there's no remount, no parent refetch, no scroll jump. `/projects/:id/docs`
+  now redirects (`<DocsTabRedirect>`) to the equivalent `?tab=docs` URL so old links/bookmarks
+  still resolve.
+- **Deleted `ProjectDocs.jsx`** (would otherwise be dead code duplicating the merged logic).
+- **`ProjectTabs`** gained an `onSelectTab` mode (state-based switch, used by the unified
+  workspace) alongside its original Link-based mode (kept for `ProjectDetail.jsx`, the legacy
+  checklist view, which still navigates to a different route entirely).
+- **Removed the duplicate "New entry" button** -- previously one in the Docs page header and
+  one in the tabs row; only the tabs-row one (context-sensitive per tab) remains.
+- **Removed the Docs-specific title+subtitle block** -- the unified page has exactly one
+  header (breadcrumb + project card) shared by both tabs.
+- **Default filters are now genuinely empty on both tabs**: gate filter default changed from
+  `'all'` to `''`, doc status default changed from `'ACTIVE'` to `''`. Previously both
+  registered as an "active" filter in `SharedFilterBar`'s count on first load (`"Filters (1)"`
+  with nothing actually chosen). **Behavior change:** Docs now shows retired entries by
+  default alongside active ones, since status is no longer pre-filtered to Active -- a direct,
+  intentional consequence of "default to no filters active."
+- **Fixed `onBack` targets**: `ProjectBoard` and `RoadmapOverview` previously hard-coded
+  `/dashboard` from every page. Now: gate / unscheduled / whole-project board → project
+  roadmap; a roadmap-less project's own board (board IS its home) → dashboard; the roadmap
+  workspace itself → dashboard. Each page's back arrow now matches its breadcrumb trail.
+
+**Known deviation, not fixed (by choice):** `ProjectDetail.jsx` (the legacy pre-roadmap
+checklist view, slated for deletion in the contract phase) still uses a standalone
+`ArrowLeft` button instead of the shared `Breadcrumb` component. Converting it would require
+reworking its header (inline-editable title + six action buttons: Add Task, Add Group,
+Arrange, Merge Groups, Share, Delete) to fit the Breadcrumb pattern, for a page with no
+long-term future. Left as-is and documented here rather than converted.
+
+**Not resolved — chevron rotation direction (Commit 1, Item 4):** Still not visually
+confirmed in a browser after multiple attempts this session. A live preview server was
+reachable (`http://localhost:5183`, the actual `taskflow-staging/frontend` dev server) and an
+unauthenticated debug route rendering the raw lucide `ChevronDown` icon with both `rotate-90`
+and `-rotate-90` loaded successfully (confirmed via DOM read), but the screenshot/pixel-capture
+tool timed out on every attempt, so no pixel-level visual confirmation exists. The debug route
+was removed before this commit; nothing debug-only shipped. The `-rotate-90` (collapsed →
+points right) fix applied to `ProjectDetailCard` and `GroupCard` in commit `15debc7` follows
+from CSS rotation mechanics (clockwise convention on a down-pointing glyph) and matches the
+user's explicit correction, but this is reasoning, not the requested browser confirmation --
+**do not treat this item as closed.**
 
 ### Sprint Backlog (as of 17 Jul, pre-chunking)
 1. ✅ customId field — COMPLETE & PRODUCTION
