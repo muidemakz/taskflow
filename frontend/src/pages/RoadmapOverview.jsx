@@ -6,8 +6,7 @@ import ProjectDetailCard from '../components/ProjectDetailCard';
 import ProjectTabs from '../components/ProjectTabs';
 import SharedFilterBar from '../components/SharedFilterBar';
 import TagMultiSelect from '../components/TagMultiSelect';
-import GateCard from '../components/roadmap/GateCard';
-import UnscheduledCard from '../components/roadmap/UnscheduledCard';
+import RoadmapCard from '../components/roadmap/RoadmapCard';
 import CloseGateModal from '../components/roadmap/CloseGateModal';
 import ReopenGateModal from '../components/roadmap/ReopenGateModal';
 import QuickAddTaskModal from '../components/roadmap/QuickAddTaskModal';
@@ -387,8 +386,9 @@ export default function RoadmapOverview() {
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {visibleGates.map((gate) => (
-              <GateCard
+              <RoadmapCard
                 key={gate.id}
+                kind="gate"
                 gate={gate}
                 onOpen={(g) => navigate(`/projects/${id}/board?gateId=${g.id}`)}
                 onCloseGate={setClosingGate}
@@ -399,10 +399,12 @@ export default function RoadmapOverview() {
               />
             ))}
             {gateFilter !== 'closed' && (
-              <UnscheduledCard
+              <RoadmapCard
+                kind="unscheduled"
                 count={unscheduledCount}
                 onOpen={() => navigate(`/projects/${id}/board?gateId=unscheduled`)}
                 onAddTask={() => setAddingTaskGate(null)}
+                onShareProject={() => setShareModal(true)}
               />
             )}
           </div>
