@@ -1,6 +1,6 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 18 July 2026 (Notes feature shipped — chat-style personal notes + optional Talk to AI — staging only)
+**Last Updated:** 19 July 2026 (Notes composer bug fixes; Gate/Unscheduled card unification — staging only)
 **Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370); Group→Tag migration investigated on production only (not run); Account page Profile section converted to modals; Trash lives in Account as its own full page at `/trash`; **Notes is now a real feature** (migration `13_add_notes`, the 14th migration directory: `NoteChat`/`NoteMessage`, owner-scoped CRUD, global search integration, chat UI with voice-to-text) replacing the earlier placeholder, `ENABLE_AI_GENERATION` confirmed unchanged (still `false`) throughout — **all staging only, not yet merged**; chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
@@ -789,6 +789,93 @@ reverted to Light (shared account state, same hygiene as prior sessions).
 
 Gate: 64/64 backend tests pass (51 existing + 13 new), frontend build clean, no secrets in diff.
 Pushed to `staging` only, not merged to `main`.
+
+### Notes composer: fixed positioning + bubble color rework (✅ COMPLETE, STAGING ONLY — 19 Jul 2026)
+
+Two bugs reported against the Notes chat UI shipped above:
+
+1. **Composer position.** The composer used `position: sticky`, which only behaves like "fixed"
+   once the page has scrolled enough to run out of room -- on a short conversation it sat right
+   after the last message and visibly slid down the page as messages were sent, instead of staying
+   put. Changed to `position: fixed` (`NoteChat.jsx`), anchored at the same `bottom-16` offset as
+   before so it still sits just above the fixed `BottomNav`. Fixed removes it from document flow
+   entirely, so it cannot move regardless of message count -- the message stream above it is what
+   scrolls (still whole-document scroll, no new internal scroll container introduced), and the
+   existing `streamEndRef.current?.scrollIntoView` effect keeps auto-scrolling to the newest
+   message exactly as before. `<main>`'s bottom padding increased (`pb-28`) so the fixed composer
+   never overlaps the last message.
+2. **Message bubble colors.** Changed from a solid primary-blue user bubble to the requested
+   neutral scheme: user messages `bg-slate-100` (light) / `bg-slate-700` (dark), assistant messages
+   unchanged (`.card` already resolves to white light / slate-800 dark, which is exactly what was
+   asked for -- no change needed there). Timestamp text color unified to `text-muted` for both
+   roles now that neither background is a solid brand color.
+
+**Verified live against the staging dev server** (real session, admin user, fresh JWT): sent 20
+messages into a test chat -- confirmed via `getBoundingClientRect()` that the composer's fixed
+position (`bottom: 64px` from the viewport) is byte-identical before the first message and after
+the page grew to `scrollHeight: 1832` (from an initial `747`, well past one viewport), while
+`window.scrollY` advanced to `844.8`, proving the page scrolled and auto-scroll-to-newest kept
+working while the composer itself never moved. Bubble colors confirmed via computed style in both
+themes: user bubble `rgb(241,245,249)`/`rgb(23,32,51)` (light) and `rgb(51,65,85)`/`rgb(241,245,249)`
+(dark) -- Tailwind's `slate-100`/`text-text` and `slate-700`/`slate-100` respectively. Dark mode +
+380px: no horizontal overflow, no console errors. Test chat and its messages deleted afterward;
+theme reverted to Light (same hygiene as prior sessions).
+
+Gate: 64/64 backend tests pass (no backend touched), frontend build clean, no secrets in diff.
+Pushed to `staging` only.
+
+### GateCard + UnscheduledCard unified into one `RoadmapCard` (✅ COMPLETE, STAGING ONLY — 19 Jul 2026)
+
+Structural follow-up to the earlier Unscheduled-vs-Gate visual investigation: the two were separate
+components sharing only ambient CSS classes. Replaced both with one `RoadmapCard.jsx` (`kind: 'gate'
+| 'unscheduled'`), the sole render site being `RoadmapOverview.jsx`'s gates grid (grepped -- neither
+old component had any other caller). `GateCard.jsx` and `UnscheduledCard.jsx` deleted, not kept
+alongside as dead code.
+
+Per the decisions specified up front:
+- **Click target: the whole card, both variants.** Gate previously only opened via a small
+  internal `<button>` around its title; now both variants wrap the entire header + progress/sentence
+  block in one `<button>`, matching Unscheduled's original behavior. "Add task" and the "⋮" menu are
+  siblings *outside* that button (not nested inside it, which would be invalid HTML and would need
+  `stopPropagation` gymnastics to work around) -- structurally incapable of triggering the card's
+  own open handler, rather than merely tested to not do so.
+- **Progress bar stays Gate-only**; Unscheduled keeps its plain "`{count} tasks not yet assigned to
+  a gate`" sentence -- an intentional difference, not an oversight.
+- **Menu contents differ by design:** Gate keeps its full menu (Reopen/Close toggle by status,
+  Share, Edit); Unscheduled's menu has only "Share", wired to `onShareProject` -- reusing the
+  existing project-level `ShareProjectModal`/`setShareModal(true)` already in `RoadmapOverview.jsx`
+  (the same modal `ProjectDetailCard`'s own Share button opens), not a new share mechanism. This
+  matches the precedent already established on the Unscheduled board view itself
+  (`ProjectBoard.jsx`), where "Share" for Unscheduled has always meant sharing the whole project,
+  since Unscheduled has no entity of its own to share.
+- **Status badge (Active/Closed) and closed-reason quote stay Gate-only** -- no Unscheduled
+  equivalent, since it has no open/closed lifecycle.
+
+Visual consistency alignment:
+- **Icon:** Gate gained one (`Milestone`, lucide) rather than removing Unscheduled's existing
+  `Inbox` -- both readable at a glance beat neither having one.
+- **Chevron:** both now use the same `ChevronRight` at the end of the header row (previously
+  Unscheduled's sat at the end of a separate "Assign to gate" CTA sentence below the count -- that
+  sentence/CTA-link styling was dropped since the whole card being clickable makes it redundant).
+- **Spacing:** unified on `gap-3` (Unscheduled's original convention) on both the outer card and the
+  inner clickable button, replacing Gate's mix of ad hoc `mt-*` margins.
+
+**Verified live against the staging dev server** (Testing project, 3 gates -- one closed, two
+active -- plus Unscheduled): confirmed via the accessibility tree that each gate and Unscheduled
+render as one wrapping `button` around their content, with `"Add task"` and a `"Gate actions"` /
+`"Unscheduled actions"` button as separate siblings (distinct aria-labels, not both saying "Gate
+actions"). Opened the closed gate's menu -- showed exactly Reopen/Share/Edit (no Close); an active
+gate's menu -- showed exactly Close/Share/Edit (no Reopen); Unscheduled's menu -- showed exactly
+Share, which opened the real "Share project" modal. Clicked "Add task" on a gate -- opened
+`QuickAddTaskModal` without navigating (confirms the regression risk called out up front didn't
+happen). Clicked the Unscheduled card body -- navigated to its board view (`?gateId=unscheduled`)
+showing its 3 real tasks. Dark mode + 380px: every card's background resolved to `rgb(30,41,59)`
+(`.card`'s dark surface) via computed style, no horizontal overflow (`scrollWidth` === viewport
+width), no console errors throughout.
+
+Gate: 64/64 backend tests pass (no backend touched), frontend build clean, no secrets in diff, no
+dead references to the deleted components (`GateCard`/`UnscheduledCard` grepped repo-wide, zero
+hits). Pushed to `staging` only.
 
 ### Sprint Backlog (as of 17 Jul, pre-chunking)
 1. ✅ customId field — COMPLETE & PRODUCTION

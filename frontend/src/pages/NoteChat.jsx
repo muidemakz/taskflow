@@ -183,7 +183,8 @@ export default function NoteChat() {
   if (!chat || messages === null) return <main className="page-container py-6 text-center text-muted">Loading chat...</main>;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-4">
+    <>
+    <main className="mx-auto max-w-3xl px-4 pb-28 pt-4">
       <Breadcrumb items={[{ label: 'Notes', to: '/notes' }, { label: chat.displayTitle }]} onBack={() => navigate('/notes')} />
 
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -234,11 +235,11 @@ export default function NoteChat() {
           const isEditing = editingId === message.id;
           return (
             <div key={message.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-              <div className={`group max-w-[85%] rounded-lg px-3 py-2 ${isUser ? 'bg-primary text-white' : 'card'}`}>
+              <div className={`group max-w-[85%] rounded-lg px-3 py-2 ${isUser ? 'bg-slate-100 text-text dark:bg-slate-700 dark:text-slate-100' : 'card'}`}>
                 {isEditing ? (
                   <div className="space-y-1.5">
                     <textarea
-                      className={`field text-sm ${isUser ? 'text-text dark:text-slate-100' : ''}`}
+                      className="field text-sm"
                       rows={2}
                       value={editingBody}
                       onChange={(e) => setEditingBody(e.target.value)}
@@ -252,7 +253,7 @@ export default function NoteChat() {
                 ) : (
                   <>
                     <p className="whitespace-pre-wrap text-sm">{message.body}</p>
-                    <div className={`mt-1 flex items-center gap-2 text-[11px] ${isUser ? 'text-blue-100' : 'text-muted'}`}>
+                    <div className="mt-1 flex items-center gap-2 text-[11px] text-muted">
                       <span>{formatTime(message.createdAt)}</span>
                       <span className="ml-auto hidden items-center gap-1 group-hover:flex">
                         <button className="opacity-70 hover:opacity-100" onClick={() => startEdit(message)} aria-label="Edit message"><Pencil size={12} /></button>
@@ -272,49 +273,57 @@ export default function NoteChat() {
         )}
         <div ref={streamEndRef} />
       </div>
-
-      {micError && (
-        <p className="mb-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{micError}</p>
-      )}
-
-      {/* sticky, not fixed: stays 4rem (the BottomNav's reserved pb-16 space
-          in App.jsx) above the viewport bottom as the page scrolls, without
-          needing a bespoke fixed-height scroll container like the rest of
-          the app doesn't use anywhere else. */}
-      <div className="sticky bottom-16 z-10 flex items-end gap-2 border-t border-border bg-bg pt-3 dark:border-slate-700 dark:bg-slate-900">
-        {SpeechRecognitionCtor && (
-          <button
-            type="button"
-            className={`btn-icon shrink-0 ${recording ? 'animate-pulse border-red-400 text-red-600' : ''}`}
-            onClick={recording ? stopRecording : startRecording}
-            aria-label={recording ? 'Stop recording' : 'Start voice input'}
-          >
-            {recording ? <MicOff size={16} /> : <Mic size={16} />}
-          </button>
-        )}
-        <textarea
-          className="field flex-1 resize-none"
-          rows={1}
-          placeholder="Write a note..."
-          value={composerText}
-          onChange={(e) => setComposerText(e.target.value)}
-          onKeyDown={onComposerKeyDown}
-        />
-        <button className="btn-primary shrink-0" onClick={send} disabled={sending || !composerText.trim()} aria-label="Send">
-          <Send size={16} />
-        </button>
-      </div>
-
-      {deleteTarget && (
-        <DeleteConfirmModal
-          title="Delete this message?"
-          warning="This can't be undone."
-          confirmLabel="Delete"
-          loading={deletingMessage}
-          onConfirm={confirmDeleteMessage}
-          onClose={() => setDeleteTarget(null)}
-        />
-      )}
     </main>
+
+    {/* position: fixed, not sticky -- sticky only locks once the page has
+        scrolled enough to run out of room, so on a short conversation it
+        sat right after the last message and visibly slid down the page as
+        messages were added. Fixed removes it from document flow entirely,
+        so it never moves; the message stream above is what scrolls (and
+        auto-scrolls to bottom via streamEndRef), exactly like the composer
+        was always meant to behave. Anchored at bottom-16, the same offset
+        as before, to keep sitting just above the fixed BottomNav. */}
+    <div className="fixed inset-x-0 bottom-16 z-10 border-t border-border bg-bg dark:border-slate-700 dark:bg-slate-900">
+      <div className="mx-auto max-w-3xl px-4 py-3">
+        {micError && (
+          <p className="mb-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{micError}</p>
+        )}
+        <div className="flex items-end gap-2">
+          {SpeechRecognitionCtor && (
+            <button
+              type="button"
+              className={`btn-icon shrink-0 ${recording ? 'animate-pulse border-red-400 text-red-600' : ''}`}
+              onClick={recording ? stopRecording : startRecording}
+              aria-label={recording ? 'Stop recording' : 'Start voice input'}
+            >
+              {recording ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+          )}
+          <textarea
+            className="field flex-1 resize-none"
+            rows={1}
+            placeholder="Write a note..."
+            value={composerText}
+            onChange={(e) => setComposerText(e.target.value)}
+            onKeyDown={onComposerKeyDown}
+          />
+          <button className="btn-primary shrink-0" onClick={send} disabled={sending || !composerText.trim()} aria-label="Send">
+            <Send size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {deleteTarget && (
+      <DeleteConfirmModal
+        title="Delete this message?"
+        warning="This can't be undone."
+        confirmLabel="Delete"
+        loading={deletingMessage}
+        onConfirm={confirmDeleteMessage}
+        onClose={() => setDeleteTarget(null)}
+      />
+    )}
+    </>
   );
 }
