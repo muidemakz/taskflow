@@ -1,6 +1,6 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 19 July 2026 (Notes composer bug fixes; Gate/Unscheduled card unification — staging only)
+**Last Updated:** 19 July 2026 (Task detail modal mobile-Safari close-button bug fixed — staging only)
 **Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370); Group→Tag migration investigated on production only (not run); Account page Profile section converted to modals; Trash lives in Account as its own full page at `/trash`; **Notes is now a real feature** (migration `13_add_notes`, the 14th migration directory: `NoteChat`/`NoteMessage`, owner-scoped CRUD, global search integration, chat UI with voice-to-text) replacing the earlier placeholder, `ENABLE_AI_GENERATION` confirmed unchanged (still `false`) throughout — **all staging only, not yet merged**; chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
@@ -876,6 +876,62 @@ width), no console errors throughout.
 Gate: 64/64 backend tests pass (no backend touched), frontend build clean, no secrets in diff, no
 dead references to the deleted components (`GateCard`/`UnscheduledCard` grepped repo-wide, zero
 hits). Pushed to `staging` only.
+
+### Bug fix: task detail modal close button unreachable on mobile Safari (✅ COMPLETE, STAGING ONLY — 19 Jul 2026)
+
+**Reported symptom:** on iOS Safari (staging frontend), opening a task detail modal cut off the top
+of the modal -- the close (X) button and part of the TID badge were not visible or reachable, with
+no way to close the modal except navigating away another way.
+
+**Root cause, confirmed before fixing:** the shared `Modal.jsx` (used by every modal in the app
+except the unrelated `TaskMoveSheet` bottom-sheet -- grepped `fixed inset-0` repo-wide, only those
+two files) rendered its overlay as `fixed inset-0 flex items-center justify-center` with the card
+capped at `max-h-[90vh]`, and the overlay itself had **no `overflow-y-auto` of its own**. Two
+compounding problems:
+1. `vh` is a static unit computed against the browser's layout viewport, which on mobile Safari
+   does not reliably track the *actual currently-visible* height while its collapsible toolbar is
+   showing -- so `90vh` can size/center the card as if more vertical space were available than is
+   really on screen.
+2. Because the overlay used flexbox centering with no scroll fallback, if the card's computed top
+   ended up above the real visible viewport, there was **no way to scroll and reveal it** -- the
+   outer container itself wasn't a scroll container, so the clipped close button and TID badge were
+   not just visually cut off but structurally unreachable, matching the reported symptom exactly.
+   This reproduces on any viewport short enough for the card to approach or exceed the visible
+   height, not only on real iOS Safari -- confirmed live at a Chromium 390×400 viewport (see below),
+   so it is a general small-viewport bug that mobile Safari's toolbar behavior simply makes common
+   in practice, not an iOS-only code path.
+
+**Fix (`components/Modal.jsx`, the single shared component -- fixes every modal in the app, not
+just the task detail modal):**
+- `max-h-[90vh]` → `max-h-[90dvh]` -- dynamic viewport height, which tracks the *current* visible
+  viewport live as Safari's toolbar shows/hides, rather than a static/stale reference. No fallback
+  unit needed; `dvh` has shipped in every current browser (iOS Safari since 15.4, released March
+  2022) for long enough that this app doesn't otherwise carry compatibility shims.
+- Overlay restructured so it can genuinely scroll: outer `fixed inset-0 overflow-y-auto` (background
+  + backdrop-click-to-close), inner `flex min-h-full items-center justify-center` sizing wrapper
+  (centers the card when it fits; naturally becomes scrollable-from-the-top, not center-clipped,
+  when content is taller than the viewport, because `min-h-full` grows with content instead of
+  truncating it before scroll is possible -- the standard fix for the classic "flexbox centering
+  clips overflow" pitfall).
+- Added safe-area-inset-top handling: the sizing wrapper's top padding is
+  `pt-[max(1rem,env(safe-area-inset-top))]` so the header also clears a notch/dynamic island on
+  devices that have one, instead of relying on the base `p-4` alone.
+- Confirmed the modal does **not** open pre-scrolled and has no internal scroll-position bug of its
+  own (`TaskDetailModal` remounts fresh per task, scrollTop starts at 0 by default) -- ruled out as a
+  contributing cause, root cause is fully the overlay/unit issue above.
+
+**Verified live against the staging dev server:** opened the task detail modal at a 390×664
+viewport (approximates an iPhone with Safari's toolbar visible, shrinking real visible height below
+a naive full-screen assumption) -- close button's `getBoundingClientRect()` confirmed fully within
+`[0, window.innerHeight]`. Stress-tested at an even shorter 390×400 viewport -- still fully visible
+(`top:46, bottom:80` inside a 410px-tall window). Verified the close button actually closes the
+modal (not just visible). Checked dark mode -- card resolves to the correct `rgb(30,41,59)` dark
+surface. Checked desktop width (1280×800) for regressions -- card renders centered as before
+(`top:40, bottom:760` in an 800px viewport), no visual change from the pre-fix behavior. Zero
+console errors at any viewport size or theme.
+
+Gate: 64/64 backend tests pass (no backend touched), frontend build clean, no secrets in diff.
+Pushed to `staging` only.
 
 ### Sprint Backlog (as of 17 Jul, pre-chunking)
 1. ✅ customId field — COMPLETE & PRODUCTION
