@@ -1,6 +1,6 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 19 July 2026 (Task detail modal mobile-Safari close-button bug fixed — staging only)
+**Last Updated:** 19 July 2026 (Trash extended to cover deleted NoteChats — staging only)
 **Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370); Group→Tag migration investigated on production only (not run); Account page Profile section converted to modals; Trash lives in Account as its own full page at `/trash`; **Notes is now a real feature** (migration `13_add_notes`, the 14th migration directory: `NoteChat`/`NoteMessage`, owner-scoped CRUD, global search integration, chat UI with voice-to-text) replacing the earlier placeholder, `ENABLE_AI_GENERATION` confirmed unchanged (still `false`) throughout — **all staging only, not yet merged**; chevron rotation direction still unverified in a browser
 **Repository:** taskflow (main = production, staging = development)
 
@@ -931,6 +931,75 @@ surface. Checked desktop width (1280×800) for regressions -- card renders cente
 console errors at any viewport size or theme.
 
 Gate: 64/64 backend tests pass (no backend touched), frontend build clean, no secrets in diff.
+Pushed to `staging` only.
+
+### Trash extended to cover deleted NoteChats (✅ COMPLETE, STAGING ONLY — 19 Jul 2026)
+
+**Premise check (as asked, before making any change):** Trash does **not** only show deleted
+Tasks -- `backend/src/routes/trash.js` already listed/restored/permanently-deleted Project, Task,
+Group, Gate, Tag, DocEntry, and DocCategory. NoteChat (added when the Notes feature shipped) was
+genuinely the one resource type missing, since Trash predates Notes and was never revisited after
+Notes landed -- that's the actual gap this closes, not the broader "only Tasks" gap described.
+
+**Design decision, flagged as asked: NoteMessage does NOT get its own Trash row.** Only whole
+NoteChats are trashable. Reasoning:
+- Every existing Trash item type is a whole meaningful entity (Project, Task, Group, Gate, Tag,
+  Doc, Category) -- nothing at a smaller grain (e.g. a single DocAnnotation) has ever been
+  independently surfaced in Trash; it always rides along with its parent. A NoteMessage is that
+  same kind of "rides with its parent" leaf content relative to a NoteChat.
+- There is no restore route for a single message today (`PATCH /notes/messages/:id` edits,
+  `DELETE` soft-deletes, but nothing undoes that) -- adding one would be new scope invented for
+  this change, not an extension of something that already exists.
+- Confirmed via `requireNoteChat`/`notes.js`: deleting a chat (`DELETE /notes/chats/:id`) only
+  stamps the **chat's own** `deletedAt` -- it never touches its messages' `deletedAt` at all. This
+  means restoring the chat requires no message-level work either: the messages were never marked
+  deleted in the first place, so they simply become reachable again through the same
+  `deletedAt: null` filters everywhere else the moment the chat itself is un-trashed.
+
+**Backend (`backend/src/routes/trash.js`):**
+- List: added a `noteChat.findMany({ userId, deletedAt: { not: null } })` branch, serialized as
+  `{ type: 'notechat', title: chat.title || 'Untitled note', ... }` -- the nullable `title` is the
+  one case here that needed a fallback string, since every other trashable type's name/title field
+  is required. Deliberately not attempting to reproduce the Notes list's "Untitled N" numbering
+  (that number is computed from *currently active* chats' creation order -- a trashed chat isn't
+  part of that list anymore, so inventing a matching number for it would be more confusing than a
+  plain "Untitled note" label).
+- Restore: new `notechat` branch, a single `deletedAt: null` update -- no companion message
+  update needed, per the reasoning above.
+- Permanent delete: new `notechat` branch, `prisma.noteChat.delete()`. **Verified this actually
+  cleans up messages, not just the chat row:** `NoteMessage.chatId` has `onDelete: Cascade` in
+  `schema.prisma` (checked directly, not assumed from memory) -- deleting the chat row cascades to
+  every one of its messages at the Postgres level, live or already soft-deleted, the same mechanism
+  every other cascade in this router already relies on (Project → Task/Group/Gate/Tag/Doc).
+- 30-day retention sweep: added a `noteChat.deleteMany` branch so trashed chats expire the same way
+  every other trashable type already does, instead of lingering forever.
+- Both new branches are owner-scoped the same way as everywhere else in this file (`userId:
+  req.auth.sub`, the same direct-owner check `requireNoteChat` uses) -- cross-user access is 404.
+
+**Frontend (`frontend/src/pages/Trash.jsx`):** one line -- added `notechat: 'Note'` (plus `doc`/
+`category`, which had been silently falling back to their raw type string) to `TYPE_LABELS`. No
+icon added, matching the label-only convention every other trash row already uses (none of
+Project/Task/Group/Gate/Tag/Doc/Category has one either) -- single tabs-vs-label call was label,
+since a type chip already distinguishes rows clearly at this list size. Restore/permanent-delete
+buttons, the search filter (by `item.title`, already generic across every type), and the
+project-title subtitle line needed **zero** changes -- they were already fully generic over
+`item.type`, exactly because Trash was built this way for the six pre-existing types.
+
+**Backend tests (`test/trashDelete.test.js`):** added ownership negative-path tests for both
+`notechat` restore and permanent-delete (cross-user 404, mutation never called), plus owner-success
+tests for both -- 4 new tests, following the exact `findFirst`-mock convention the existing
+task/project tests use.
+
+**Verified live against the staging dev server** (after pushing -- new backend routes needed
+deploying before the dev server, which points at deployed staging, could reach them): deleted a
+NoteChat from Notes -- appeared in Trash labeled "Note"; restored it -- reappeared in the Notes
+list with its messages intact (confirmed by opening the chat); permanently deleted a different
+trashed NoteChat -- gone from Trash, `GET /api/notes/chats` never showed it again, and it did not
+reappear on reload; existing Task trash/restore/permanent-delete re-exercised end-to-end to confirm
+no regression; search filtered correctly across a mixed Task+NoteChat trash list by typing a
+substring of each; dark mode + 380px checked, no console errors.
+
+Gate: 68/68 backend tests pass (64 existing + 4 new), frontend build clean, no secrets in diff.
 Pushed to `staging` only.
 
 ### Sprint Backlog (as of 17 Jul, pre-chunking)

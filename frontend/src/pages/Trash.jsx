@@ -6,7 +6,7 @@ import { projectsApi, trashApi } from '../api/endpoints';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import Breadcrumb from '../components/Breadcrumb';
 
-const TYPE_LABELS = { project: 'Project', task: 'Task', group: 'Group', gate: 'Gate', tag: 'Tag' };
+const TYPE_LABELS = { project: 'Project', task: 'Task', group: 'Group', gate: 'Gate', tag: 'Tag', doc: 'Doc', category: 'Category', notechat: 'Note' };
 
 function daysRemaining(deletedAt, retentionDays) {
   const elapsedDays = Math.floor((Date.now() - new Date(deletedAt).getTime()) / (24 * 60 * 60 * 1000));
