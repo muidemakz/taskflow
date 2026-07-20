@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 19 July 2026 (Group→Tag migration **executed on production** — Fortnoto's 38
-groups → 38 tags, 279 task-tag links, verified in the live app UI; no code changed)
+**Last Updated:** 19 July 2026 (`JWT_SECRET` **rotated on both environments** to distinct values —
+security audit finding #5 CLOSED; no code changed)
 **Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5dec9ca` (28 commits, 18 Jul
 2026, verified healthy, code-only, zero new migrations). **11 further commits now sit on `staging`
 ahead of `main`** (`5dec9ca..843acb3`, not yet merged — see "Current Open Items" below for the full
@@ -10,11 +10,11 @@ revision, the full Notes feature (migration `13_add_notes`, the 14th migration d
 composer bug fix, the GateCard/UnscheduledCard→RoadmapCard unification, a mobile Modal `dvh`/
 safe-area fix, and Trash's extension to cover deleted NoteChats. TID backfill complete on **both**
 environments (staging 328/328, production 370/370, including the one Fortnoto task already gated
-under "Gate 1" rather than Unscheduled). **Group→Tag migration is now COMPLETE on production**
-(Fortnoto: 38 groups → 38 tags created, 279/279 tasks linked, 0 deviation from the re-confirmed
-dry-run, verified live in the app UI) — **staging is still pending** its own separate go-ahead
-(it was already 35/35/100% matched at investigation time, untouched by this run). File upload
-capability investigated and **PARKED** pending the user's provider decision.
+under "Gate 1" rather than Unscheduled). Group→Tag migration is **COMPLETE on production**
+(Fortnoto: 38 groups → 38 tags created, 279/279 tasks linked, verified live in the app UI) — staging
+is still pending its own separate go-ahead. File upload capability investigated and **PARKED**
+pending the user's provider decision. **`JWT_SECRET` rotated 19 Jul 2026** — production and staging
+now hold distinct, freshly-generated secrets; cross-environment token validity closed and verified.
 `ENABLE_AI_GENERATION` confirmed unchanged (still `false`) throughout.
 Backend: 68 tests, 9 files, all passing.
 **Repository:** taskflow (main = production, staging = development)
@@ -45,7 +45,7 @@ feature and the full Valideity dataset.
 - ✅ Doc markdown XSS — sanitized with DOMPurify, `5892373`
 - ✅ UI overhaul: detail-card pattern — breadcrumb + collapsible project card + gate card with accent stripe + My Tasks filters, `9bbc534`, **pending visual verification**
 - 🟡 Contract phase (optional cleanup) — not started
-- 🔴 **Open finding:** staging and production share the **same `JWT_SECRET`** — needs user decision (see Security section)
+- ✅ **Resolved 19 Jul 2026:** staging and production `JWT_SECRET` rotated to distinct values (see Security section)
 
 **Production merge:** ✅ DONE 18 Jul 2026 — all 28 commits through `5dec9ca` merged (fast-forward) and deployed. Nothing currently batched/pending merge; staging and main are at parity (`5dec9ca`).
 
@@ -215,16 +215,33 @@ code (`9f72056`) is already on production.
 | 2 | customId PATCH validation (409 on dup, length limit, plain-text render) | MED | ✅ **FIXED** — 400 > 20 chars; P2002 → 409; rendered as JSX text node (no `dangerouslySetInnerHTML`) |
 | 3 | Share tokens crypto-random; shared views leak nothing out of scope | MED | ✅ **PASS** — `cuid()` / `randomUUID()` / `crypto.randomBytes`; share.js exposes read-only scoped fields, no docs/prompts |
 | 4 | Invite tokens: `expiresAt` enforced on accept, single-use | MED | ✅ **PASS** — `requireValidInvite` rejects expired/accepted; accept sets `acceptedAt` in a transaction |
-| 5 | `JWT_SECRET` differs staging vs prod; no secrets committed | MED | 🔴 **NEEDS-DECISION** — secrets NOT committed (only `.env.example` placeholder), but staging & prod `JWT_SECRET` are **identical** (sha256 matched) |
+| 5 | `JWT_SECRET` differs staging vs prod; no secrets committed | MED | ✅ **RESOLVED 19 Jul 2026** — secrets NOT committed (only `.env.example` placeholder); staging & prod `JWT_SECRET` **rotated to distinct values**, verified via a cross-environment token test |
 | 6 | PAT auth gap (no role attached; admin routes 403 for PATs) | LOW | Documented, Phase 2 fix (fails closed) |
 | 7 | Doc markdown rendered via `marked` + `dangerouslySetInnerHTML` without sanitization | MED (self-XSS now; stored XSS if docs are ever shared) | ✅ **FIXED** (`5892373`) — `renderMarkdown` runs output through DOMPurify; strips `<script>`/`onerror`/`javascript:`, keeps heading-id anchors |
 
-**🔴 Finding #5 detail:** A stateless JWT access token minted for one environment validates on the
-other because both share the same secret. Refresh tokens are DB-scoped so they don't cross over, but
-access tokens do. **Recommendation:** rotate production `JWT_SECRET` to a distinct value. This is a
-sensitive infra action (it invalidates all active production sessions), so it's left for the user to
-schedule — not done automatically. PAT `hashPatToken` also derives from the token itself, not the JWT
-secret, so PATs are unaffected.
+**✅ Finding #5 — RESOLVED 19 Jul 2026.** A stateless JWT access token minted for one environment
+used to validate on the other because both shared the same secret. Rotated both environments to
+freshly-generated, distinct values via Railway env vars (`railway variables --set` +
+`railway restart`, since Railway does not hot-reload env changes into the running process — a
+restart was required to pick up each new value). Grepped the full codebase first to confirm
+`JWT_SECRET` has exactly one consumer (`backend/src/utils/token.js`'s `signAccessToken`/
+`verifyAccessToken`) — no webhook signing, no other service-to-service auth references it. PATs
+(`hashPatToken`, plain SHA-256 of the token itself) and share tokens (`randomUUID`/
+`crypto.randomBytes`, DB-stored) confirmed structurally independent, unaffected by rotation.
+
+**Verification performed (production, in order):**
+1. Minted a token with the pre-rotation (old, shared) secret — confirmed it validated (`200`) *before* rotating, as a baseline.
+2. Rotated production's `JWT_SECRET`, restarted the service.
+3. `GET /health` → `200` (service healthy post-restart).
+4. The pre-rotation token → `401` (old secret no longer verifies — this is the actual fix).
+5. Fresh `POST /api/auth/login` → new access token → `GET /api/auth/me` with it → `200` (full login round-trip works against the new secret).
+
+Repeated 2-5 for staging with its own distinct new secret, plus one additional check: a token
+freshly minted against **production's new secret**, tested against **staging**, correctly returned
+`401` — proving the two environments no longer share any validity, which was the entire point of
+the finding. Both environments' users were logged out on their next request (expected and
+unavoidable — no `/refresh` endpoint exists in this app, confirmed by grep, so there is no silent
+re-authentication path; this was called out to the user before rotating and approved).
 
 ---
 
@@ -1027,12 +1044,14 @@ immediately below this one.
 4. ✅ Task modal in-place fix — COMPLETE (`5628ba1`)
 5. ~~⏳ User visual verification on staging (5-item queue above)~~ — superseded, see below
 6. ~~⏳ Merge staging → production after verification~~ — ✅ done 18 Jul (`5dec9ca`)
-7. 🔴 Decide on production `JWT_SECRET` rotation (audit finding #5) — still open, see below
+7. ✅ Production `JWT_SECRET` rotation (audit finding #5) — done 19 Jul, see below
 8. 🟡 Contract phase (drop Group model, old Task.status enum, Project.order) — still optional, unstarted
 
 ### Current Open Items (as of 19 Jul 2026)
-1. 🔴 **Decide on production `JWT_SECRET` rotation** — invalidates active prod sessions, left for
-   the user to schedule (audit finding #5, unchanged status since 17 Jul).
+1. ✅ **`JWT_SECRET` rotation — DONE 19 Jul 2026** (audit finding #5, closed). Both environments
+   rotated to distinct, freshly-generated secrets; verified via health check, live login round-trip,
+   old-token rejection, and cross-environment rejection on both sides. Full detail in the Security
+   Posture table above and the "Known Issues" section below (moved to Resolved).
 2. ✅ **Group → Tag migration — production DONE** (19 Jul: Fortnoto 38 groups → 38 tags, 279/279
    tasks linked, verified live in the app UI, zero deviation from the dry-run). 🟡 **Staging still
    pending** its own separate go-ahead (35 groups/35 tags/100% overlap, untouched by this run).
@@ -1062,14 +1081,18 @@ immediately below this one.
 
 ## Known Issues & Workarounds
 
-### 🔴 Shared `JWT_SECRET` across environments (NEW — audit finding #5)
-Staging and production use the same `JWT_SECRET`; access tokens cross environments. Rotate the prod
-secret (invalidates active prod sessions). Left for the user to schedule.
-
 ### 🚨 PAT Auth Gap (Pre-existing, Phase 2)
 PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround: JWT for admin ops.
 
 ### ℹ️ Resolved This Cycle
+- **Shared `JWT_SECRET` across environments (audit finding #5) → rotated 19 Jul 2026.** Production
+  and staging now hold distinct, freshly-generated secrets (Railway env var + explicit restart,
+  since Railway doesn't hot-reload env changes). Verified: health check, live login round-trip, a
+  pre-rotation token now rejected on both sides, and a token minted against production's new secret
+  correctly rejected on staging — closing the cross-environment validity gap the finding described.
+  Every active session on both environments was force-logged-out on its next request (expected —
+  confirmed via code that no `/refresh` endpoint exists, so there's no silent re-auth path — flagged
+  to the user and approved before rotating).
 - Production Fortnoto kanban board rendered empty → **statuses created + `statusId` backfilled on prod** (data mutation, see Production Database note). Root cause: legacy project with 0 statuses; fix never replayed from staging to prod.
 - Doc markdown XSS (`marked` output was unsanitized) → **DOMPurify sanitization at render** (`5892373`); heading-id anchors preserved
 - Trash permanent-delete ownership → **confirmed + negative-path test** (`e93a26a`)
@@ -1265,8 +1288,8 @@ Corrected against the actual repo and live databases:
 **Production Status:** LIVE & STABLE (`5dec9ca`)
 **Next Review:** After the user reviews the 11 unmerged staging commits (`5dec9ca..843acb3`) and
 decides on merge timing, plus the remaining open decisions tracked under "Current Open Items" above
-(`JWT_SECRET` rotation, staging's Group→Tag migration — production's is now done, file-upload
-provider choice)
+(staging's Group→Tag migration — production's is now done, and the file-upload provider choice.
+`JWT_SECRET` rotation is now complete on both environments.)
 
 ---
 
