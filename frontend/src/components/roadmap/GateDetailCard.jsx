@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown, DoorClosed, DoorOpen, Plus, Share2 } from 'lucide-react';
 import ProgressBar from '../ProgressBar';
 
@@ -48,6 +48,16 @@ export default function GateDetailCard({ gate, onAddTask, onShareGate, onCloseGa
   const [collapsed, setCollapsed] = useState(() => readCollapsed(gate.id));
   const { total, done, pct } = gate.progress || { total: 0, done: 0, pct: 0 };
   const isClosed = gate.status === 'CLOSED';
+
+  // ProjectBoard swaps `gate` on the same mounted instance when the user
+  // picks a different gate from the nav selector -- there's no remount, so
+  // the useState lazy initializer above only ever ran once (for whichever
+  // gate first mounted this card). Re-sync from storage whenever the gate
+  // identity itself changes, or every gate after the first would silently
+  // inherit the previous gate's collapsed/expanded state instead of its own.
+  useEffect(() => {
+    setCollapsed(readCollapsed(gate.id));
+  }, [gate.id]);
 
   function toggle() {
     setCollapsed((prev) => {
