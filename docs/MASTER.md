@@ -1306,6 +1306,14 @@ immediately below this one.
     verified live on production identically — see "Fourth production merge" above. **Data track (Group
     table / Task.status column / Project.order column drops) is the only Contract-phase work
     remaining, still not started.**
+12. ❌ **DECLINED 20 Jul 2026 — Prompt Queue item 3 / "Chunk C" (task detail modal collapsible
+    redesign).** Scoped on request before any code was written: no spec for this ever existed in this
+    doc or prior session history (the 18 Jul chunk lettering runs A → B → D → E → F; C was never
+    defined). Current `TaskDetailModal` already uses conditional rendering appropriately (blocked-note,
+    focus-date, gate-placement UI all render only when relevant), and nothing in this session's UI work
+    flagged it as a live problem worth solving. **Decided not to do this — not a deferral, not parked.**
+    If a real need surfaces later, it starts as a fresh request with its own spec, not a resumption of
+    this one.
 
 ### Future (Phase 2+)
 - PAT auth role attachment
