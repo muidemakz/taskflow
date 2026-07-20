@@ -1,7 +1,20 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 19 July 2026 (Trash extended to cover deleted NoteChats — staging only)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION — **all 28 staging commits merged to `main` and deployed 18 Jul 2026, verified healthy (code-only, zero new migrations)**; TID backfill complete on **both** environments (staging 328/328, production 370/370); Group→Tag migration investigated on production only (not run); Account page Profile section converted to modals; Trash lives in Account as its own full page at `/trash`; **Notes is now a real feature** (migration `13_add_notes`, the 14th migration directory: `NoteChat`/`NoteMessage`, owner-scoped CRUD, global search integration, chat UI with voice-to-text) replacing the earlier placeholder, `ENABLE_AI_GENERATION` confirmed unchanged (still `false`) throughout — **all staging only, not yet merged**; chevron rotation direction still unverified in a browser
+**Last Updated:** 19 July 2026 (documentation audit — corrected stale test counts/commit hashes,
+logged the Group→Tag production findings and the file-upload investigation, refreshed the open-items
+list; no application code changed)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5dec9ca` (28 commits, 18 Jul
+2026, verified healthy, code-only, zero new migrations). **11 further commits now sit on `staging`
+ahead of `main`** (`5dec9ca..843acb3`, not yet merged — see "Current Open Items" below for the full
+list), covering: Account modals, the Trash→Account nav restructure and its later modal→page
+revision, the full Notes feature (migration `13_add_notes`, the 14th migration directory), a Notes
+composer bug fix, the GateCard/UnscheduledCard→RoadmapCard unification, a mobile Modal `dvh`/
+safe-area fix, and Trash's extension to cover deleted NoteChats. TID backfill complete on **both**
+environments (staging 328/328, production 370/370, including the one Fortnoto task already gated
+under "Gate 1" rather than Unscheduled). Group→Tag migration **investigated on both** environments
+(staging 35/35/100%, production 38 groups/6 tags/0% overlap) but **not mutated on either**. File
+upload capability investigated and **PARKED** pending the user's provider decision. `ENABLE_AI_GENERATION`
+confirmed unchanged (still `false`) throughout. Backend: 68 tests, 9 files, all passing.
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -239,7 +252,7 @@ secret, so PATs are unaffected.
 - **Backend:** Node.js / Express / Prisma 5.22 → **Railway**
 - **Database:** PostgreSQL (separate staging + production instances)
 - **Auth:** JWT + Personal Access Tokens (PAT)
-- **Testing:** Vitest — **44 backend tests across 7 files**, all passing
+- **Testing:** Vitest — **68 backend tests across 9 files**, all passing
 - **AI:** Anthropic Claude API (flag-gated)
 - **PWA:** manifest.json + service worker
 
@@ -1002,15 +1015,39 @@ substring of each; dark mode + 380px checked, no console errors.
 Gate: 68/68 backend tests pass (64 existing + 4 new), frontend build clean, no secrets in diff.
 Pushed to `staging` only.
 
-### Sprint Backlog (as of 17 Jul, pre-chunking)
+### Sprint Backlog (as of 17 Jul, pre-chunking) — HISTORICAL, SUPERSEDED
+Kept as-written for the record; items 5–6 below are stale (the merge this list treats as pending
+completed 18 Jul — see "Production merge" at the top of this doc). Current open items are the list
+immediately below this one.
 1. ✅ customId field — COMPLETE & PRODUCTION
 2. ✅ Production data migration (Valideity seed + Fortnoto ownership) — COMPLETE
 3. ✅ Security audit (6 items) — COMPLETE (fixes in `e93a26a`; finding #5 escalated to user)
 4. ✅ Task modal in-place fix — COMPLETE (`5628ba1`)
-5. ⏳ **User visual verification** on staging (5-item queue above)
-6. ⏳ **Merge staging → production** after verification (batches `08ad9ed` + `e93a26a` + `5628ba1`)
-7. 🔴 **Decide on production `JWT_SECRET` rotation** (audit finding #5)
-8. 🟡 **Contract phase** (drop Group model, old Task.status enum, Project.order) — optional
+5. ~~⏳ User visual verification on staging (5-item queue above)~~ — superseded, see below
+6. ~~⏳ Merge staging → production after verification~~ — ✅ done 18 Jul (`5dec9ca`)
+7. 🔴 Decide on production `JWT_SECRET` rotation (audit finding #5) — still open, see below
+8. 🟡 Contract phase (drop Group model, old Task.status enum, Project.order) — still optional, unstarted
+
+### Current Open Items (as of 19 Jul 2026)
+1. 🔴 **Decide on production `JWT_SECRET` rotation** — invalidates active prod sessions, left for
+   the user to schedule (audit finding #5, unchanged status since 17 Jul).
+2. 🟡 **Group → Tag migration for contract phase** — investigated on both environments (staging
+   35/35/100%, production 38 groups/6 tags/0% overlap), not yet mutated on either. Awaiting go-ahead.
+3. 🟡 **File upload capability (Tasks + Notes)** — PARKED, investigation delivered (Railway Buckets
+   recommended, R2 as fallback), awaiting the user's provider decision before any code is written.
+4. ⏳ **11 staging commits not yet merged to `main`** (`5dec9ca..843acb3`) — Account modals, nav
+   restructure, Trash-to-page revision, the full Notes feature, the Notes composer fix, the
+   GateCard/UnscheduledCard→RoadmapCard unification, the mobile Modal `dvh`/safe-area fix, and
+   Trash's NoteChat extension. Awaiting the user's go-ahead to merge, per the standing "staging
+   only until explicit approval" rule.
+5. ⏳ **Avatar-upload real-file path** — only the modal's open/cancel/disabled-until-changed logic
+   has been verified live; an actual image has never been pushed through the file picker →
+   resize → save path end-to-end (Browser pane tooling used this session has no file-upload
+   capability). See the Account Page Modals section.
+6. ⏳ **Chevron rotation direction** — still not pixel-confirmed in a browser (screenshot tooling
+   failure from 18 Jul); the CSS-mechanics reasoning behind the fix stands, but per the doc's own
+   earlier note, "do not treat this item as closed."
+7. 🟡 **Contract phase** (drop Group model, old Task.status enum, Project.order) — optional, unstarted.
 
 ### Future (Phase 2+)
 - PAT auth role attachment
@@ -1045,11 +1082,11 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 ## Deployment & Environments
 
 ### Production (Railway + Netlify)
-- Backend: https://taskflow-production-d9c0.up.railway.app — commit `9f72056`, 13 migrations
+- Backend: https://taskflow-production-d9c0.up.railway.app — commit `5dec9ca`, 13 migrations
 - Auto-deploys on push to `main` (`prisma migrate deploy` preDeploy)
 
 ### Staging (Railway + Netlify)
-- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `5628ba1`
+- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `843acb3`, 14 migrations
 - Frontend: https://staging--muidemakztaskflow.netlify.app
 
 ### Local Development
@@ -1066,22 +1103,67 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 
 ## Testing Strategy
 
-- ✅ Vitest: **44 backend tests, 7 files**, all passing
+- ✅ Vitest: **68 backend tests, 9 files**, all passing
 - ✅ API-level verification per feature (board/search/trash customId; permanent delete end-to-end; auth endpoints sanity-checked; 409/400 customId paths)
 - ✅ Deployed-bundle inspection (CSS/JS asset verification on Netlify)
 - ✅ Idempotency verification on data scripts
-- ⏳ Human visual QA: the standing gap — backend QA passes; UI sign-off pends the user's click-through
+- ✅ Live browser verification against the staging dev server: the dominant testing mode since
+  17 Jul's tooling outage was resolved — every feature shipped from the Account/Trash/Notes work
+  onward (profile modals, nav restructure, Notes chat, composer fix, RoadmapCard unification, the
+  mobile Modal fix, Trash's NoteChat extension) was click-through-tested live, not just API-verified.
+- ⏳ **One specific remaining manual-test gap, not a blanket one:** the avatar-upload real-file path
+  (file picker → resize → preview → save) has only been verified for its modal open/cancel/
+  disabled-until-changed logic — the Browser pane tooling used this session has no file-upload
+  capability, so an actual image was never pushed through it end-to-end. See the Account Page
+  Modals section below.
 - Security & Debug Gate mandatory pre-commit (see CLAUDE.md)
 
 ---
 
-## Pending: Group → Tag Migration for Contract Phase (18 Jul 2026)
+## Pending: Group → Tag Migration for Contract Phase (updated 19 Jul 2026)
 
-**Status:** Investigation STARTED
-- **Staging:** ✅ Complete (35 groups → 35 tags, 100% overlap, 221 grouped tasks, 7 ungrouped left as-is)
-- **Production:** ⏳ Investigation needed (no inferred data; must query direct DB or use Railway SSH)
-- **Approach:** Single idempotent script to run on both environments; handles both cases (tags exist or need creation)
-- **Scheduled:** After Commit 1 completion (filter unification, breadcrumbs, page width)
+**Status:** ✅ INVESTIGATED on both environments, NOT YET MUTATED anywhere (no tags created, no
+migration run — read-only investigation only, per explicit instruction at the time).
+- **Staging:** 35 groups → 35 tags, **100% overlap**, 221 grouped tasks, 7 ungrouped left as-is.
+- **Production (investigated 18 Jul 2026, STEP 4a):** Fortnoto has **38 groups vs. 6 existing tags,
+  0% overlap** — none of the 6 tags match any of the 38 groups by name. This is materially
+  different from staging's clean 35/35 match, so the eventual migration script cannot assume
+  "tags already exist and just need linking" as its only case — it needs to handle
+  create-from-scratch for production's groups, not just the already-matched case staging has.
+- **Approach:** Single idempotent script to run on both environments; handles both cases (tags exist or need creation).
+- **Scheduled:** After Commit 1 completion (filter unification, breadcrumbs, page width) — not yet started; awaiting go-ahead to run the actual mutation on either environment.
+
+---
+
+## PARKED: File Upload Capability (Tasks + Notes) — investigated 19 Jul 2026, no decision yet
+
+**Status:** 🟡 **PARKED — investigation only, awaiting the user's decision.** No accounts created, no
+code written, no schema changes made, exactly per the explicit constraint this was scoped under.
+
+Investigated adding file upload (images, PDFs, video, audio) to both Tasks and Notes:
+
+- **Storage options compared:** Cloudflare R2, Backblaze B2, AWS S3, and Railway's own new
+  S3-compatible "Storage Buckets" product (setup complexity, pricing shape, free tier, Node.js SDK
+  compatibility).
+- **Recommendation given:** **Railway Storage Buckets** as the primary pick — zero new vendor
+  account (one click inside the existing Railway project), same $0.015/GB-month price as R2, free
+  bucket egress, fully S3-compatible so the same `@aws-sdk/client-s3` code works unchanged.
+  **Cloudflare R2 flagged as the explicit fallback** if Railway Buckets' relative newness (thin
+  free-tier docs, less battle-tested) is a concern — same price point, same integration code, more
+  established product.
+- **Integration shape recommended:** presigned direct-to-browser uploads (not proxied through
+  Express) — keeps large files off the small Railway backend, avoids double egress cost, still
+  fully owner-scoped since the backend mints the presigned URL after verifying ownership.
+- **Schema sketch given, not built:** a single polymorphic `Attachment` model (storage key,
+  filename, mime type, size, status, nullable `taskId`/`noteMessageId`) rather than separate fields
+  bolted onto `Task` and `NoteMessage`.
+- **File-type/size guidance given:** per-file caps (~10–15MB images/PDFs, ~100–200MB video,
+  ~25–50MB audio), allowlist validation by extension + MIME, and an explicit flag that
+  unrestricted video upload is the real cost/abuse surface to bound.
+
+**Nothing from this investigation has been acted on.** It is a report delivered to the user for
+their decision, not a plan currently being executed — the next step, if any, is the user picking a
+provider and asking for it to be built.
 
 ---
 
@@ -1103,8 +1185,10 @@ Corrected against the actual repo and live databases:
 
 **Owner:** User
 **Active Maintainer:** Claude (via Claude Code sessions)
-**Production Status:** LIVE & STABLE (`9f72056`)
-**Next Review:** After the 5-item staging verification + production merge of `08ad9ed`/`e93a26a`/`5628ba1`
+**Production Status:** LIVE & STABLE (`5dec9ca`)
+**Next Review:** After the user reviews the 11 unmerged staging commits (`5dec9ca..843acb3`) and
+decides on merge timing, plus the three open decisions tracked under "Current Open Items" above
+(`JWT_SECRET` rotation, Group→Tag migration, file-upload provider choice)
 
 ---
 
