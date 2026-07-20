@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 20 July 2026 (second production merge complete — `main` fast-forwarded
-`5dec9ca → 5a2528c`, deployed, verified healthy)
+**Last Updated:** 20 July 2026 (staging Group→Tag migration confirmed complete — 35/35 tags, 0
+created/0 new links since staging was already fully tagged; Contract-phase scope audited)
 **Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5a2528c` (20 Jul 2026,
 verified healthy). **`staging` and `main` are now at full parity** — zero commit gap. This second
 merge shipped: Account modals, the Trash→Account nav restructure and its later modal→page revision,
@@ -10,9 +10,15 @@ the Notes composer fix, the GateCard/UnscheduledCard→RoadmapCard unification, 
 `dvh`/safe-area fix, Trash's extension to cover deleted NoteChats, and the four docs-only commits
 logging the Group→Tag production migration and the JWT_SECRET rotation. TID backfill complete on
 **both** environments (staging 328/328, production 370/370, including the one Fortnoto task already
-gated under "Gate 1" rather than Unscheduled). Group→Tag migration is **COMPLETE on production**
-(Fortnoto: 38 groups → 38 tags created, 279/279 tasks linked, verified live in the app UI) — staging
-is still pending its own separate go-ahead. File upload capability investigated and **PARKED**
+gated under "Gate 1" rather than Unscheduled). Group→Tag migration is **COMPLETE on both
+environments** (production 19 Jul: 38 groups → 38 tags created, 279/279 tasks linked. Staging 20 Jul:
+35 groups, all 35 tags already existed with full task overlap — 0 created, 0 new links, formally
+verified live via tag-filter spot-checks). Contract-phase scope was audited 20 Jul 2026 (see the
+dedicated section below) — Group→Tag is no longer a blocker on either environment, but a second,
+previously undocumented blocker was found: the legacy `Task.status` field has drifted from the real
+kanban `Status.countsAsDone` system on both environments, currently understating "done" counts on the
+Dashboard, RoadmapOverview, public ShareView pages, and Admin stats — flagged as a live bug, not yet
+fixed. File upload capability investigated and **PARKED**
 pending the user's provider decision. **`JWT_SECRET` rotated 19 Jul 2026** — production and staging
 hold distinct, freshly-generated secrets; cross-environment token validity closed and verified.
 `ENABLE_AI_GENERATION` confirmed **unset on production both before and after this merge** — Notes'
@@ -1124,9 +1130,10 @@ immediately below this one.
    rotated to distinct, freshly-generated secrets; verified via health check, live login round-trip,
    old-token rejection, and cross-environment rejection on both sides. Full detail in the Security
    Posture table above and the "Known Issues" section below (moved to Resolved).
-2. ✅ **Group → Tag migration — production DONE** (19 Jul: Fortnoto 38 groups → 38 tags, 279/279
-   tasks linked, verified live in the app UI, zero deviation from the dry-run). 🟡 **Staging still
-   pending** its own separate go-ahead (35 groups/35 tags/100% overlap, untouched by this run).
+2. ✅ **Group → Tag migration — COMPLETE on both environments** (production 19 Jul: 38 groups → 38
+   tags, 279/279 tasks linked, verified live. Staging 20 Jul: 35 groups, all 35 tags already existed
+   with full task overlap — 0 created, 0 new links, formally verified and logged). No environment has
+   an outstanding Group→Tag gap anymore.
 3. 🟡 **File upload capability (Tasks + Notes)** — PARKED, investigation delivered (Railway Buckets
    recommended, R2 as fallback), awaiting the user's provider decision before any code is written.
 4. ✅ **Second production merge — DONE 20 Jul 2026** (`main` fast-forwarded `5dec9ca → 5a2528c`, 15
@@ -1142,7 +1149,24 @@ immediately below this one.
 6. ⏳ **Chevron rotation direction** — still not pixel-confirmed in a browser (screenshot tooling
    failure from 18 Jul); the CSS-mechanics reasoning behind the fix stands, but per the doc's own
    earlier note, "do not treat this item as closed."
-7. 🟡 **Contract phase** (drop Group model, old Task.status enum, Project.order) — optional, unstarted.
+7. 🟡 **Contract phase** (drop `Group` model, legacy `Task.status` enum, `Project.order`, and delete
+   the orphaned `ProjectDetail.jsx` legacy view) — scoped 20 Jul 2026, not yet started. Group→Tag is
+   cleared on both environments (item 2 above), but that was **not the only blocker**: dropping
+   `Task.status` requires rewriting `taskCounts()`/`stats()` (and every consumer: Dashboard project
+   cards, `ProjectDetailCard`, public `ShareView` pages, Admin's per-user and global stats) off the
+   legacy field onto `Status.countsAsDone` first — this is real code work, not just a schema drop.
+   See the "Contract Phase Scope Audit" section below for full detail, per-item risk, and rollback
+   story (three of the four items are one-way schema/data drops with no down-migration; the fourth,
+   deleting `ProjectDetail.jsx`, is fully git-reversible).
+8. 🔴 **New finding, 20 Jul 2026 — legacy `Task.status` has already drifted from live data**,
+   independent of Contract-phase timing. Verified directly: production Fortnoto shows "219 done" on
+   the Dashboard but is actually **237** done per the real kanban `Status.countsAsDone` system (18
+   tasks understated); production Valideity shows "0% done" but is actually **18/91 (20%)** done.
+   Same pattern on staging (122 shown vs. 130 real for Fortnoto; 0 shown vs. 17 real for Valideity).
+   Root cause: the modern board (`board.js`) only ever writes `statusId`, never the legacy `status`
+   column, which is written **only** by the orphaned `/legacy` route. This is a live, user-facing
+   accuracy bug on the Dashboard/RoadmapOverview/ShareView/Admin surfaces today — worth a decision on
+   its own, independent of whether/when Contract phase proceeds. No code changed; flagged only.
 
 ### Future (Phase 2+)
 - PAT auth role attachment
@@ -1220,11 +1244,13 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 
 ---
 
-## Group → Tag Migration for Contract Phase (production migrated 19 Jul 2026)
+## Group → Tag Migration for Contract Phase (production migrated 19 Jul 2026, staging 20 Jul 2026)
 
-**Status:** ✅ **PRODUCTION MIGRATED AND VERIFIED** — 🟡 **staging still pending its own go-ahead**
-(staging was already 35/35/100% matched at investigation time; no migration script has been run
-there, only Fortnoto/production was explicitly approved and executed this pass).
+**Status:** ✅ **COMPLETE ON BOTH ENVIRONMENTS.** Production: 38 tags created 19 Jul 2026. Staging:
+confirmed 20 Jul 2026 — all 35 tags already existed with full task overlap in place (0 created, 0
+new links; formally verified and logged, not newly created). **This clears the Group→Tag piece of
+the Contract-phase blocker on both environments** — see "Current Open Items" and the Contract-phase
+scope note below for what's still outstanding.
 
 ### Production Fortnoto — ✅ COMPLETE, 19 Jul 2026
 
@@ -1278,9 +1304,41 @@ TaskTag rows were created), so nothing else is at risk from a rollback.
 **Nothing else was touched:** no changes to Task, Group, or any other model; no application code
 changed; no migration file added (this is a data operation on existing tables, not a schema change).
 
-### Staging — ⏳ still pending, unchanged from the original investigation
-35 groups → 35 tags, **100% overlap**, 221 grouped tasks, 7 ungrouped left as-is. No migration
-script has been run against staging. Awaiting a separate go-ahead before staging is touched.
+### Staging — ✅ COMPLETE, 20 Jul 2026
+
+Approved and run against **staging only**, via the same `migrateGroupsToTags.mjs` (temporary, piped
+over Railway SSH stdin, deleted immediately after each run) and the same read-verify-write design as
+production.
+
+**Re-confirmed dry-run before running — numbers had shifted slightly from the cached MASTER.md
+figures, re-queried live rather than trusted:** `investigateGroupToTagMigration.js` re-run against
+live staging showed 35 groups / 221 grouped tasks / 7 ungrouped — but **35 existing tags with 100%
+task overlap already in place**, not "35 tags to create" as the phase name implied. Every proposed
+tag already existed under an identical name, and every one of those tags already had the exact same
+task set as its corresponding group (verified per-group in the collision analysis: group task count
+== tag task count == overlap count, for all 35). **New tags to create: 0.** This means staging's
+Group→Tag state was already fully correct before this run — likely from earlier ad-hoc tagging —
+just never formally verified or logged as such.
+
+**Actual run confirmed this exactly:** `Groups processed: 35, Tags created: 0, Tags reused: 35, Total
+task-tag links created this run: 0`. Re-ran a second time immediately after — identical output,
+confirming idempotency the same way as production (a no-create/no-link result, twice).
+
+**Rollback path:** trivial in this case — since 0 tags and 0 links were created, there is nothing to
+roll back. The `TaskTag.tagId onDelete: Cascade` mechanism from the production run still applies in
+principle (delete-by-ID would cascade-clean TaskTag rows), but it's moot here since this run created
+no new rows at all.
+
+**Verified in the app UI on staging (not just the DB)** — logged into
+`https://staging--muidemakztaskflow.netlify.app` as the real admin user, opened Fortnoto's
+whole-project board, and spot-checked the smallest and largest groups by tag filter:
+- "Venda Logo" (smallest, 1 task) → filtered to exactly **1** task (`U1.7`) — matches.
+- "Key Decisions Made" (largest, 18 tasks) → filtered to exactly **18** tasks, all in Done — matches.
+
+No console errors during verification.
+
+**Nothing else was touched:** no changes to Task, Group, or any other model; no application code
+changed; no migration file added.
 
 ### Full production mapping (all 38 groups → identically-named tags, all created)
 
@@ -1306,6 +1364,63 @@ script has been run against staging. Awaiting a separate go-ahead before staging
   | Customer Management | 3 | | Venda Designs | 11 |
   | Coupons & Discounts | 1 | | | |
   | Wallet | 6 | | **Total: 38 groups, 279 tasks** | |
+
+---
+
+## Contract Phase Scope Audit (20 Jul 2026, investigation only — no code changed)
+
+Requested before starting Contract phase, now that Group→Tag is clear on both environments. Grepped
+the full codebase (not memory) for every reference to each of the four named drop targets.
+
+### `Group` model
+- **References:** backend `groups.js` (full CRUD — create/rename/soft-delete/merge), `projects.js`
+  (default-group-on-task-create, `groupId` validation), `tasks.js` (move-into-group), `trash.js`
+  (soft-delete/restore/permanent-delete branch). Frontend: `ProjectDetail.jsx`, `GroupCard.jsx`,
+  `TaskCard.jsx` (root-level — distinct from `board/BoardTaskCard.jsx`), `projectStore.js`. Every
+  frontend consumer traces back to `ProjectDetail.jsx` exclusively.
+- **Additive-safe?** No — production still has 38 live `Group` rows in parallel with their Tag
+  equivalents (the Group→Tag migration explicitly left Groups untouched); staging now has 35 in the
+  same state. Dropping the model deletes real rows.
+- **Rollback:** one-way — no Prisma down-migration exists. The taxonomy survives via Tags, but the
+  `Group` rows and `Task.groupId` links themselves are gone the moment the migration runs, recoverable
+  only from a DB snapshot.
+
+### `Task.status` (legacy enum)
+- **References:** written only by `tasks.js` / `utils/project.js:normalizeTaskInput` (reachable only
+  via the orphaned `/legacy` route); read by `taskCounts()`/frontend `stats()`, which feed the
+  Dashboard project cards, `ProjectDetailCard` (RoadmapOverview header), public `ShareView` pages,
+  Admin's per-user project stats, and Admin's global "Tasks Completed" figure.
+- **Additive-safe?** No — see the drift finding above (Current Open Items #8). `taskCounts()` and its
+  five consumers need rewriting onto `statusId → Status.countsAsDone` **before** the column can be
+  dropped; this is code work, not a schema-only change.
+- **Rollback:** one-way, no down-migration. Values are already stale per the drift finding, so little
+  real information is lost, but the column itself is unrecoverable without a DB snapshot.
+
+### `Project.order`
+- **References:** written on every task/group creation in `groups.js`/`projects.js`/`tasks.js`
+  (including from the modern `QuickAddTaskModal`, via the shared `POST /api/projects/:id/tasks`
+  route — not legacy-only), read only by `orderedEntries`/`visibleEntries` in `ProjectDetail.jsx`.
+- **Additive-safe?** Mostly — nothing modern reads it, but modern task/group creation still writes it
+  today; those write-sites need the write call deleted alongside the column, no backfill needed.
+- **Rollback:** one-way at the column level, but lowest-consequence of the three data drops — only
+  ever fed the now-orphaned legacy view.
+
+### `ProjectDetail.jsx`
+- **References:** routed only at `/projects/:id/legacy` in `App.jsx`. Confirmed nothing else in the
+  app links there — dead-end reachable only by typing the URL directly.
+- **Additive-safe?** Yes, cleanly — pure code deletion, no data implications.
+- **Rollback:** fully reversible — `git revert` restores it exactly. Categorically lower risk than
+  the other three.
+
+### Sequencing recommendation
+Two tracks, not one phase: **(1) code track** — rewrite `taskCounts()` onto `Status.countsAsDone`,
+delete `ProjectDetail.jsx` + `GroupCard`/`TaskCard` (root) + `groups.js`, strip `Project.order`
+writes — build and verify on staging first, then merge, independent of Group→Tag timing. **(2) data
+track** — the actual `DROP` migrations can't run until the code track is deployed to both
+environments (nothing left reading/writing the columns) **and** an explicit DB snapshot exists as
+the rollback path (no documented Railway Postgres backup policy was found in this repo — treat a
+snapshot as a hard prerequisite, not optional). Group→Tag being clear on both environments (this
+session) removes one blocker for the data track but does not make it schedulable on its own.
 
 ---
 
