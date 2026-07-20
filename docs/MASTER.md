@@ -1285,14 +1285,30 @@ immediately below this one.
    instead of 2. Fixed by scoping the count's `where`. Both verified against live UI + an independent
    ground-truth query on staging, then cherry-picked to `main` and verified again on production (see
    "Third production merge" above).
-10. ℹ️ **Manual production backup taken 20 Jul 2026** — general safety net, not tied to any specific
-    migration. `pg_dump` isn't installed on the app container; ran it via SSH directly on the
-    `Postgres` service's own container (`/usr/bin/pg_dump`, part of the official image), custom format
+10. ℹ️ **Railway backup capability researched 20 Jul 2026 — no automated backup exists today,
+    manual `pg_dump` taken as an interim safety net.** Two questions investigated before Contract
+    phase's data track could be considered schedulable:
+    - **Point-in-Time Recovery (PITR):** confirmed **OFF** for production. Railway's PITR (continuous
+      WAL archiving via pgBackRest) is Pro-plan-gated and off by default even on Pro — confirmed
+      directly via `railway variables --service Postgres --environment production --kv`, which showed
+      **no `WAL_ARCHIVE_*` env vars present** (PITR sets these when enabled). No CLI surface exists to
+      enable it either — `railway volume --help` has no backup/snapshot subcommand at all.
+    - **Volume Backups (the dashboard-only "Backups" tab):** genuinely could not be checked from this
+      session — it's a separate, dashboard-only feature (manual or Daily/Weekly/Monthly scheduled
+      Copy-on-Write snapshots) with no CLI or API surface, and this session has no browser login
+      session to Railway's own dashboard. **The user still needs to check that tab directly** — this
+      finding does not confirm or rule out whether a schedule already exists there.
+    - **Bottom line as investigated:** no confirmed automated backup exists for production today. That
+      is the honest answer, not "zero backups exist" stated as fact (the Backups tab remains unknown)
+      and not "a schedule probably exists" assumed for convenience.
+
+    Given that, a **manual `pg_dump` was taken 20 Jul 2026** as a general safety net — not tied to any
+    specific migration, and explicitly not treated as a substitute for a real policy decision.
+    `pg_dump` isn't installed on the app container; ran it via SSH directly on the `Postgres` service's
+    own container (`/usr/bin/pg_dump`, part of the official image), custom format
     (`-Fc --no-owner --no-privileges`), stdout piped straight through SSH to local disk — nothing
     touched the container's filesystem. Result: 120,771 bytes, `PGDMP` header verified, stored at
     `C:\Users\Excellentm\Documents\Fortnoto\taskflow-backups\taskflow-production-20260720-182937.dump`.
-    Separately, the user still needs to check Railway's dashboard Backups tab directly for any
-    existing automated schedule — this pg_dump does not confirm or rule that out either way.
 11. ✅ **RESOLVED 20 Jul 2026 — Contract-phase code track, complete and in production.** Resumed
     (basis: the manual pg_dump above was judged sufficient for a code-only, additive-safe, zero-schema
     change — explicitly NOT sufficient basis for the data track, which stays gated on the Railway
@@ -1413,12 +1429,20 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 - Auto-deploys on push to `main` (`prisma migrate deploy` preDeploy)
 
 ### Staging (Railway + Netlify)
-- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `66c04d9`, 14 migrations (this round
-  was frontend-only; backend unchanged since `06f5ea3` but redeployed anyway, matching current `HEAD`)
-- Frontend: https://staging--muidemakztaskflow.netlify.app
-- **`staging` is ahead of `main` as of 20 Jul 2026** by exactly one commit: `20dc416` (docs-only,
-  deliberately never merged). Code parity restored as of the fourth production merge — verified via
-  empty diff on every file the Contract-phase code track touched.
+- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `9d7acd4` (current staging `HEAD`),
+  14 migrations. Backend code itself unchanged since `06f5ea3` — everything since (the GateDetailCard
+  feature, its 3 fixes, and docs) is frontend-only or docs-only, but the service redeploys on every
+  push regardless of which files changed.
+- Frontend: https://staging--muidemakztaskflow.netlify.app — commit `66c04d9` is the last one that
+  changed frontend code; `9d7acd4` on top is docs-only.
+- **`staging` is ahead of `main` by 9 commits as of 20 Jul 2026** (`git log 2665c82..staging` — the
+  last commit shared with `main`'s own history): 5 docs-only (`20dc416`, `8b23504`, `657054c`,
+  `870ef41`, `9d7acd4` — deliberately never merged, per this session's staging-only-docs precedent) and
+  4 real code commits, all one feature (`82af10a`, `6b9fbc7`, `a7bf93b`, `66c04d9` — GateDetailCard
+  collapsible + its 3 fixes, verified live on staging, merge-to-main decision still pending). Code
+  parity with `main` was momentarily true right after the fourth production merge — it no longer is,
+  as of the GateDetailCard
+  work.
 
 ### Local Development
 - `npm run dev` frontend (Vite) + backend; `.env.local` DATABASE_URL. Local dev frontend points at the
@@ -1629,6 +1653,14 @@ the rollback path (no documented Railway Postgres backup policy was found in thi
 snapshot as a hard prerequisite, not optional). Group→Tag being clear on both environments (this
 session) removes one blocker for the data track but does not make it schedulable on its own.
 
+> **Status update, 20 Jul 2026 — code track is now done** (see "Current Open Items" #11 above; shipped
+> to both environments, verified live). The data track's prerequisite has been **partially** addressed,
+> not resolved: a manual `pg_dump` now exists (see item #10 above), taken specifically because Railway's
+> automated PITR was confirmed OFF (Pro-plan-gated) and the dashboard-only Backups tab's status remains
+> unconfirmed. A one-off dump is not the same thing as "an explicit DB snapshot exists as the rollback
+> path" in the durable, repeatable sense this recommendation originally meant — the data track is still
+> gated on the user's own backup-policy decision, not just on any single snapshot existing.
+
 ---
 
 ## PARKED: File Upload Capability (Tasks + Notes) — investigated 19 Jul 2026, no decision yet
@@ -1675,17 +1707,29 @@ Corrected against the actual repo and live databases:
 - **Task modal fix:** was "queued" → **completed** (`5628ba1`).
 - URLs (prod backend, staging backend, staging frontend) confirmed reachable. Production frontend URL still unconfirmed.
 
+> **Note, 20 Jul 2026:** the line above is a snapshot from the original 17–18 Jul fact-check and is kept
+> as-written for the historical record — it does not reflect current state. The production frontend URL
+> (`https://muidemakztaskflow.netlify.app`) has since been used and verified live repeatedly across
+> multiple production merges this session.
+
 ---
 
 ## Contact & Ownership
 
 **Owner:** User
 **Active Maintainer:** Claude (via Claude Code sessions)
-**Production Status:** LIVE & STABLE (`5aaa94b`) — `staging` ahead by exactly one docs-only commit
-(`20dc416`); code parity restored as of the fourth production merge
-**Next Review:** Remaining open decisions tracked under "Current Open Items" above: staging's own
-Group→Tag migration (production's is done), and the file-upload provider choice. `JWT_SECRET`
-rotation and the second production merge are both now complete.
+**Production Status:** LIVE & STABLE (`5aaa94b`) — `staging` (`9d7acd4`) is ahead by 9 commits: 5
+docs-only (deliberately never merged) plus the GateDetailCard collapsible feature and its 3 fix
+commits (real code, verified live on staging, not yet merged to main — merge decision pending, same
+as every other change this session). See "Deployment & Environments → Staging" above for the exact
+list.
+**Next Review:** Remaining open decisions tracked under "Current Open Items" above: (1) Contract-phase
+data track (Group table / `Task.status` column / `Project.order` column drops) — blocked on the user's
+own backup-policy decision, not just the interim `pg_dump`; (2) whether/when to merge the GateDetailCard
+feature to `main`; (3) the file-upload provider choice (Railway Storage Buckets vs. R2), still parked;
+(4) the shared `ProjectDetailCard`/`GateDetailCard` collapse-animation bug, flagged not fixed, needs a
+combined fix touching both components. `JWT_SECRET` rotation, staging's own Group→Tag migration, and
+four production merges are all complete.
 
 ---
 
