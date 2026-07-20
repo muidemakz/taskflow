@@ -48,7 +48,10 @@ router.get('/stats', async (_req, res, next) => {
       prisma.user.count(),
       prisma.project.count(),
       prisma.task.count(),
-      prisma.task.count({ where: { status: 'DONE' } }),
+      // Real kanban status, not the legacy status column -- see taskCounts()
+      // in utils/project.js for why the legacy column drifts and understates
+      // completion the moment a task moves on the real board.
+      prisma.task.count({ where: { taskStatus: { countsAsDone: true } } }),
       prisma.user.count({ where: { createdAt: { gte: monthStart() } } }),
       prisma.project.count({ where: { createdAt: { gte: monthStart() } } }),
       prisma.user.findMany({

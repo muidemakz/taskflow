@@ -5,7 +5,10 @@ export const projectInclude = {
     include: { tasks: { where: { deletedAt: null } } },
     orderBy: { createdAt: 'asc' }
   },
-  tasks: { where: { groupId: null, deletedAt: null }, orderBy: { createdAt: 'asc' } }
+  tasks: { where: { groupId: null, deletedAt: null }, orderBy: { createdAt: 'asc' } },
+  // Only what taskCounts() needs to derive "done" from the real kanban
+  // status system -- see taskCounts() below.
+  statuses: { select: { id: true, countsAsDone: true } }
 };
 
 export function orderArray(project) {
@@ -39,8 +42,12 @@ export function normalizeTaskInput(data = {}) {
 }
 
 export function toClientProject(project) {
+  // statuses is fetched only for taskCounts()'s internal use below -- the
+  // client already gets the full Status list from the board API, so it's
+  // dropped here rather than duplicated under a second, unrelated shape.
+  const { statuses, ...rest } = project;
   return {
-    ...project,
+    ...rest,
     order: orderArray(project),
     groups: project.groups.map((group) => ({
       ...group,
@@ -50,11 +57,17 @@ export function toClientProject(project) {
   };
 }
 
+// "Done" is derived from statusId -> Status.countsAsDone (the real kanban
+// system), not the legacy status column -- the legacy column is written
+// only by the orphaned /legacy view and drifts from statusId the moment a
+// task is moved on the real board, so it silently understates completion.
+// project.statuses must be included (see projectInclude above) for this.
 export function taskCounts(project) {
   const root = project.tasks || [];
   const grouped = (project.groups || []).flatMap((group) => group.tasks || []);
   const tasks = [...root, ...grouped];
-  const done = tasks.filter((task) => task.status === 'DONE').length;
+  const doneStatusIds = new Set((project.statuses || []).filter((s) => s.countsAsDone).map((s) => s.id));
+  const done = tasks.filter((task) => task.statusId && doneStatusIds.has(task.statusId)).length;
   return { total: tasks.length, done, pct: tasks.length ? Math.round((done / tasks.length) * 100) : 0 };
 }
 
