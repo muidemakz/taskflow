@@ -92,9 +92,15 @@ export default function GateDetailCard({ gate, onAddTask, onShareGate, onCloseGa
           {gateLetter(gate.order)}
         </span>
         <h2 className="min-w-0 flex-1 truncate text-base font-bold">{gate.name}</h2>
-        {collapsed && <span className="shrink-0 text-sm font-semibold text-primary">{pct}%</span>}
+        {/* Hidden below sm: at narrow widths the row doesn't have room for
+            pct + two icon buttons + the chevron without running into the
+            absolutely-positioned Open/Closed pill's space (same reasoning
+            as ProjectDetailCard hiding its mini progress bar below sm). The
+            chevron itself stays visible at every width -- collapsing is
+            still possible on mobile, it just doesn't get the extra row. */}
+        {collapsed && <span className="hidden shrink-0 text-sm font-semibold text-primary sm:inline">{pct}%</span>}
         {collapsed && (
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="hidden shrink-0 items-center gap-1 sm:flex">
             {onAddTask && (
               <button className="btn-icon h-8 w-8" onClick={() => onAddTask(gate)} aria-label="Add task">
                 <Plus size={15} />
