@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import toast from 'react-hot-toast';
-import { groupsApi, projectsApi, tasksApi } from '../api/endpoints';
+import { projectsApi, tasksApi } from '../api/endpoints';
 
 export const useProjectStore = create((set, get) => ({
   projects: [],
@@ -43,22 +43,6 @@ export const useProjectStore = create((set, get) => ({
   async createTask(payload) {
     const { current } = get();
     const { data } = await projectsApi.createTask(current.id, payload);
-    get().applyProject(data);
-  },
-  async updateGroup(id, payload) {
-    const { data } = await groupsApi.update(id, payload);
-    get().applyProject(data);
-  },
-  async deleteGroup(id) {
-    const { data } = await groupsApi.remove(id);
-    get().applyProject(data);
-  },
-  async ungroup(id) {
-    const { data } = await groupsApi.ungroup(id);
-    get().applyProject(data);
-  },
-  async mergeGroups(payload) {
-    const { data } = await groupsApi.merge(payload);
     get().applyProject(data);
   },
   async updateTask(id, payload, optimistic) {

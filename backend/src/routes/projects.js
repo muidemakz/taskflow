@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
-import { defaultOrder, orderArray, projectInclude, serializeOrder, taskCounts, toClientProject } from '../utils/project.js';
+import { projectInclude, taskCounts, toClientProject } from '../utils/project.js';
 import { appendPosition } from '../lib/position.js';
 import { createTaskWithCustomId } from '../utils/customId.js';
 import { requireGate } from '../lib/ownership.js';
@@ -57,7 +57,7 @@ router.post('/', async (req, res, next) => {
     if (!title) return res.status(400).json({ message: 'Project title is required' });
     const project = await prisma.$transaction(async (tx) => {
       const created = await tx.project.create({
-        data: { title, description: req.body.description?.trim() || null, ownerId: req.auth.sub, order: serializeOrder([]) }
+        data: { title, description: req.body.description?.trim() || null, ownerId: req.auth.sub }
       });
       await tx.status.createMany({
         data: DEFAULT_STATUSES.map((status) => ({ ...status, projectId: created.id }))
@@ -90,7 +90,6 @@ router.patch('/:id', async (req, res, next) => {
     const data = {};
     if (typeof req.body.title === 'string' && req.body.title.trim()) data.title = req.body.title.trim();
     if (typeof req.body.description === 'string') data.description = req.body.description.trim() || null;
-    if (Array.isArray(req.body.order)) data.order = serializeOrder(req.body.order);
     if (req.body.rolloverMode) {
       if (!['AUTOMATIC', 'ASK_FIRST'].includes(req.body.rolloverMode)) {
         return res.status(400).json({ message: 'rolloverMode must be AUTOMATIC or ASK_FIRST' });
@@ -176,11 +175,7 @@ router.post('/:id/groups', async (req, res, next) => {
     const project = await ownedProject(req.params.id, req.auth.sub);
     if (!project) return res.status(404).json({ message: 'Project not found' });
     const title = req.body.title?.trim() || 'New Group';
-    const group = await prisma.group.create({ data: { title, projectId: project.id } });
-    await prisma.project.update({
-      where: { id: project.id },
-      data: { order: serializeOrder([`group:${group.id}`, ...(orderArray(project).length ? orderArray(project) : defaultOrder(project))]) }
-    });
+    await prisma.group.create({ data: { title, projectId: project.id } });
     const updated = await ownedProject(project.id, req.auth.sub);
     res.status(201).json(await withMetrics(updated));
   } catch (error) {
@@ -241,12 +236,6 @@ router.post('/:id/tasks', async (req, res, next) => {
       statusId: backlogStatus.id,
       position: appendPosition(maxPosition)
     });
-    if (!groupId) {
-      await prisma.project.update({
-        where: { id: project.id },
-        data: { order: serializeOrder([`task:${task.id}`, ...(orderArray(project).length ? orderArray(project) : defaultOrder(project))]) }
-      });
-    }
     const updated = await ownedProject(project.id, req.auth.sub);
     res.status(201).json({ ...(await withMetrics(updated)), taskId: task.id });
   } catch (error) {
