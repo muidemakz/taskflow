@@ -1,8 +1,9 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 20 July 2026 (fourth production merge — Contract-phase code track, the orphaned
-`/legacy` checklist view and its dead Group-CRUD backend routes, cherry-picked to `main` and deployed;
-zero schema changes)
+**Last Updated:** 20 July 2026 (Chunk C shipped to staging — `GateDetailCard` collapsible behavior,
+correctly re-targeted after an earlier mis-scoped pass against `TaskDetailModal`; two real bugs found
+and fixed during live verification; one pre-existing, shared collapse-animation bug found and flagged,
+not fixed, per instruction — see item 13 below)
 **Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5aaa94b` (20 Jul 2026,
 verified healthy). This fourth merge cherry-picked exactly one commit (`06f5ea3`, not a fast-forward):
 the Contract-phase code track — deleted `ProjectDetail.jsx`/`GroupCard.jsx`/root `TaskCard.jsx` and
@@ -1306,14 +1307,70 @@ immediately below this one.
     verified live on production identically — see "Fourth production merge" above. **Data track (Group
     table / Task.status column / Project.order column drops) is the only Contract-phase work
     remaining, still not started.**
-12. ❌ **DECLINED 20 Jul 2026 — Prompt Queue item 3 / "Chunk C" (task detail modal collapsible
-    redesign).** Scoped on request before any code was written: no spec for this ever existed in this
-    doc or prior session history (the 18 Jul chunk lettering runs A → B → D → E → F; C was never
-    defined). Current `TaskDetailModal` already uses conditional rendering appropriately (blocked-note,
-    focus-date, gate-placement UI all render only when relevant), and nothing in this session's UI work
-    flagged it as a live problem worth solving. **Decided not to do this — not a deferral, not parked.**
-    If a real need surfaces later, it starts as a fresh request with its own spec, not a resumption of
-    this one.
+12. ✅ **DONE 20 Jul 2026 — Prompt Queue item 3 / "Chunk C", corrected target: `GateDetailCard`
+    collapsible behavior, not `TaskDetailModal`.** *Correction to this doc's own prior entry* — an
+    earlier pass in this session had scoped and then declined this item against `TaskDetailModal`,
+    based on the user's own initial framing. The user corrected the target afterward: Chunk C was
+    always the **Gate detail card** — the page header shown on a gate's own board page (breadcrumb
+    `Projects / [Project] / [Gate letter+name]`), styled in `9bbc534` as `GateDetailCard.jsx`, a
+    confirmed-distinct sibling of `ProjectDetailCard` (not the same component as `RoadmapCard`, which
+    is the clickable grid tile in the roadmap view). The `9bbc534` spec itself, read directly from this
+    doc's own section 8, only ever called `ProjectDetailCard` "collapsible" — `GateDetailCard`'s entry
+    lists visual traits only (accent stripe, tinted background, compact metadata), no collapse
+    behavior, confirming the original spec gap the user described. The earlier `TaskDetailModal`
+    decline (research-only, no code written) stands as correctly declined on its own terms — it was
+    never the real target, but reviewing it wasn't wasted: it turned up no problem worth solving there
+    either.
+    - **Built:** `GateDetailCard.jsx` made collapsible, mirroring `ProjectDetailCard`'s mechanics
+      exactly (chevron toggle, `grid-template-rows: 0fr/1fr` height transition, collapsed single line
+      showing gate-letter badge + name + progress % + icon-only Add task/Share). Own localStorage key
+      (`taskflow_gate_card_collapsed`, keyed by `gate.id`) so collapse state is independent per gate
+      and independent of the project card's. Same-file change only — `RoadmapCard.jsx`,
+      `ProjectDetailCard.jsx`, and existing CSS classes untouched, per instruction.
+    - **Two real bugs found and fixed during live verification** (not present until this feature was
+      built, both fixed same-file within `GateDetailCard.jsx`):
+      1. Switching gates via `ProjectBoard`'s nav selector swaps the `gate` prop on the same mounted
+         component instance rather than remounting it, so the `useState` lazy initializer only ran
+         once — every gate after the first silently inherited whichever gate's collapsed state had
+         been set first. Fixed with a `useEffect` keyed on `gate.id` that re-reads storage on every
+         gate switch. Verified: collapse Gate A → switch to Gate B (renders independently expanded,
+         never toggled) → switch back to A (still remembers collapsed) — all confirmed live.
+      2. At narrow widths, the collapsed row's added content (progress %, two icon buttons, chevron)
+         genuinely overlapped the absolutely-positioned Open/Closed pill — measured directly (chevron
+         box intersecting pill box). Root cause: the pre-existing `pr-24` (96px) buffer reserved for
+         the pill was already narrower than the pill's actual rendered width for the "Closed · DD Mon
+         YYYY" variant (~137px measured) — a latent gap in the original, non-collapsible card that
+         only ever went unnoticed because the title's own `truncate` silently absorbed the shortfall;
+         the new non-truncating chevron button is what exposed it as a visible collision. Fixed by
+         widening to `pr-40`, and separately hiding the collapsed pct/icons below the `sm` breakpoint
+         (matching `ProjectDetailCard`'s own established mobile-safety pattern for its mini progress
+         bar) so the always-required chevron toggle has guaranteed room at every width.
+    - **Verified live on staging**: collapse/expand toggling, per-gate independence (both directions),
+      dark mode (card background/border/text/pill/icons all correctly theme-aware, no leftover
+      light-mode colors), no horizontal overflow or pill collision at mobile width, no overlap at
+      desktop width with pct/icons visible, no console errors. 73/73 backend tests pass (unaffected —
+      frontend-only change). Security & Debug Gate: no backend/endpoint changes, no secrets in diff.
+    - Commits: `82af10a` (feature), `6b9fbc7` (gate-switch fix), `a7bf93b` (mobile-overlap fix,
+      first pass), `66c04d9` (mobile-overlap fix, root-cause pass). **Staging only, not merged to
+      main.**
+13. 🟡 **Flagged, not fixed — shared collapse-animation bug in both `ProjectDetailCard` and
+    `GateDetailCard`.** Found while verifying item 12: the `grid-template-rows: 0fr/1fr` transition
+    that both cards use doesn't actually animate/collapse when triggered by a user click — state
+    toggles correctly (`aria-expanded`, labels, and conditional content all update), but the rendered
+    height stays at full content size instead of shrinking. Confirmed this is real, not a testing
+    artifact: a fresh mount already in the collapsed state renders correctly at 0 height; it's
+    specifically the *animated transition* between states that fails to complete, even after a full
+    real-time second well past the 300ms transition duration. Confirmed the CSS technique itself isn't
+    broken (an isolated scratch `0fr` grid element outside the app collapses correctly in the same
+    browser) — something about the two cards' specific DOM/CSS context blocks the transition from
+    completing. This is a **pre-existing bug in `ProjectDetailCard`**, live in production since
+    `9bbc534`, which this doc had already flagged as "pending visual verification" — a verification
+    that evidently never happened before shipping, until this investigation caught it. `GateDetailCard`
+    inherits it faithfully since it mirrors the same mechanics by design (explicit instruction: ship
+    matching behavior, do not fix the transition mechanism, to preserve sibling parity — flag
+    separately instead). **Next fix should touch both components together in one pass**, not patched
+    per-component, since they need to stay siblings. Not a regression from anything in this session —
+    it was always there, just never actually seen.
 
 ### Future (Phase 2+)
 - PAT auth role attachment
@@ -1356,7 +1413,8 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 - Auto-deploys on push to `main` (`prisma migrate deploy` preDeploy)
 
 ### Staging (Railway + Netlify)
-- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `06f5ea3`, 14 migrations
+- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `66c04d9`, 14 migrations (this round
+  was frontend-only; backend unchanged since `06f5ea3` but redeployed anyway, matching current `HEAD`)
 - Frontend: https://staging--muidemakztaskflow.netlify.app
 - **`staging` is ahead of `main` as of 20 Jul 2026** by exactly one commit: `20dc416` (docs-only,
   deliberately never merged). Code parity restored as of the fourth production merge — verified via
