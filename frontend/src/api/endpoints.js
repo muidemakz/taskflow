@@ -18,13 +18,6 @@ export const projectsApi = {
   createTask: (id, payload) => api.post(`/api/projects/${id}/tasks`, payload)
 };
 
-export const groupsApi = {
-  update: (id, payload) => api.patch(`/api/groups/${id}`, payload),
-  remove: (id) => api.delete(`/api/groups/${id}`),
-  ungroup: (id) => api.post(`/api/groups/${id}/ungroup`),
-  merge: (payload) => api.post('/api/groups/merge', payload)
-};
-
 export const tasksApi = {
   update: (id, payload) => api.patch(`/api/tasks/${id}`, payload),
   remove: (id) => api.delete(`/api/tasks/${id}`),

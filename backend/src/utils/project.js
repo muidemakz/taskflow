@@ -11,6 +11,11 @@ export const projectInclude = {
   statuses: { select: { id: true, countsAsDone: true } }
 };
 
+// Read-only now: every write site (group/task create, task move/delete,
+// project patch) was removed in the Contract-phase code track once nothing
+// in the modern UI read Project.order anymore. Kept only so toClientProject
+// can still shape whatever value existing rows already have -- the column
+// itself is untouched, dropping it is a separate data-track decision.
 export function orderArray(project) {
   if (Array.isArray(project.order)) return project.order;
   try {
@@ -19,10 +24,6 @@ export function orderArray(project) {
   } catch {
     return [];
   }
-}
-
-export function serializeOrder(order) {
-  return Array.isArray(order) ? order : [];
 }
 
 // customId (TID) is deliberately excluded here: it is generated once at
@@ -69,10 +70,4 @@ export function taskCounts(project) {
   const doneStatusIds = new Set((project.statuses || []).filter((s) => s.countsAsDone).map((s) => s.id));
   const done = tasks.filter((task) => task.statusId && doneStatusIds.has(task.statusId)).length;
   return { total: tasks.length, done, pct: tasks.length ? Math.round((done / tasks.length) * 100) : 0 };
-}
-
-export function defaultOrder(project) {
-  const taskKeys = (project.tasks || []).map((task) => `task:${task.id}`);
-  const groupKeys = (project.groups || []).map((group) => `group:${group.id}`);
-  return [...taskKeys, ...groupKeys];
 }

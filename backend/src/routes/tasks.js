@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
-import { normalizeTaskInput, orderArray, projectInclude, serializeOrder, taskCounts, toClientProject } from '../utils/project.js';
+import { normalizeTaskInput, projectInclude, taskCounts, toClientProject } from '../utils/project.js';
 
 const router = Router();
 
@@ -45,10 +45,6 @@ router.delete('/:tid', async (req, res, next) => {
     const task = await taskForUser(req.params.tid, req.auth.sub);
     if (!task) return res.status(404).json({ message: 'Task not found' });
     await prisma.task.update({ where: { id: task.id }, data: { deletedAt: new Date() } });
-    await prisma.project.update({
-      where: { id: task.projectId },
-      data: { order: serializeOrder(orderArray(task.project).filter((key) => key !== `task:${task.id}`)) }
-    });
     res.json(await projectPayload(task.projectId, req.auth.sub));
   } catch (error) {
     next(error);
@@ -64,9 +60,6 @@ router.patch('/:tid/move', async (req, res, next) => {
       return res.status(400).json({ message: 'Group does not belong to this project' });
     }
     await prisma.task.update({ where: { id: task.id }, data: { groupId } });
-    const currentOrder = orderArray(task.project);
-    const order = groupId ? currentOrder.filter((key) => key !== `task:${task.id}`) : [`task:${task.id}`, ...currentOrder.filter((key) => key !== `task:${task.id}`)];
-    await prisma.project.update({ where: { id: task.projectId }, data: { order: serializeOrder(order) } });
     res.json(await projectPayload(task.projectId, req.auth.sub));
   } catch (error) {
     next(error);
