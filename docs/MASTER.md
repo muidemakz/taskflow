@@ -1,7 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 19 July 2026 (Group→Tag production dry-run re-confirmed live — corrected a
-misattribution from the 18 Jul investigation, no mutation)
+**Last Updated:** 19 July 2026 (Group→Tag migration **executed on production** — Fortnoto's 38
+groups → 38 tags, 279 task-tag links, verified in the live app UI; no code changed)
 **Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5dec9ca` (28 commits, 18 Jul
 2026, verified healthy, code-only, zero new migrations). **11 further commits now sit on `staging`
 ahead of `main`** (`5dec9ca..843acb3`, not yet merged — see "Current Open Items" below for the full
@@ -10,11 +10,12 @@ revision, the full Notes feature (migration `13_add_notes`, the 14th migration d
 composer bug fix, the GateCard/UnscheduledCard→RoadmapCard unification, a mobile Modal `dvh`/
 safe-area fix, and Trash's extension to cover deleted NoteChats. TID backfill complete on **both**
 environments (staging 328/328, production 370/370, including the one Fortnoto task already gated
-under "Gate 1" rather than Unscheduled). Group→Tag migration **investigated on both** environments
-(staging 35 groups/35 tags/100% overlap; production Fortnoto 38 groups/**0 tags of its own** —
-the "6 tags" from the original 18 Jul report belong to Valideity, a separate project, corrected
-19 Jul) but **not mutated on either**. File upload capability investigated and **PARKED** pending
-the user's provider decision. `ENABLE_AI_GENERATION` confirmed unchanged (still `false`) throughout.
+under "Gate 1" rather than Unscheduled). **Group→Tag migration is now COMPLETE on production**
+(Fortnoto: 38 groups → 38 tags created, 279/279 tasks linked, 0 deviation from the re-confirmed
+dry-run, verified live in the app UI) — **staging is still pending** its own separate go-ahead
+(it was already 35/35/100% matched at investigation time, untouched by this run). File upload
+capability investigated and **PARKED** pending the user's provider decision.
+`ENABLE_AI_GENERATION` confirmed unchanged (still `false`) throughout.
 Backend: 68 tests, 9 files, all passing.
 **Repository:** taskflow (main = production, staging = development)
 
@@ -63,7 +64,7 @@ feature and the full Valideity dataset.
 ### Production Database (verified 17 Jul 2026, read-only Prisma query; TID/status counts re-verified 18 Jul 2026 post-merge and post-backfill)
 - **Users:** 3 — `admin@taskflow.app`, `demo@taskflow.app`, `testuser123@example.com`
 - **Projects:** 2 (non-deleted)
-  - **Fortnoto** — 279 tasks — owned by **admin@taskflow.app** (moved from demo). Board statuses backfilled 17 Jul 2026 (see data-mutation note below). Also has 38 Groups and (newly discovered 18 Jul) one real Gate ("Gate 1") with `hasRoadmap: true` and one task placed in it — evidently a prior isolated test of the roadmap feature directly on production, unrelated to this session's work.
+  - **Fortnoto** — 279 tasks — owned by **admin@taskflow.app** (moved from demo). Board statuses backfilled 17 Jul 2026 (see data-mutation note below). Also has 38 Groups and (newly discovered 18 Jul) one real Gate ("Gate 1") with `hasRoadmap: true` and one task placed in it — evidently a prior isolated test of the roadmap feature directly on production, unrelated to this session's work. **38 Tags added 19 Jul 2026** (one per group, identically named, 279/279 tasks linked — see the "Group → Tag Migration" section below for the full run detail); Groups themselves were left untouched by this migration, so the Groups view still works exactly as before.
   - **Valideity** — 91 tasks (all 91 have customId), 6 gates, docs/prompts, Gate A closed — owned by **admin@taskflow.app**
 - **customId / TID:** ✅ **100% backfilled on production as of 18 Jul 2026** — Fortnoto 279/279 (278 as `U1.1…U1.278`, 1 as `A1.1` for the task in "Gate 1" above), Valideity 91/91 (unchanged, already complete). Verified idempotent (second run assigned 0) and duplicate-free.
 - **Task descriptions:** Valideity enhanced comments (acceptance criteria, effort, priority, dependencies) applied
@@ -1032,10 +1033,9 @@ immediately below this one.
 ### Current Open Items (as of 19 Jul 2026)
 1. 🔴 **Decide on production `JWT_SECRET` rotation** — invalidates active prod sessions, left for
    the user to schedule (audit finding #5, unchanged status since 17 Jul).
-2. 🟡 **Group → Tag migration for contract phase** — investigated on both environments and
-   re-confirmed live 19 Jul (staging 35 groups/35 tags/100% overlap; production Fortnoto 38
-   groups/0 tags of its own, guaranteed collision-free), not yet mutated on either. Full dry-run
-   with per-group task-count mapping is in the dedicated section below. Awaiting go-ahead.
+2. ✅ **Group → Tag migration — production DONE** (19 Jul: Fortnoto 38 groups → 38 tags, 279/279
+   tasks linked, verified live in the app UI, zero deviation from the dry-run). 🟡 **Staging still
+   pending** its own separate go-ahead (35 groups/35 tags/100% overlap, untouched by this run).
 3. 🟡 **File upload capability (Tasks + Notes)** — PARKED, investigation delivered (Railway Buckets
    recommended, R2 as fallback), awaiting the user's provider decision before any code is written.
 4. ⏳ **11 staging commits not yet merged to `main`** (`5dec9ca..843acb3`) — Account modals, nav
@@ -1123,25 +1123,69 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 
 ---
 
-## Pending: Group → Tag Migration for Contract Phase (re-confirmed 19 Jul 2026)
+## Group → Tag Migration for Contract Phase (production migrated 19 Jul 2026)
 
-**Status:** ✅ INVESTIGATED on both environments, NOT YET MUTATED anywhere (no tags created, no
-migration run — read-only investigation only, per explicit instruction at the time).
-- **Staging:** 35 groups → 35 tags, **100% overlap**, 221 grouped tasks, 7 ungrouped left as-is.
-- **Production Fortnoto (re-confirmed live 19 Jul 2026, via `investigateGroupToTagMigration.js` run
-  fresh over Railway SSH — not the 18 Jul numbers restated from memory):** **38 groups, 279 grouped
-  tasks, 0 ungrouped tasks (100% coverage), and Fortnoto has ZERO tags of its own** (0 total,
-  including 0 soft-deleted) — every one of the 38 proposed tag creates is guaranteed
-  collision-free, not just "0% overlap" against some other pool.
-- **Correction to the 18 Jul entry this replaces:** it previously said "Fortnoto has 38 groups vs. 6
-  existing tags, 0% overlap." **The "6 existing tags" were never Fortnoto's — they belong to
-  Valideity** (`moat`, `content`, `legal`, `brand`, `ops`, `assistive`), a structurally separate
-  project (`Tag.projectId` is a hard FK; tags cannot be shared across projects). Comparing Fortnoto's
-  groups against Valideity's tags was a category error carried from the original 18 Jul commit
-  message through the 19 Jul docs-audit pass — re-verified directly against production this time
-  rather than restated. The corrected, simpler fact: Fortnoto's own tag pool is empty, so there is
-  nothing to overlap with at all.
-- **Full proposed mapping (all 38 groups → identically-named tags, all new creates):**
+**Status:** ✅ **PRODUCTION MIGRATED AND VERIFIED** — 🟡 **staging still pending its own go-ahead**
+(staging was already 35/35/100% matched at investigation time; no migration script has been run
+there, only Fortnoto/production was explicitly approved and executed this pass).
+
+### Production Fortnoto — ✅ COMPLETE, 19 Jul 2026
+
+Approved and run against **production only**, via `migrateGroupsToTags.mjs` (temporary, piped over
+Railway SSH stdin — never written to the container's disk; deleted immediately after each run,
+confirmed via `ls` returning "No such file or directory").
+
+**Design — read-verify-write, not a blind bulk insert from the dry-run:** the script re-queried
+Fortnoto's live groups/tasks/tags at execution time and made every create/link decision from that
+live read, not from the dry-run's cached output. Idempotent by construction: reuses an existing tag
+by exact name instead of erroring on `@@unique([projectId, name])`, and `TaskTag.createMany` uses
+`skipDuplicates` (TaskTag's PK is `[taskId, tagId]`) so a re-run links nothing twice.
+
+**Live pre-state matched the dry-run exactly** (38 groups, 0 existing tags, 279 grouped tasks) —
+confirmed before any write occurred.
+
+**Result — zero deviation from the confirmed dry-run:**
+
+| | Dry-run (re-confirmed) | Actual result | Match |
+|---|---|---|---|
+| Groups processed | 38 | 38 | ✅ |
+| Tags created | 38 | 38 | ✅ |
+| Tags reused | 0 | 0 | ✅ |
+| Task-tag links created | 279 | 279 | ✅ |
+| Tasks left unlinked | 0 | 0 | ✅ |
+
+Per-group task counts matched the dry-run mapping 1:1 across all 38 groups (full JSON result with
+every group→tag→task-count triple captured in the run log; not reproduced in full here since it's
+identical to the dry-run table already on record from the 19 Jul re-confirmation).
+
+**Idempotency verified by design, not just claim:** re-ran the identical script twice more
+immediately after — both times reported `Tags created: 0, Tags reused: 38, Total task-tag links
+created this run: 0`. Confirms re-running is a safe no-op.
+
+**Verified in the app UI on production (not just the DB)** — logged into
+`https://muidemakztaskflow.netlify.app` as the real admin user and spot-checked three tag filters
+against Fortnoto's whole-project board, spanning the smallest, largest, and a mid-size group:
+- "Coupons & Discounts" → filtered to exactly **1** task (`U1.113`) — matches `linked 1/1`
+- "Cross-Platform / Global" → filtered to exactly **21** tasks — matches `linked 21/21`
+- "Tickets / Events" → filtered to exactly **18** tasks — matches `linked 18/18`
+
+Project card also now shows "38 tags" in its metadata line, and the tag filter dropdown lists all
+38 names exactly matching the proposed mapping. No console errors during verification.
+
+**Rollback path (not used, kept on record):** every created tag ID was captured in the run's
+"ROLLBACK MANIFEST" output. Since `TaskTag.tagId` has `onDelete: Cascade`, hard-deleting those 38
+specific tag IDs would cascade-remove their TaskTag rows automatically and restore the exact
+pre-migration state — Task and Group rows were never touched by this migration (only Tag and
+TaskTag rows were created), so nothing else is at risk from a rollback.
+
+**Nothing else was touched:** no changes to Task, Group, or any other model; no application code
+changed; no migration file added (this is a data operation on existing tables, not a schema change).
+
+### Staging — ⏳ still pending, unchanged from the original investigation
+35 groups → 35 tags, **100% overlap**, 221 grouped tasks, 7 ungrouped left as-is. No migration
+script has been run against staging. Awaiting a separate go-ahead before staging is touched.
+
+### Full production mapping (all 38 groups → identically-named tags, all created)
 
   | Group | Tasks | | Group | Tasks |
   |---|---|---|---|---|
@@ -1165,9 +1209,6 @@ migration run — read-only investigation only, per explicit instruction at the 
   | Customer Management | 3 | | Venda Designs | 11 |
   | Coupons & Discounts | 1 | | | |
   | Wallet | 6 | | **Total: 38 groups, 279 tasks** | |
-
-- **Approach:** Single idempotent script to run on both environments; handles both cases (tags exist or need creation) — production's case is now confirmed to be pure create-from-scratch, staging's is pure already-matched.
-- **Scheduled:** After Commit 1 completion (filter unification, breadcrumbs, page width) — not yet started; awaiting go-ahead to run the actual mutation on either environment.
 
 ---
 
@@ -1223,8 +1264,9 @@ Corrected against the actual repo and live databases:
 **Active Maintainer:** Claude (via Claude Code sessions)
 **Production Status:** LIVE & STABLE (`5dec9ca`)
 **Next Review:** After the user reviews the 11 unmerged staging commits (`5dec9ca..843acb3`) and
-decides on merge timing, plus the three open decisions tracked under "Current Open Items" above
-(`JWT_SECRET` rotation, Group→Tag migration, file-upload provider choice)
+decides on merge timing, plus the remaining open decisions tracked under "Current Open Items" above
+(`JWT_SECRET` rotation, staging's Group→Tag migration — production's is now done, file-upload
+provider choice)
 
 ---
 
