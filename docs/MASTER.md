@@ -1,15 +1,20 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 20 July 2026 (third production merge — Task.status drift fix + both Admin Users
-double-count fixes — cherry-picked to `main` and deployed; staging's paused Contract-phase code-track
-edits are NOT part of this merge, still uncommitted on `staging`)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5761011` (20 Jul 2026,
-verified healthy). This third merge shipped exactly three cherry-picked commits (not a fast-forward —
-`staging` also carries one docs-only commit, `20dc416`, deliberately left off `main`): the
-`Task.status` drift fix (Dashboard/RoadmapOverview/Admin "done" counts now derive from
+**Last Updated:** 20 July 2026 (fourth production merge — Contract-phase code track, the orphaned
+`/legacy` checklist view and its dead Group-CRUD backend routes, cherry-picked to `main` and deployed;
+zero schema changes)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5aaa94b` (20 Jul 2026,
+verified healthy). This fourth merge cherry-picked exactly one commit (`06f5ea3`, not a fast-forward):
+the Contract-phase code track — deleted `ProjectDetail.jsx`/`GroupCard.jsx`/root `TaskCard.jsx` and
+the `/projects/:id/legacy` route, deleted `backend/src/routes/groups.js` and its 4 endpoints (nothing
+in the modern UI called them), stripped `Project.order` write sites from `projects.js`/`tasks.js`/
+`utils/project.js`. Group model, `Task.status` column, and `Project.order` column are all still in
+the schema, untouched — code-only. See "Fourth production merge" below for full verification detail.
+The third merge cherry-picked three commits (`bb69606`, `b13da77`, `cb0d4b9` → old `main` tip
+`5761011`): the `Task.status` drift fix (Dashboard/RoadmapOverview/Admin "done" counts now derive from
 `statusId → Status.countsAsDone` instead of the stale legacy column) and two Admin Users list
 double-count fixes (Tasks column was double-counting grouped tasks; Projects column was counting
-soft-deleted projects). See "Third production merge" below for full verification detail. The second
+soft-deleted projects). See "Third production merge" below for that detail. The second
 merge (`5dec9ca → 5a2528c`) shipped: Account modals, the Trash→Account nav restructure and its later
 modal→page revision, the full Notes feature (migration `13_add_notes`, the 14th migration directory,
 additive-only DDL), the Notes composer fix, the GateCard/UnscheduledCard→RoadmapCard unification, the
@@ -66,7 +71,9 @@ feature and the full Valideity dataset.
 - ✅ Task modal in-place fix (My Tasks / Search) — DONE, `5628ba1`
 - ✅ Doc markdown XSS — sanitized with DOMPurify, `5892373`
 - ✅ UI overhaul: detail-card pattern — breadcrumb + collapsible project card + gate card with accent stripe + My Tasks filters, `9bbc534`, **pending visual verification**
-- 🟡 Contract phase (optional cleanup) — not started
+- 🟡 Contract phase — **code track DONE and in production** (4th merge, below); **data track (drop
+  Group table / Task.status column / Project.order column) still not started**, gated on the Railway
+  backup-schedule confirmation
 - ✅ **Resolved 19 Jul 2026:** staging and production `JWT_SECRET` rotated to distinct values (see Security section)
 
 **Production merge (2nd):** ✅ DONE 20 Jul 2026 — all 15 commits through `5a2528c` merged
@@ -74,17 +81,20 @@ feature and the full Valideity dataset.
 
 **Production merge (3rd):** ✅ DONE 20 Jul 2026 — 3 commits cherry-picked onto `main`
 (`bb69606`, `b13da77`, `cb0d4b9` → `main`@`5761011`), **not** a fast-forward. One further commit on
-`staging` ahead of the old `main` (`20dc416`, docs-only) was deliberately left off. Staging also still
-carries uncommitted, paused Contract-phase code-track edits (stripping `Project.order` writes) that
-were stashed during this merge and restored afterward — **not part of this merge, not on `main`.**
-**`staging` and `main` are no longer at full parity** — staging is ahead by 1 docs commit plus the
-uncommitted paused edits.
+`staging` ahead of the old `main` (`20dc416`, docs-only) was deliberately left off.
+
+**Production merge (4th):** ✅ DONE 20 Jul 2026 — 1 commit cherry-picked onto `main`
+(`06f5ea3` → `main`@`5aaa94b`), **not** a fast-forward. The Contract-phase code track: deleted the
+orphaned `/legacy` view and its Group-CRUD backend routes, stripped `Project.order` writes. Zero
+schema changes. **`staging` and `main` are now at code parity** — the one docs-only commit
+(`20dc416`) intentionally left off `main` in the 3rd merge is still the only commit staging carries
+that main doesn't, and it's docs, not code.
 
 ---
 
 ## Production State (Current)
 
-**Commit:** `5761011` (main HEAD; 3 commits cherry-picked from staging 20 Jul 2026, deployed via Railway + Netlify)
+**Commit:** `5aaa94b` (main HEAD; 1 commit cherry-picked from staging 20 Jul 2026, deployed via Railway + Netlify)
 **Migrations:** 14 migration directories, `0_init` … `13_add_notes` (latest), all applied cleanly —
 `13_add_notes` (`NoteChat`/`NoteMessage` tables, additive-only DDL, no data) applied automatically via
 Railway's `prisma migrate deploy` preDeploy step; confirmed via `prisma migrate status`: "14 migrations
@@ -683,6 +693,46 @@ authorized) — `main` fast-forwarded `9f72056 → 5dec9ca`**
   (`20dc416`) plus the still-paused, uncommitted Contract-phase code-track edits — this is expected
   and intentional, not a gap to close.
 
+**Fourth production merge — 20 Jul 2026 — 1 commit cherry-picked onto `main` (`5aaa94b`)**
+
+- The Contract-phase code track (`06f5ea3` on `staging`) had by this point been resumed, finished, and
+  verified live on staging (see the "Contract Phase" section elsewhere in this doc for the staging-side
+  detail). `git log main..staging` showed staging still one docs-only commit ahead (`20dc416`, already
+  deliberately excluded from the 3rd merge) plus this one code commit — cherry-picked just `06f5ea3`,
+  same reasoning as the 3rd merge: the user named the exact commit to ship, not a fast-forward of
+  everything on staging.
+- Confirmed `main`'s local branch (the sibling `taskflow` worktree) matched `origin/main` exactly
+  before starting. Cherry-pick applied clean, zero conflicts. Diffed every touched file between the
+  new `main` HEAD and `staging`, plus checked the four deleted files no longer exist on `main` —
+  **empty diff, files confirmed gone**, byte-for-byte match with staging.
+- 73/73 backend tests passing on the merge-commit tree. Frontend build initially failed in the `main`
+  worktree with `Rollup failed to resolve import "marked"` — a stale `node_modules` in that checkout
+  (missing a dependency added for the Notes markdown feature in the 2nd merge), unrelated to this
+  commit's diff. `npm install` in that worktree resolved it; build then succeeded clean.
+- `git push origin main` → `5761011..5aaa94b main -> main`. Railway auto-deployed promptly this time
+  (unlike the 3rd merge's staging deploy, which was unusually delayed) — polled through BUILDING →
+  DEPLOYING → **SUCCESS**.
+- **Post-deploy live verification against production**
+  (https://muidemakztaskflow.netlify.app, logged in as the real admin user):
+  - Confirmed via Railway SSH directly on the production container: `backend/src/routes/groups.js`
+    absent from the deployed filesystem.
+  - **Dashboard:** Fortnoto 237/279 done (85%), Valideity 18/91 done (20%) — unchanged from pre-merge,
+    confirming the refactor didn't touch runtime behavior.
+  - **Board view** (Fortnoto): renders correctly, 38 tags, columns populated as before.
+  - **RoadmapOverview** (Fortnoto): `ProjectDetailCard` header renders correctly — 237/279 done (85%),
+    38 tags, 1 gate.
+  - **`/projects/:id/legacy`:** navigating there now redirects cleanly to `/dashboard` (via the
+    catch-all route) — confirmed via `window.location.href` post-navigation, no error page, no crash.
+  - **`/api/groups/*`:** a direct `fetch` against `PATCH /api/groups/anything` on the production API
+    returned **404**, confirming the route mount is fully gone on production too.
+  - No console errors during any of the above checks.
+- No data, seed, ownership, or schema mutations in this merge — pure code deletion/refactor, no
+  migrations, Group model and `Task.status`/`Project.order` columns untouched in the schema.
+- **Production verified healthy.** `staging` and `main` are back to code parity — only the pre-existing
+  docs-only `20dc416` commit remains staging-only. **Contract-phase code track is now fully shipped to
+  production.** Only the data track (Group table / Task.status column / Project.order column drops)
+  remains, still gated on the Railway backup-schedule confirmation the user is checking independently.
+
 **CHUNK D + E (✅ COMPLETE, STAGING) — two task-modal bugs — `ec79d78`**
 
 1. **Status dropdown excluded empty statuses.** Root cause: `ProjectBoard.jsx`'s gate-scoped
@@ -1242,13 +1292,20 @@ immediately below this one.
     `C:\Users\Excellentm\Documents\Fortnoto\taskflow-backups\taskflow-production-20260720-182937.dump`.
     Separately, the user still needs to check Railway's dashboard Backups tab directly for any
     existing automated schedule — this pg_dump does not confirm or rule that out either way.
-11. 🟡 **Contract-phase code track — PAUSED, mid-edit, staging only.** Started 20 Jul 2026 (strip
-    `Project.order` writes from `projects.js`/`tasks.js`/`utils/project.js`, leaving the column and its
-    read path intact), interrupted before the frontend/route-deletion steps (deleting
-    `ProjectDetail.jsx`/`GroupCard.jsx`/root `TaskCard.jsx`, `groups.js`, and their references) began.
-    Uncommitted edits currently sit in staging's working tree (stashed and restored intact around the
-    third production merge above, to keep them isolated from it). Not resumed yet — awaiting the
-    user's go-ahead.
+11. ✅ **RESOLVED 20 Jul 2026 — Contract-phase code track, complete and in production.** Resumed
+    (basis: the manual pg_dump above was judged sufficient for a code-only, additive-safe, zero-schema
+    change — explicitly NOT sufficient basis for the data track, which stays gated on the Railway
+    backup-schedule question). Finished stripping `Project.order` writes, removed the now-unused
+    `defaultOrder()`, deleted `ProjectDetail.jsx`/`GroupCard.jsx`/root `TaskCard.jsx` and the
+    `/projects/:id/legacy` route (re-grepped after the frontend deletion to confirm `groups.js`'s 4
+    endpoints truly had zero remaining callers before deleting them), deleted
+    `backend/src/routes/groups.js` and its `index.js` mount, removed `groupsApi` and its 4 dead
+    `projectStore.js` methods. `POST /:id/groups` (create) stays — separate endpoint in `projects.js`,
+    still used by the modern UI. Committed `06f5ea3` on staging, verified live there (board/roadmap
+    unaffected, `/legacy` redirects, `/api/groups/*` 404s), then cherry-picked to `main`@`5aaa94b` and
+    verified live on production identically — see "Fourth production merge" above. **Data track (Group
+    table / Task.status column / Project.order column drops) is the only Contract-phase work
+    remaining, still not started.**
 
 ### Future (Phase 2+)
 - PAT auth role attachment
@@ -1287,16 +1344,15 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 ## Deployment & Environments
 
 ### Production (Railway + Netlify)
-- Backend: https://taskflow-production-d9c0.up.railway.app — commit `5761011`, 14 migrations
+- Backend: https://taskflow-production-d9c0.up.railway.app — commit `5aaa94b`, 14 migrations
 - Auto-deploys on push to `main` (`prisma migrate deploy` preDeploy)
 
 ### Staging (Railway + Netlify)
-- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `cb0d4b9`, 14 migrations
+- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `06f5ea3`, 14 migrations
 - Frontend: https://staging--muidemakztaskflow.netlify.app
-- **`staging` is ahead of `main` as of 20 Jul 2026**: one docs-only commit (`20dc416`) deliberately
-  not merged, plus uncommitted, paused Contract-phase code-track edits in the working tree (not
-  committed on either branch). Not a parity gap in the code sense — everything shipped to `main` this
-  round matches `staging` exactly for the files it touched (verified via empty diff).
+- **`staging` is ahead of `main` as of 20 Jul 2026** by exactly one commit: `20dc416` (docs-only,
+  deliberately never merged). Code parity restored as of the fourth production merge — verified via
+  empty diff on every file the Contract-phase code track touched.
 
 ### Local Development
 - `npm run dev` frontend (Vite) + backend; `.env.local` DATABASE_URL. Local dev frontend points at the
@@ -1559,8 +1615,8 @@ Corrected against the actual repo and live databases:
 
 **Owner:** User
 **Active Maintainer:** Claude (via Claude Code sessions)
-**Production Status:** LIVE & STABLE (`5761011`) — `staging` ahead by one docs-only commit
-(`20dc416`) plus uncommitted, paused Contract-phase edits; not a code parity gap for anything shipped
+**Production Status:** LIVE & STABLE (`5aaa94b`) — `staging` ahead by exactly one docs-only commit
+(`20dc416`); code parity restored as of the fourth production merge
 **Next Review:** Remaining open decisions tracked under "Current Open Items" above: staging's own
 Group→Tag migration (production's is done), and the file-upload provider choice. `JWT_SECRET`
 rotation and the second production merge are both now complete.
