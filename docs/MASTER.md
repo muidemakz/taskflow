@@ -1,8 +1,7 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 19 July 2026 (documentation audit — corrected stale test counts/commit hashes,
-logged the Group→Tag production findings and the file-upload investigation, refreshed the open-items
-list; no application code changed)
+**Last Updated:** 19 July 2026 (Group→Tag production dry-run re-confirmed live — corrected a
+misattribution from the 18 Jul investigation, no mutation)
 **Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5dec9ca` (28 commits, 18 Jul
 2026, verified healthy, code-only, zero new migrations). **11 further commits now sit on `staging`
 ahead of `main`** (`5dec9ca..843acb3`, not yet merged — see "Current Open Items" below for the full
@@ -12,9 +11,11 @@ composer bug fix, the GateCard/UnscheduledCard→RoadmapCard unification, a mobi
 safe-area fix, and Trash's extension to cover deleted NoteChats. TID backfill complete on **both**
 environments (staging 328/328, production 370/370, including the one Fortnoto task already gated
 under "Gate 1" rather than Unscheduled). Group→Tag migration **investigated on both** environments
-(staging 35/35/100%, production 38 groups/6 tags/0% overlap) but **not mutated on either**. File
-upload capability investigated and **PARKED** pending the user's provider decision. `ENABLE_AI_GENERATION`
-confirmed unchanged (still `false`) throughout. Backend: 68 tests, 9 files, all passing.
+(staging 35 groups/35 tags/100% overlap; production Fortnoto 38 groups/**0 tags of its own** —
+the "6 tags" from the original 18 Jul report belong to Valideity, a separate project, corrected
+19 Jul) but **not mutated on either**. File upload capability investigated and **PARKED** pending
+the user's provider decision. `ENABLE_AI_GENERATION` confirmed unchanged (still `false`) throughout.
+Backend: 68 tests, 9 files, all passing.
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -1031,8 +1032,10 @@ immediately below this one.
 ### Current Open Items (as of 19 Jul 2026)
 1. 🔴 **Decide on production `JWT_SECRET` rotation** — invalidates active prod sessions, left for
    the user to schedule (audit finding #5, unchanged status since 17 Jul).
-2. 🟡 **Group → Tag migration for contract phase** — investigated on both environments (staging
-   35/35/100%, production 38 groups/6 tags/0% overlap), not yet mutated on either. Awaiting go-ahead.
+2. 🟡 **Group → Tag migration for contract phase** — investigated on both environments and
+   re-confirmed live 19 Jul (staging 35 groups/35 tags/100% overlap; production Fortnoto 38
+   groups/0 tags of its own, guaranteed collision-free), not yet mutated on either. Full dry-run
+   with per-group task-count mapping is in the dedicated section below. Awaiting go-ahead.
 3. 🟡 **File upload capability (Tasks + Notes)** — PARKED, investigation delivered (Railway Buckets
    recommended, R2 as fallback), awaiting the user's provider decision before any code is written.
 4. ⏳ **11 staging commits not yet merged to `main`** (`5dec9ca..843acb3`) — Account modals, nav
@@ -1120,17 +1123,50 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 
 ---
 
-## Pending: Group → Tag Migration for Contract Phase (updated 19 Jul 2026)
+## Pending: Group → Tag Migration for Contract Phase (re-confirmed 19 Jul 2026)
 
 **Status:** ✅ INVESTIGATED on both environments, NOT YET MUTATED anywhere (no tags created, no
 migration run — read-only investigation only, per explicit instruction at the time).
 - **Staging:** 35 groups → 35 tags, **100% overlap**, 221 grouped tasks, 7 ungrouped left as-is.
-- **Production (investigated 18 Jul 2026, STEP 4a):** Fortnoto has **38 groups vs. 6 existing tags,
-  0% overlap** — none of the 6 tags match any of the 38 groups by name. This is materially
-  different from staging's clean 35/35 match, so the eventual migration script cannot assume
-  "tags already exist and just need linking" as its only case — it needs to handle
-  create-from-scratch for production's groups, not just the already-matched case staging has.
-- **Approach:** Single idempotent script to run on both environments; handles both cases (tags exist or need creation).
+- **Production Fortnoto (re-confirmed live 19 Jul 2026, via `investigateGroupToTagMigration.js` run
+  fresh over Railway SSH — not the 18 Jul numbers restated from memory):** **38 groups, 279 grouped
+  tasks, 0 ungrouped tasks (100% coverage), and Fortnoto has ZERO tags of its own** (0 total,
+  including 0 soft-deleted) — every one of the 38 proposed tag creates is guaranteed
+  collision-free, not just "0% overlap" against some other pool.
+- **Correction to the 18 Jul entry this replaces:** it previously said "Fortnoto has 38 groups vs. 6
+  existing tags, 0% overlap." **The "6 existing tags" were never Fortnoto's — they belong to
+  Valideity** (`moat`, `content`, `legal`, `brand`, `ops`, `assistive`), a structurally separate
+  project (`Tag.projectId` is a hard FK; tags cannot be shared across projects). Comparing Fortnoto's
+  groups against Valideity's tags was a category error carried from the original 18 Jul commit
+  message through the 19 Jul docs-audit pass — re-verified directly against production this time
+  rather than restated. The corrected, simpler fact: Fortnoto's own tag pool is empty, so there is
+  nothing to overlap with at all.
+- **Full proposed mapping (all 38 groups → identically-named tags, all new creates):**
+
+  | Group | Tasks | | Group | Tasks |
+  |---|---|---|---|---|
+  | Venda Logo | 1 | | Withdrawals | 2 |
+  | Marketplace | 2 | | Miscellanous | 11 |
+  | Access, Authentication & Onboarding | 5 | | Affiliate — Model & Access | 6 |
+  | Courses (curriculum, LMS integration) | 14 | | Affiliate — Creator/Business Controls | 8 |
+  | Supported Product Types | 4 | | Creator Platform Settings | 6 |
+  | Digital Products Checklist | 15 | | Integrations | 2 |
+  | Masterclass / Webinar | 6 | | Public Fortnoto Website | 2 |
+  | Tickets / Events | 18 | | Logistics — Delivery Models — Pricing Clarity — Admin | 16 |
+  | Service Products | 3 | | Shortlet — Apartment Creation — Booking — Custom Domain & Bundles | 14 |
+  | Subscription Products | 6 | | Business Booking | 3 |
+  | Bundle Products | 3 | | Regular Store (Admin) | 6 |
+  | Show Love / Fan Page / Seek Assistance | 5 | | Cross-Platform / Global | 21 |
+  | Content Delivery & Email | 2 | | Recurring Themes | 12 |
+  | Storepage (Public-Facing Creator Shop) | 9 | | Key Decisions Made | 18 |
+  | Buyer / Customer Portal | 6 | | Email Templates | 2 |
+  | Creator LMS (inside Course/Masterclass) | 4 | | Marketing Studio / AI Business Intelligence | 18 |
+  | Sales Tracking | 5 | | Internal Management System | 3 |
+  | Customer Management | 3 | | Venda Designs | 11 |
+  | Coupons & Discounts | 1 | | | |
+  | Wallet | 6 | | **Total: 38 groups, 279 tasks** | |
+
+- **Approach:** Single idempotent script to run on both environments; handles both cases (tags exist or need creation) — production's case is now confirmed to be pure create-from-scratch, staging's is pure already-matched.
 - **Scheduled:** After Commit 1 completion (filter unification, breadcrumbs, page width) — not yet started; awaiting go-ahead to run the actual mutation on either environment.
 
 ---
