@@ -92,7 +92,12 @@ router.get('/users', async (req, res, next) => {
         orderBy: { createdAt: 'desc' },
         include: {
           _count: { select: { projects: true } },
-          projects: { include: { groups: { include: { tasks: true } }, tasks: true } }
+          // Reuse the shared include (same as /users/:id below) instead of a
+          // separate ad-hoc shape -- the ad-hoc version omitted groupId: null
+          // on the root tasks relation and deletedAt: null everywhere, so
+          // every grouped task was counted twice (once as a "root" task,
+          // again inside its group) and soft-deleted rows were included.
+          projects: { include: projectInclude }
         }
       })
     ]);
