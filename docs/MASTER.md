@@ -1,22 +1,31 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 19 July 2026 (`JWT_SECRET` **rotated on both environments** to distinct values —
-security audit finding #5 CLOSED; no code changed)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5dec9ca` (28 commits, 18 Jul
-2026, verified healthy, code-only, zero new migrations). **11 further commits now sit on `staging`
-ahead of `main`** (`5dec9ca..843acb3`, not yet merged — see "Current Open Items" below for the full
-list), covering: Account modals, the Trash→Account nav restructure and its later modal→page
-revision, the full Notes feature (migration `13_add_notes`, the 14th migration directory), a Notes
-composer bug fix, the GateCard/UnscheduledCard→RoadmapCard unification, a mobile Modal `dvh`/
-safe-area fix, and Trash's extension to cover deleted NoteChats. TID backfill complete on **both**
-environments (staging 328/328, production 370/370, including the one Fortnoto task already gated
-under "Gate 1" rather than Unscheduled). Group→Tag migration is **COMPLETE on production**
+**Last Updated:** 20 July 2026 (second production merge complete — `main` fast-forwarded
+`5dec9ca → 5a2528c`, deployed, verified healthy)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5a2528c` (20 Jul 2026,
+verified healthy). **`staging` and `main` are now at full parity** — zero commit gap. This second
+merge shipped: Account modals, the Trash→Account nav restructure and its later modal→page revision,
+the full Notes feature (migration `13_add_notes`, the 14th migration directory, additive-only DDL),
+the Notes composer fix, the GateCard/UnscheduledCard→RoadmapCard unification, the mobile Modal
+`dvh`/safe-area fix, Trash's extension to cover deleted NoteChats, and the four docs-only commits
+logging the Group→Tag production migration and the JWT_SECRET rotation. TID backfill complete on
+**both** environments (staging 328/328, production 370/370, including the one Fortnoto task already
+gated under "Gate 1" rather than Unscheduled). Group→Tag migration is **COMPLETE on production**
 (Fortnoto: 38 groups → 38 tags created, 279/279 tasks linked, verified live in the app UI) — staging
 is still pending its own separate go-ahead. File upload capability investigated and **PARKED**
 pending the user's provider decision. **`JWT_SECRET` rotated 19 Jul 2026** — production and staging
-now hold distinct, freshly-generated secrets; cross-environment token validity closed and verified.
-`ENABLE_AI_GENERATION` confirmed unchanged (still `false`) throughout.
-Backend: 68 tests, 9 files, all passing.
+hold distinct, freshly-generated secrets; cross-environment token validity closed and verified.
+`ENABLE_AI_GENERATION` confirmed **unset on production both before and after this merge** — Notes'
+AI mode ships gated off; merging code never touches Railway env vars.
+Backend: 68 tests, 9 files, all passing (verified on the actual merge commit, not just staging HEAD).
+
+> **Correction to this doc's own prior entry:** an earlier pre-merge check in this session reported
+> main's HEAD as `9f72056` and flagged a "44 commit gap" — that was wrong. It came from reading a
+> **stale local `main` branch pointer** in a different git worktree that hadn't fetched since 17 Jul;
+> `origin/main` (the real, canonical ref) was already at `5dec9ca` the whole time, matching what this
+> doc had recorded all along. Re-verified directly against `origin/main` before merging — the true
+> gap was the 15 commits listed above, exactly as this doc already tracked. No harm done (caught
+> before the merge executed), but noting it here since the user was given the wrong number first.
 **Repository:** taskflow (main = production, staging = development)
 
 > **Fact-checked against the repo & live DBs on 17 Jul 2026.** Corrections applied vs. the
@@ -38,8 +47,8 @@ feature and the full Valideity dataset.
 - customId field: ✅ Complete & Production (commit `9f72056`, migration `12_add_task_custom_id`)
 - Valideity Seed Data: ✅ Complete & **Production** (seeded on prod)
 
-**Current Work (all on `staging`, not yet merged to production):**
-- ✅ Trash permanent-delete + Account modals — `08ad9ed`, **pending user visual verification**
+**Current Work:**
+- ✅ Trash permanent-delete + Account modals — `08ad9ed`, now in production
 - ✅ Security audit of recent changes — DONE; fixes in `e93a26a`
 - ✅ Task modal in-place fix (My Tasks / Search) — DONE, `5628ba1`
 - ✅ Doc markdown XSS — sanitized with DOMPurify, `5892373`
@@ -47,14 +56,19 @@ feature and the full Valideity dataset.
 - 🟡 Contract phase (optional cleanup) — not started
 - ✅ **Resolved 19 Jul 2026:** staging and production `JWT_SECRET` rotated to distinct values (see Security section)
 
-**Production merge:** ✅ DONE 18 Jul 2026 — all 28 commits through `5dec9ca` merged (fast-forward) and deployed. Nothing currently batched/pending merge; staging and main are at parity (`5dec9ca`).
+**Production merge (2nd):** ✅ DONE 20 Jul 2026 — all 15 commits through `5a2528c` merged
+(fast-forward, `5dec9ca → 5a2528c`) and deployed. **Nothing currently batched/pending merge; staging
+and main are at full parity (`5a2528c`).**
 
 ---
 
 ## Production State (Current)
 
-**Commit:** `5dec9ca` (main HEAD; fast-forwarded from staging 18 Jul 2026, deployed via Railway + Netlify)
-**Migrations:** 13 migration directories, `0_init` … `12_add_task_custom_id` (latest), all applied cleanly — this merge shipped code only, **zero new migrations** (confirmed byte-identical `prisma/migrations` + `schema.prisma` between staging and main before merging; deploy log showed "13 migrations found ... No pending migrations to apply")
+**Commit:** `5a2528c` (main HEAD; fast-forwarded from staging 20 Jul 2026, deployed via Railway + Netlify)
+**Migrations:** 14 migration directories, `0_init` … `13_add_notes` (latest), all applied cleanly —
+`13_add_notes` (`NoteChat`/`NoteMessage` tables, additive-only DDL, no data) applied automatically via
+Railway's `prisma migrate deploy` preDeploy step; confirmed via `prisma migrate status`: "14 migrations
+found ... Database schema is up to date" post-deploy.
 
 ### Production URLs
 - **Backend:** https://taskflow-production-d9c0.up.railway.app
@@ -69,6 +83,11 @@ feature and the full Valideity dataset.
 - **customId / TID:** ✅ **100% backfilled on production as of 18 Jul 2026** — Fortnoto 279/279 (278 as `U1.1…U1.278`, 1 as `A1.1` for the task in "Gate 1" above), Valideity 91/91 (unchanged, already complete). Verified idempotent (second run assigned 0) and duplicate-free.
 - **Task descriptions:** Valideity enhanced comments (acceptance criteria, effort, priority, dependencies) applied
 - `demo@taskflow.app` currently owns **zero projects on production** (flagged; user hasn't requested a placeholder there)
+- **NoteChat / NoteMessage tables:** created by the 20 Jul 2026 merge's migration, **0 rows in both**
+  as of this writing — Notes feature verified live (create-chat + send-message round trip, then
+  cleaned up via the app's own delete → Trash → permanent-delete flow) but otherwise unused on
+  production. Board data (statuses, `statusId` validity) re-verified unaffected: Fortnoto 5
+  statuses/279 tasks, Valideity 5 statuses/91 tasks, 0 invalid `statusId`s on either.
 
 > **Data mutation — 17 Jul 2026 (production only):** Production Fortnoto had **0 statuses and all 279
 > `statusId`s null** (legacy project that predated the "5 default statuses on create" behavior), so its
@@ -550,6 +569,59 @@ authorized) — `main` fast-forwarded `9f72056 → 5dec9ca`**
   Group→Tag migration, and any `JWT_SECRET` change are explicitly deferred to a separate
   go-ahead.
 
+**Second production merge — 20 Jul 2026 — `main` fast-forwarded `5dec9ca → 5a2528c`**
+
+- **Pre-merge check surfaced and corrected a self-made error.** The first draft of the pre-merge
+  report compared `staging` against the local `main` *branch pointer* checked out in a different git
+  worktree (`taskflow`) that hadn't been fetched since 17 Jul — that stale ref read `9f72056`, making
+  the gap look like 44 commits. Before merging, re-verified directly against `origin/main` (the
+  canonical remote ref, unaffected by any local worktree's staleness): `origin/main` was genuinely at
+  `5dec9ca` the whole time, exactly matching what this doc had already recorded. True gap: **15
+  commits** (`5dec9ca..5a2528c`), matching the set the user expected. Local `main` was fast-forwarded
+  to `origin/main` first, then the real merge proceeded from the correct base — no incorrect history
+  was ever pushed.
+- Pre-merge check (corrected): 15 commits staging-ahead-of-main, one new Prisma migration
+  (`13_add_notes`, additive-only DDL — new `NoteChat`/`NoteMessage` tables + `NoteMessageRole` enum,
+  no data), clean fast-forward (`origin/main` a direct ancestor of `staging`, verified via
+  `git merge-base`), dry-run merge on a disposable local branch confirmed zero conflicts (61 files:
+  30 added, 27 modified, 4 deleted), 68/68 backend tests passing against the actual merge-commit
+  tree, no seed/backfill/data-mutation scripts bundled in the diff, `ENABLE_AI_GENERATION` confirmed
+  unset on production pre-merge.
+- Fast-forwarded local `main` to `origin/main`, then fast-forwarded again to `staging`'s tip
+  (`git merge --ff-only origin/staging`) — no merge commit, pure fast-forward. Re-ran the 68-test
+  suite on `main`'s new tip before pushing. `git push origin main` → `5dec9ca..5a2528c main -> main`.
+- Watched the Railway production deploy through to completion (`railway deployment list` polling:
+  BUILDING → DEPLOYING → SUCCESS). Confirmed via `prisma migrate status`: **14 migrations found …
+  Database schema is up to date** (up from 13 pre-deploy) — `13_add_notes` applied cleanly, no
+  manual intervention needed.
+- Post-deploy verification:
+  - `GET /health` → `200 {"ok":true,"name":"Taskflow API"}`.
+  - Board-data integrity re-checked at the DB layer (same method as the first merge): Fortnoto 5
+    statuses/279 tasks, Valideity 5 statuses/91 tasks, **0** tasks with an invalid/missing
+    `statusId` on either — **PASS**.
+  - `NoteChat`/`NoteMessage` tables confirmed present and empty (0/0) immediately post-deploy.
+  - `ENABLE_AI_GENERATION` re-checked **post-deploy** (not just pre-deploy, since this is the actual
+    point of the two-gate check): still unset in production's Railway variables, alongside
+    `ANTHROPIC_API_KEY` — also unset. Confirms merging code never touches Railway env vars; Notes'
+    AI mode ships gated off.
+  - **Live browser spot-checks against production** (https://muidemakztaskflow.netlify.app, logged
+    in as the real admin user): Notes page loads, "New chat" creates a chat, composer sends and
+    persists a message with "Talk to AI: Off" and no AI call triggered; Trash page loads cleanly
+    under Account; RoadmapCard renders correctly for both variants on Valideity (Gate cards A–F
+    with progress bars, the Unscheduled card with its plain sentence); task detail modal opened at
+    375×812 with the close button's bounding rect at `top: 175.8px` — fully in-bounds, not clipped,
+    confirming the mobile Safari fix holds in production.
+  - **Test data cleanup:** the Notes chat created for verification was deleted through the app's own
+    delete → Trash → permanent-delete flow (exercising the new NoteChat trash path live in the
+    process), confirmed `NoteChat`/`NoteMessage` back to 0/0 afterward. One incidental misclick
+    during spot-checking opened a project-delete confirmation for Valideity — dismissed via Cancel
+    immediately, confirmed nothing was deleted (task/gate counts unchanged).
+  - No data, seed, or ownership mutations were bundled in this merge — the Group→Tag migration and
+    the `JWT_SECRET` rotation both remain env/DB-direct operations, never captured as code, so this
+    merge could not and did not replay them.
+- **Production verified healthy. `staging` and `main` now at full parity (`5a2528c`) — zero commit
+  gap.**
+
 **CHUNK D + E (✅ COMPLETE, STAGING) — two task-modal bugs — `ec79d78`**
 
 1. **Status dropdown excluded empty statuses.** Root cause: `ProjectBoard.jsx`'s gate-scoped
@@ -618,7 +690,7 @@ chrome from scratch and had no in-app way out but the browser back button.
 Gate (all three chunks): 53/53 backend tests pass, frontend build clean, no secrets in diff.
 Pushed to `staging` only.
 
-### Account Page — Profile editing converted to modals (✅ COMPLETE, STAGING ONLY — 18 Jul 2026)
+### Account Page — Profile editing converted to modals (✅ COMPLETE, PRODUCTION — 18 Jul 2026 staging, merged to prod 20 Jul 2026, `be261a0`)
 
 UX-consistency change only, no new functionality: the inline Profile editor on the Account page
 (large clickable avatar + a "Name" text field + a "Save profile" button, all live-edited in
@@ -664,7 +736,7 @@ Gate: 51/51 backend tests pass (unchanged -- no backend touched), frontend build
 secrets in diff, no dead code left behind (`savingProfile`/`onAvatarSelected`/`saveProfile`
 grepped, zero hits). Pushed to `staging` only.
 
-### Nav restructure: Trash → Account, Notes slot opened (✅ COMPLETE, STAGING ONLY — 18 Jul 2026)
+### Nav restructure: Trash → Account, Notes slot opened (✅ COMPLETE, PRODUCTION — 18 Jul 2026 staging, merged to prod 20 Jul 2026, `a98ce95`)
 
 Bottom nav changes from `My Tasks | Catch Up | Projects | Trash | Account` to
 `My Tasks | Catch Up | Projects | Notes | Account`:
@@ -698,7 +770,7 @@ horizontal overflow anywhere. No console errors in the clean tab at any point.
 Gate: 51/51 backend tests pass (no backend touched), frontend build clean, no secrets in diff.
 Pushed to `staging` only.
 
-### Revision: Trash modal → dedicated page (✅ COMPLETE, STAGING ONLY — 18 Jul 2026, commit `a98ce95` revised)
+### Revision: Trash modal → dedicated page (✅ COMPLETE, PRODUCTION — 18 Jul 2026 staging, merged to prod 20 Jul 2026, commit `499ab05`)
 
 The Trash section shipped above opened as a wide modal from Account; revised the same day to a
 full page instead, reached the same way (clicking "Trash" in Account) but landing on `/trash`
@@ -737,7 +809,7 @@ own sake.
 Gate: 51/51 backend tests pass (no backend touched), frontend build clean, no secrets in diff,
 no dead references (`TrashPanel`/`showTrash` grepped, zero hits). Pushed to `staging` only.
 
-### Notes feature: chat-style personal notes + optional Talk to AI (✅ COMPLETE, STAGING ONLY — 18 Jul 2026)
+### Notes feature: chat-style personal notes + optional Talk to AI (✅ COMPLETE, PRODUCTION — 18 Jul 2026 staging, merged to prod 20 Jul 2026, `9d0ceb3`/`2422a3f`; migration `13_add_notes` applied cleanly, `ENABLE_AI_GENERATION` confirmed still unset)
 
 Replaces the placeholder Notes page with a real feature, following the full-page navigation
 pattern established for Trash (not modals): `/notes` (list) and `/notes/:id` (an open chat).
@@ -822,7 +894,7 @@ reverted to Light (shared account state, same hygiene as prior sessions).
 Gate: 64/64 backend tests pass (51 existing + 13 new), frontend build clean, no secrets in diff.
 Pushed to `staging` only, not merged to `main`.
 
-### Notes composer: fixed positioning + bubble color rework (✅ COMPLETE, STAGING ONLY — 19 Jul 2026)
+### Notes composer: fixed positioning + bubble color rework (✅ COMPLETE, PRODUCTION — 19 Jul 2026 staging, merged to prod 20 Jul 2026, `b5f3ffc`)
 
 Two bugs reported against the Notes chat UI shipped above:
 
@@ -856,7 +928,7 @@ theme reverted to Light (same hygiene as prior sessions).
 Gate: 64/64 backend tests pass (no backend touched), frontend build clean, no secrets in diff.
 Pushed to `staging` only.
 
-### GateCard + UnscheduledCard unified into one `RoadmapCard` (✅ COMPLETE, STAGING ONLY — 19 Jul 2026)
+### GateCard + UnscheduledCard unified into one `RoadmapCard` (✅ COMPLETE, PRODUCTION — 19 Jul 2026 staging, merged to prod 20 Jul 2026, `6c794e8`; re-verified live on Valideity production — both Gate cards (with progress bar) and the Unscheduled card (plain sentence) render correctly)
 
 Structural follow-up to the earlier Unscheduled-vs-Gate visual investigation: the two were separate
 components sharing only ambient CSS classes. Replaced both with one `RoadmapCard.jsx` (`kind: 'gate'
@@ -909,7 +981,7 @@ Gate: 64/64 backend tests pass (no backend touched), frontend build clean, no se
 dead references to the deleted components (`GateCard`/`UnscheduledCard` grepped repo-wide, zero
 hits). Pushed to `staging` only.
 
-### Bug fix: task detail modal close button unreachable on mobile Safari (✅ COMPLETE, STAGING ONLY — 19 Jul 2026)
+### Bug fix: task detail modal close button unreachable on mobile Safari (✅ COMPLETE, PRODUCTION — 19 Jul 2026 staging, merged to prod 20 Jul 2026, `7a89a02`; re-verified live at 375×812 on production — close button bounding rect `top: 175.8px`, fully within viewport, not clipped)
 
 **Reported symptom:** on iOS Safari (staging frontend), opening a task detail modal cut off the top
 of the modal -- the close (X) button and part of the TID badge were not visible or reachable, with
@@ -965,7 +1037,7 @@ console errors at any viewport size or theme.
 Gate: 64/64 backend tests pass (no backend touched), frontend build clean, no secrets in diff.
 Pushed to `staging` only.
 
-### Trash extended to cover deleted NoteChats (✅ COMPLETE, STAGING ONLY — 19 Jul 2026)
+### Trash extended to cover deleted NoteChats (✅ COMPLETE, PRODUCTION — 19 Jul 2026 staging, merged to prod 20 Jul 2026, `843acb3`; verified live end-to-end on production — created a test note, deleted it, confirmed it appeared in Trash with the "Note" type label, then permanently deleted it and confirmed both NoteChat and NoteMessage row counts back to 0)
 
 **Premise check (as asked, before making any change):** Trash does **not** only show deleted
 Tasks -- `backend/src/routes/trash.js` already listed/restored/permanently-deleted Project, Task,
@@ -1057,11 +1129,12 @@ immediately below this one.
    pending** its own separate go-ahead (35 groups/35 tags/100% overlap, untouched by this run).
 3. 🟡 **File upload capability (Tasks + Notes)** — PARKED, investigation delivered (Railway Buckets
    recommended, R2 as fallback), awaiting the user's provider decision before any code is written.
-4. ⏳ **11 staging commits not yet merged to `main`** (`5dec9ca..843acb3`) — Account modals, nav
-   restructure, Trash-to-page revision, the full Notes feature, the Notes composer fix, the
-   GateCard/UnscheduledCard→RoadmapCard unification, the mobile Modal `dvh`/safe-area fix, and
-   Trash's NoteChat extension. Awaiting the user's go-ahead to merge, per the standing "staging
-   only until explicit approval" rule.
+4. ✅ **Second production merge — DONE 20 Jul 2026** (`main` fast-forwarded `5dec9ca → 5a2528c`, 15
+   commits: Account modals, nav restructure, Trash-to-page revision, the full Notes feature, the
+   Notes composer fix, the GateCard/UnscheduledCard→RoadmapCard unification, the mobile Modal
+   `dvh`/safe-area fix, Trash's NoteChat extension, and 4 docs-only commits). **`staging` and `main`
+   are now at full parity — zero commit gap.** Full verification detail in "Deployment &
+   Environments" below.
 5. ⏳ **Avatar-upload real-file path** — only the modal's open/cancel/disabled-until-changed logic
    has been verified live; an actual image has never been pushed through the file picker →
    resize → save path end-to-end (Browser pane tooling used this session has no file-upload
@@ -1108,12 +1181,13 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 ## Deployment & Environments
 
 ### Production (Railway + Netlify)
-- Backend: https://taskflow-production-d9c0.up.railway.app — commit `5dec9ca`, 13 migrations
+- Backend: https://taskflow-production-d9c0.up.railway.app — commit `5a2528c`, 14 migrations
 - Auto-deploys on push to `main` (`prisma migrate deploy` preDeploy)
 
 ### Staging (Railway + Netlify)
-- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `843acb3`, 14 migrations
+- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `5a2528c`, 14 migrations
 - Frontend: https://staging--muidemakztaskflow.netlify.app
+- **`staging` and `main` are at full parity as of 20 Jul 2026** (both `5a2528c`) — zero commit gap.
 
 ### Local Development
 - `npm run dev` frontend (Vite) + backend; `.env.local` DATABASE_URL. Local dev frontend points at the
@@ -1285,11 +1359,10 @@ Corrected against the actual repo and live databases:
 
 **Owner:** User
 **Active Maintainer:** Claude (via Claude Code sessions)
-**Production Status:** LIVE & STABLE (`5dec9ca`)
-**Next Review:** After the user reviews the 11 unmerged staging commits (`5dec9ca..843acb3`) and
-decides on merge timing, plus the remaining open decisions tracked under "Current Open Items" above
-(staging's Group→Tag migration — production's is now done, and the file-upload provider choice.
-`JWT_SECRET` rotation is now complete on both environments.)
+**Production Status:** LIVE & STABLE (`5a2528c`) — `staging` and `main` at full parity
+**Next Review:** Remaining open decisions tracked under "Current Open Items" above: staging's own
+Group→Tag migration (production's is done), and the file-upload provider choice. `JWT_SECRET`
+rotation and the second production merge are both now complete.
 
 ---
 
