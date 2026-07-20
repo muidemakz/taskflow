@@ -84,7 +84,14 @@ export default function GateDetailCard({ gate, onAddTask, onShareGate, onCloseGa
         )}
       </div>
 
-      <div className="flex min-w-0 items-center gap-2 pr-24">
+      {/* pr-40, not the original pr-24: the Closed pill ("Closed · DD Mon
+          YYYY") measures up to ~137px wide, wider than pr-24's 96px buffer
+          -- a latent gap in the pre-existing badge+title row that never
+          surfaced because the title's own truncation silently absorbed it.
+          The chevron toggle below is a new, non-truncating fixed-width
+          element at the row's trailing edge, which exposes the shortfall
+          as a real visual overlap with the pill. Verified at ~380px. */}
+      <div className="flex min-w-0 items-center gap-2 pr-40">
         <span
           className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-xs font-bold text-white"
           style={{ background: `var(--gate-accent-${(gate.order ?? 0) % 6})` }}
