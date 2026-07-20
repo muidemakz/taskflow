@@ -1,29 +1,36 @@
 # Taskflow Upgrade — Master Documentation
 
-**Last Updated:** 20 July 2026 (staging Group→Tag migration confirmed complete — 35/35 tags, 0
-created/0 new links since staging was already fully tagged; Contract-phase scope audited)
-**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5a2528c` (20 Jul 2026,
-verified healthy). **`staging` and `main` are now at full parity** — zero commit gap. This second
-merge shipped: Account modals, the Trash→Account nav restructure and its later modal→page revision,
-the full Notes feature (migration `13_add_notes`, the 14th migration directory, additive-only DDL),
-the Notes composer fix, the GateCard/UnscheduledCard→RoadmapCard unification, the mobile Modal
-`dvh`/safe-area fix, Trash's extension to cover deleted NoteChats, and the four docs-only commits
-logging the Group→Tag production migration and the JWT_SECRET rotation. TID backfill complete on
-**both** environments (staging 328/328, production 370/370, including the one Fortnoto task already
-gated under "Gate 1" rather than Unscheduled). Group→Tag migration is **COMPLETE on both
+**Last Updated:** 20 July 2026 (third production merge — Task.status drift fix + both Admin Users
+double-count fixes — cherry-picked to `main` and deployed; staging's paused Contract-phase code-track
+edits are NOT part of this merge, still uncommitted on `staging`)
+**Current Status:** Phase 1 COMPLETE and LIVE IN PRODUCTION on `main`@`5761011` (20 Jul 2026,
+verified healthy). This third merge shipped exactly three cherry-picked commits (not a fast-forward —
+`staging` also carries one docs-only commit, `20dc416`, deliberately left off `main`): the
+`Task.status` drift fix (Dashboard/RoadmapOverview/Admin "done" counts now derive from
+`statusId → Status.countsAsDone` instead of the stale legacy column) and two Admin Users list
+double-count fixes (Tasks column was double-counting grouped tasks; Projects column was counting
+soft-deleted projects). See "Third production merge" below for full verification detail. The second
+merge (`5dec9ca → 5a2528c`) shipped: Account modals, the Trash→Account nav restructure and its later
+modal→page revision, the full Notes feature (migration `13_add_notes`, the 14th migration directory,
+additive-only DDL), the Notes composer fix, the GateCard/UnscheduledCard→RoadmapCard unification, the
+mobile Modal `dvh`/safe-area fix, Trash's extension to cover deleted NoteChats, and the four docs-only
+commits logging the Group→Tag production migration and the JWT_SECRET rotation. TID backfill complete
+on **both** environments (staging 328/328, production 370/370, including the one Fortnoto task
+already gated under "Gate 1" rather than Unscheduled). Group→Tag migration is **COMPLETE on both
 environments** (production 19 Jul: 38 groups → 38 tags created, 279/279 tasks linked. Staging 20 Jul:
 35 groups, all 35 tags already existed with full task overlap — 0 created, 0 new links, formally
 verified live via tag-filter spot-checks). Contract-phase scope was audited 20 Jul 2026 (see the
-dedicated section below) — Group→Tag is no longer a blocker on either environment, but a second,
-previously undocumented blocker was found: the legacy `Task.status` field has drifted from the real
-kanban `Status.countsAsDone` system on both environments, currently understating "done" counts on the
-Dashboard, RoadmapOverview, public ShareView pages, and Admin stats — flagged as a live bug, not yet
-fixed. File upload capability investigated and **PARKED**
+dedicated section below) — Group→Tag is no longer a blocker on either environment; the legacy
+`Task.status` drift found during that audit is now **fixed and live in production** (see above). A
+manual `pg_dump` of production (custom format, `--no-owner --no-privileges`, ~118 KB) was also taken
+20 Jul 2026 as a general safety-net backup — stored locally outside Railway at
+`C:\Users\Excellentm\Documents\Fortnoto\taskflow-backups\`, not tied to any specific migration. File
+upload capability investigated and **PARKED**
 pending the user's provider decision. **`JWT_SECRET` rotated 19 Jul 2026** — production and staging
 hold distinct, freshly-generated secrets; cross-environment token validity closed and verified.
-`ENABLE_AI_GENERATION` confirmed **unset on production both before and after this merge** — Notes'
-AI mode ships gated off; merging code never touches Railway env vars.
-Backend: 68 tests, 9 files, all passing (verified on the actual merge commit, not just staging HEAD).
+`ENABLE_AI_GENERATION` confirmed **unset on production both before and after the second merge** —
+Notes' AI mode ships gated off; merging code never touches Railway env vars.
+Backend: 73 tests, 9 files, all passing (verified on the actual merge commit, not just staging HEAD).
 
 > **Correction to this doc's own prior entry:** an earlier pre-merge check in this session reported
 > main's HEAD as `9f72056` and flagged a "44 commit gap" — that was wrong. It came from reading a
@@ -63,14 +70,21 @@ feature and the full Valideity dataset.
 - ✅ **Resolved 19 Jul 2026:** staging and production `JWT_SECRET` rotated to distinct values (see Security section)
 
 **Production merge (2nd):** ✅ DONE 20 Jul 2026 — all 15 commits through `5a2528c` merged
-(fast-forward, `5dec9ca → 5a2528c`) and deployed. **Nothing currently batched/pending merge; staging
-and main are at full parity (`5a2528c`).**
+(fast-forward, `5dec9ca → 5a2528c`) and deployed.
+
+**Production merge (3rd):** ✅ DONE 20 Jul 2026 — 3 commits cherry-picked onto `main`
+(`bb69606`, `b13da77`, `cb0d4b9` → `main`@`5761011`), **not** a fast-forward. One further commit on
+`staging` ahead of the old `main` (`20dc416`, docs-only) was deliberately left off. Staging also still
+carries uncommitted, paused Contract-phase code-track edits (stripping `Project.order` writes) that
+were stashed during this merge and restored afterward — **not part of this merge, not on `main`.**
+**`staging` and `main` are no longer at full parity** — staging is ahead by 1 docs commit plus the
+uncommitted paused edits.
 
 ---
 
 ## Production State (Current)
 
-**Commit:** `5a2528c` (main HEAD; fast-forwarded from staging 20 Jul 2026, deployed via Railway + Netlify)
+**Commit:** `5761011` (main HEAD; 3 commits cherry-picked from staging 20 Jul 2026, deployed via Railway + Netlify)
 **Migrations:** 14 migration directories, `0_init` … `13_add_notes` (latest), all applied cleanly —
 `13_add_notes` (`NoteChat`/`NoteMessage` tables, additive-only DDL, no data) applied automatically via
 Railway's `prisma migrate deploy` preDeploy step; confirmed via `prisma migrate status`: "14 migrations
@@ -296,7 +310,7 @@ re-authentication path; this was called out to the user before rotating and appr
 - **Backend:** Node.js / Express / Prisma 5.22 → **Railway**
 - **Database:** PostgreSQL (separate staging + production instances)
 - **Auth:** JWT + Personal Access Tokens (PAT)
-- **Testing:** Vitest — **68 backend tests across 9 files**, all passing
+- **Testing:** Vitest — **73 backend tests across 9 files**, all passing
 - **AI:** Anthropic Claude API (flag-gated)
 - **PWA:** manifest.json + service worker
 
@@ -627,6 +641,47 @@ authorized) — `main` fast-forwarded `9f72056 → 5dec9ca`**
     merge could not and did not replay them.
 - **Production verified healthy. `staging` and `main` now at full parity (`5a2528c`) — zero commit
   gap.**
+
+**Third production merge — 20 Jul 2026 — 3 commits cherry-picked onto `main` (`5761011`)**
+
+- **Not a fast-forward, by design.** `git log main..staging` showed 4 commits ahead of main:
+  `bb69606` (Task.status drift fix), `20dc416` (docs-only Contract-phase audit entry), `b13da77`
+  (Admin Users tasksCount double-count fix), `cb0d4b9` (Admin Users Projects-count double-count fix).
+  The user asked for exactly `bb69606`, `b13da77`, `cb0d4b9` — `20dc416` was deliberately excluded,
+  so a plain fast-forward/merge was wrong here; cherry-picked the three in chronological order instead
+  (required, since `cb0d4b9`'s diff context depends on `b13da77` already being applied to the same
+  file).
+- **Working-tree isolation:** staging's working tree also had uncommitted, paused Contract-phase
+  code-track edits (`projects.js`, `tasks.js`, `utils/project.js` — stripping `Project.order` writes,
+  unrelated to this merge and not approved for shipping). `git stash push -u` on just those three
+  files before switching to the `main` worktree, `git stash pop` to restore them after — confirmed via
+  `git status --short` before and after that the stash captured exactly those three files and nothing
+  else.
+- Confirmed `main`'s local branch (checked out in the sibling `taskflow` worktree) matched
+  `origin/main` exactly before starting — no stale-ref repeat of the second merge's near-miss.
+- Cherry-picked `bb69606` → `b13da77` → `cb0d4b9` onto `main`, all three applied clean, zero conflicts.
+  Diffed the three touched files (`admin.js`, `utils/project.js`, `taskInput.test.js`) between the new
+  `main` HEAD and `staging` — **empty diff**, confirming byte-for-byte match.
+- 73/73 backend tests passing on the actual merge-commit tree (not just staging HEAD).
+- `git push origin main` → `2665c82..5761011 main -> main`. Railway auto-deployed; polled
+  `railway deployment list` through BUILDING → DEPLOYING → **SUCCESS**.
+- **Post-deploy live verification against production** (https://muidemakztaskflow.netlify.app, logged
+  in as the real admin user), cross-checked against an independent ground-truth Prisma query run
+  directly against production via Railway SSH (not the app's own code path):
+  - Ground truth: `admin@taskflow.app` → 2 projects, 370 tasks; `demo@taskflow.app` and
+    `testuser123@example.com` → 0/0 each; global `totalTasks=370`, real done
+    (`statusId→countsAsDone`) `=255`, legacy done (`status` column) `=219`.
+  - **Dashboard:** Fortnoto 237/279 done (85%), Valideity 18/91 done (20%) — sums to 255/370,
+    exactly matching ground truth. (Pre-fix, production showed 219 legacy-done total.)
+  - **Admin Overview:** Total Tasks 370, Tasks Completed 255 (69%) — exact match.
+  - **Admin Users list:** `testuser123@example.com` 0 projects/0 tasks, `demo@taskflow.app` 0/0,
+    `admin@taskflow.app` 2/370 — exact match on all three users, both columns.
+  - No console errors during the live check.
+- No data, seed, ownership, or schema mutations were bundled in this merge — pure code fixes, no
+  migrations.
+- **Production verified healthy.** `staging` is now ahead of `main` by one docs-only commit
+  (`20dc416`) plus the still-paused, uncommitted Contract-phase code-track edits — this is expected
+  and intentional, not a gap to close.
 
 **CHUNK D + E (✅ COMPLETE, STAGING) — two task-modal bugs — `ec79d78`**
 
@@ -1158,15 +1213,42 @@ immediately below this one.
    See the "Contract Phase Scope Audit" section below for full detail, per-item risk, and rollback
    story (three of the four items are one-way schema/data drops with no down-migration; the fourth,
    deleting `ProjectDetail.jsx`, is fully git-reversible).
-8. 🔴 **New finding, 20 Jul 2026 — legacy `Task.status` has already drifted from live data**,
-   independent of Contract-phase timing. Verified directly: production Fortnoto shows "219 done" on
-   the Dashboard but is actually **237** done per the real kanban `Status.countsAsDone` system (18
-   tasks understated); production Valideity shows "0% done" but is actually **18/91 (20%)** done.
-   Same pattern on staging (122 shown vs. 130 real for Fortnoto; 0 shown vs. 17 real for Valideity).
-   Root cause: the modern board (`board.js`) only ever writes `statusId`, never the legacy `status`
-   column, which is written **only** by the orphaned `/legacy` route. This is a live, user-facing
-   accuracy bug on the Dashboard/RoadmapOverview/ShareView/Admin surfaces today — worth a decision on
-   its own, independent of whether/when Contract phase proceeds. No code changed; flagged only.
+8. ✅ **RESOLVED 20 Jul 2026 — legacy `Task.status` drift, found 20 Jul 2026.** Was: production
+   Fortnoto showed "219 done" on the Dashboard but was actually **237** done per the real kanban
+   `Status.countsAsDone` system (18 tasks understated); production Valideity showed "0% done" but was
+   actually **18/91 (20%)** done. Same pattern on staging. Root cause: the modern board (`board.js`)
+   only ever writes `statusId`, never the legacy `status` column, which is written **only** by the
+   orphaned `/legacy` route. Fixed in `bb69606` (`taskCounts()` and Admin's global stat now derive
+   "done" from `statusId → Status.countsAsDone`), verified on staging, then cherry-picked to `main`
+   and deployed to production 20 Jul 2026 — see "Third production merge" above for live verification
+   (production Dashboard/Admin Overview now show 255/370 done, matching ground truth exactly).
+   ShareView's public pages were never actually affected (they already computed stats independently
+   via `statusId`/`countsAsDone`) — an earlier draft of this doc had mis-scoped ShareView into the bug,
+   corrected here.
+9. ✅ **RESOLVED 20 Jul 2026 — Admin Users list double-counted two different columns.** Found while
+   verifying item 8's fix. **Tasks column** (`b13da77`): `GET /api/admin/users` used an ad-hoc Prisma
+   include missing `groupId: null`, so every grouped task was counted twice (once as "root", once
+   inside its group) — admin's total read 553 instead of 326. Fixed by reusing the already-correct
+   shared `projectInclude`. **Projects column** (`cb0d4b9`): `_count: { select: { projects: true } }`
+   had no `deletedAt: null` filter, counting soft-deleted projects — Checkpoint C Tester read 4
+   instead of 2. Fixed by scoping the count's `where`. Both verified against live UI + an independent
+   ground-truth query on staging, then cherry-picked to `main` and verified again on production (see
+   "Third production merge" above).
+10. ℹ️ **Manual production backup taken 20 Jul 2026** — general safety net, not tied to any specific
+    migration. `pg_dump` isn't installed on the app container; ran it via SSH directly on the
+    `Postgres` service's own container (`/usr/bin/pg_dump`, part of the official image), custom format
+    (`-Fc --no-owner --no-privileges`), stdout piped straight through SSH to local disk — nothing
+    touched the container's filesystem. Result: 120,771 bytes, `PGDMP` header verified, stored at
+    `C:\Users\Excellentm\Documents\Fortnoto\taskflow-backups\taskflow-production-20260720-182937.dump`.
+    Separately, the user still needs to check Railway's dashboard Backups tab directly for any
+    existing automated schedule — this pg_dump does not confirm or rule that out either way.
+11. 🟡 **Contract-phase code track — PAUSED, mid-edit, staging only.** Started 20 Jul 2026 (strip
+    `Project.order` writes from `projects.js`/`tasks.js`/`utils/project.js`, leaving the column and its
+    read path intact), interrupted before the frontend/route-deletion steps (deleting
+    `ProjectDetail.jsx`/`GroupCard.jsx`/root `TaskCard.jsx`, `groups.js`, and their references) began.
+    Uncommitted edits currently sit in staging's working tree (stashed and restored intact around the
+    third production merge above, to keep them isolated from it). Not resumed yet — awaiting the
+    user's go-ahead.
 
 ### Future (Phase 2+)
 - PAT auth role attachment
@@ -1205,13 +1287,16 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 ## Deployment & Environments
 
 ### Production (Railway + Netlify)
-- Backend: https://taskflow-production-d9c0.up.railway.app — commit `5a2528c`, 14 migrations
+- Backend: https://taskflow-production-d9c0.up.railway.app — commit `5761011`, 14 migrations
 - Auto-deploys on push to `main` (`prisma migrate deploy` preDeploy)
 
 ### Staging (Railway + Netlify)
-- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `5a2528c`, 14 migrations
+- Backend: https://taskflow-staging-dbeb.up.railway.app — commit `cb0d4b9`, 14 migrations
 - Frontend: https://staging--muidemakztaskflow.netlify.app
-- **`staging` and `main` are at full parity as of 20 Jul 2026** (both `5a2528c`) — zero commit gap.
+- **`staging` is ahead of `main` as of 20 Jul 2026**: one docs-only commit (`20dc416`) deliberately
+  not merged, plus uncommitted, paused Contract-phase code-track edits in the working tree (not
+  committed on either branch). Not a parity gap in the code sense — everything shipped to `main` this
+  round matches `staging` exactly for the files it touched (verified via empty diff).
 
 ### Local Development
 - `npm run dev` frontend (Vite) + backend; `.env.local` DATABASE_URL. Local dev frontend points at the
@@ -1227,7 +1312,7 @@ PATs can't hit `/api/admin` routes (role not attached). Fails closed. Workaround
 
 ## Testing Strategy
 
-- ✅ Vitest: **68 backend tests, 9 files**, all passing
+- ✅ Vitest: **73 backend tests, 9 files**, all passing
 - ✅ API-level verification per feature (board/search/trash customId; permanent delete end-to-end; auth endpoints sanity-checked; 409/400 customId paths)
 - ✅ Deployed-bundle inspection (CSS/JS asset verification on Netlify)
 - ✅ Idempotency verification on data scripts
@@ -1474,7 +1559,8 @@ Corrected against the actual repo and live databases:
 
 **Owner:** User
 **Active Maintainer:** Claude (via Claude Code sessions)
-**Production Status:** LIVE & STABLE (`5a2528c`) — `staging` and `main` at full parity
+**Production Status:** LIVE & STABLE (`5761011`) — `staging` ahead by one docs-only commit
+(`20dc416`) plus uncommitted, paused Contract-phase edits; not a code parity gap for anything shipped
 **Next Review:** Remaining open decisions tracked under "Current Open Items" above: staging's own
 Group→Tag migration (production's is done), and the file-upload provider choice. `JWT_SECRET`
 rotation and the second production merge are both now complete.
