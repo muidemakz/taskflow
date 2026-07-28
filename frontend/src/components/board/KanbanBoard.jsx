@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DndContext, DragOverlay, PointerSensor, TouchSensor, closestCorners, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, PointerSensor, TouchSensor, closestCorners, pointerWithin, useSensor, useSensors } from '@dnd-kit/core';
 import toast from 'react-hot-toast';
 import BoardColumn from './BoardColumn';
 import BoardTaskCard from './BoardTaskCard';
@@ -34,6 +34,18 @@ export default function KanbanBoard({ onOpenTask, sortKey = 'default', workflowC
 
   const gatesById = Object.fromEntries(gates.map((g) => [g.id, g]));
 
+  // closestCorners alone picks the geometrically nearest droppable rect,
+  // ignoring the pointer -- an empty column's droppable is its whole
+  // (tall, stretched) container, so its corners can lose to a card sitting
+  // in a neighboring column even while the pointer is inside the empty one.
+  // pointerWithin (actual cursor location) is tried first and only falls
+  // back to closestCorners when the pointer has left every droppable rect
+  // (e.g. a fast drag during auto-scroll).
+  function collisionDetection(args) {
+    const hits = pointerWithin(args);
+    return hits.length > 0 ? hits : closestCorners(args);
+  }
+
   function handleDragStart(event) {
     const task = columns.flatMap((c) => c.tasks).find((t) => t.id === event.active.id);
     setActiveTask(task || null);
@@ -66,7 +78,7 @@ export default function KanbanBoard({ onOpenTask, sortKey = 'default', workflowC
 
   return (
     <>
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory sm:snap-none">
           {columns.map((col) => (
             <BoardColumn
