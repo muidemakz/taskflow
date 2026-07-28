@@ -1,5 +1,28 @@
 # Taskflow Upgrade — Master Documentation
 
+## 28 July 2026 Update
+
+- **Fortnoto backlog import (production, direct DB write):** added 19 new tasks to the live
+  production **Fortnoto** project (`cmpqy6dhn000467ndlcjso0ct`), unscheduled (no gate), landed in
+  the Backlog status, TIDs `U1.279`–`U1.297`. Written via a one-off script piped over `railway ssh`
+  reusing the app's own `createTaskWithCustomId`/`appendPosition` helpers (same code path as the
+  real `POST /:id/tasks` endpoint), so the rows are indistinguishable from UI-created tasks.
+  Verified: Fortnoto non-deleted task count went 278 → 297. Covers a mixed batch of Venda/POS,
+  wallet, marketplace, and website feature requests — no gate/grouping decision made yet, left as
+  flat backlog items pending triage.
+- **Board drag-drop fix (staging only, `3b4993f`):** user reported "can't drag task into an empty
+  [status column]" on production. Root cause: `KanbanBoard.jsx`'s `DndContext` used dnd-kit's
+  `closestCorners` for collision detection, which resolves the drop target by corner-distance
+  across *every* droppable rect, ignoring the pointer. An empty column's only droppable is its
+  full (tall, stretched) container; a card in a neighboring column can have geometrically closer
+  corners even while the pointer sits visually inside the empty column, so the drop silently
+  resolved to the wrong column. Fixed by trying `pointerWithin` (actual cursor location) first,
+  falling back to `closestCorners` only when the pointer has left every droppable (e.g. mid
+  auto-scroll). `BoardColumn.jsx`'s droppable itself was already correct — no change there.
+  Backend test suite re-run clean (73/73). **Not yet verified in a logged-in browser session**
+  (skipped entering any account's password per this session's own credential-handling rule) — needs
+  a manual drag-into-empty-column check on staging before this merges to production.
+
 **Last Updated:** 20 July 2026 (Chunk C shipped to staging — `GateDetailCard` collapsible behavior,
 correctly re-targeted after an earlier mis-scoped pass against `TaskDetailModal`; two real bugs found
 and fixed during live verification; one pre-existing, shared collapse-animation bug found and flagged,
