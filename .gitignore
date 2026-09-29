@@ -8,3 +8,4 @@ dist
 backend/prisma/migrations/dev.db
 backend/prisma/dev.db
 pgdata/
+AGENTS.md
